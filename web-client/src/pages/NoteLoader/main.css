@@ -1,0 +1,109 @@
+/* Card initial and loaded animation classes */
+.initial {
+  display: none;
+  transform: scale(0);
+}
+
+.loaded {
+  display: flex;
+  animation: bubbleIn 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  transform: scale(1);
+}
+
+@keyframes bubbleIn {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.2;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.complex-rotate {
+  animation: complexRotate 10s cubic-bezier(0.65, 0.05, 0.36, 1) infinite;
+}
+
+.complex-rotate-transition {
+  animation: rotate-zoom var(--rotate-transition-duration)
+    cubic-bezier(0.65, 0.05, 0.36, 1) forwards;
+}
+
+@keyframes rotate-zoom {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  10% {
+    transform: rotate(360deg) scale(4);
+  }
+  20% {
+    transform: rotate(540deg) scale(8);
+  }
+  30% {
+    transform: rotate(720deg) scale(12);
+  }
+  40% {
+    transform: rotate(1080deg) scale(16);
+  }
+  50% {
+    transform: rotate(1260deg) scale(26);
+  }
+  60% {
+    transform: rotate(1440deg) scale(40);
+  }
+  70% {
+    transform: rotate(1620deg) scale(55);
+  }
+  80% {
+    transform: rotate(1800deg) scale(65);
+  }
+  90% {
+    transform: rotate(1980deg) scale(100);
+  }
+  100% {
+    transform: rotate(2160deg) scale(150);
+  }
+}
+
+@keyframes complexRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(90deg);
+  }
+  20% {
+    transform: rotate(360deg);
+  }
+  30% {
+    transform: rotate(500deg); /* 360 + 140 */
+  }
+  40% {
+    transform: rotate(720deg);
+  }
+  50% {
+    transform: rotate(910deg); /* 720 + 190 */
+  }
+  60% {
+    transform: rotate(1080deg); /* 720 + 360 */
+  }
+  70% {
+    transform: rotate(1320deg); /* 1080 + 240 */
+  }
+  80% {
+    transform: rotate(1440deg); /* 1080 + 360 */
+  }
+  90% {
+    transform: rotate(1800deg); /* 1440 + 360 */
+  }
+  100% {
+    transform: rotate(1440deg); /* End at 4*360 */
+  }
+}

@@ -1,0 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap");
+
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    @apply font-sans;
+  }
+  #root {
+    @apply absolute top-0 z-0 left-0 w-full h-full overflow-hidden flex justify-center items-center;
+  }
+  body {
+    @apply h-screen m-0 z-0 p-0 w-screen flex justify-center items-center overflow-hidden;
+  }
+}
+
+.page-screen {
+  @apply absolute top-0 left-0 w-full h-full overflow-hidden flex z-0;
+}
+
+.page-screen.center {
+  @apply justify-center items-center;
+}
+
+.page-dark {
+  @apply bg-black text-white;
+}
