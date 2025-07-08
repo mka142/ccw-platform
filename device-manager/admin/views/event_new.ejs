@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<%- include('_semantic_head', { title: 'Dodaj komunikat' }) %>
+<body>
+  <div class="ui menu blue">
+    <div class="ui container">
+      <a href="/" class="header item">Panel Admina</a>
+    </div>
+  </div>
+  <div class="ui main text container" style="margin-top:2em;">
+    <div class="ui raised very padded text container segment">
+      <h2 class="ui header">Dodaj komunikat</h2>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="ui negative message">
+          <div class="header"><%= error %></div>
+        </div>
+      <% } %>
+      <form class="ui form" method="POST" action="/concerts/<%= concert_id %>/events">
+        <div class="field">
+          <label>Typ komunikatu (event_type)</label>
+          <input type="text" name="event_type" value="<%= typeof event_type !== 'undefined' ? event_type : '' %>" required>
+        </div>
+        <div class="field">
+          <label>Nazwa do czytania (label)</label>
+          <input type="text" name="label" value="<%= typeof label !== 'undefined' ? label : '' %>" required>
+        </div>
+        <div class="field">
+          <label>Payload (JSON)</label>
+          <textarea name="payload" rows="4"><%= typeof payload !== 'undefined' ? payload : '{}' %></textarea>
+        </div>
+        <button type="submit" class="ui primary button">Dodaj</button>
+        <a href="/concerts/<%= concert_id %>" class="ui button">Powrót</a>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
