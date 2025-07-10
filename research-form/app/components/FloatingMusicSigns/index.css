@@ -1,0 +1,68 @@
+/* Hero Graphics */
+.hero-graphics {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-note {
+  position: absolute;
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.3);
+  animation: floatNote 4s ease-in-out infinite;
+}
+
+.floating-clef {
+  position: absolute;
+  font-size: 4rem;
+  color: rgba(255, 255, 255, 0.2);
+  animation: floatClef 6s ease-in-out infinite;
+}
+
+.note-1 {
+  top: 20%;
+  right: 10%;
+  animation-delay: 0s;
+}
+
+.note-2 {
+  top: 60%;
+  right: 20%;
+  animation-delay: 1s;
+}
+
+.note-3 {
+  top: 80%;
+  right: 5%;
+  animation-delay: 2s;
+}
+
+.floating-clef {
+  top: 40%;
+  right: 15%;
+  animation-delay: 0.5s;
+}
+
+@keyframes floatNote {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes floatClef {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(5deg);
+  }
+}

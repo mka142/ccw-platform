@@ -1,0 +1,39 @@
+/* Shine effect for confirmation heading */
+.shine-text {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+}
+/* Enhanced shine: more contrast, more gold, longer and more visible streak */
+.shine-inner {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(100deg, #fff 0%, #ffe082 20%, #ffe969 40%, #fffbe6 60%, #fff 80%, #fff 100%);
+  background-size: 300% 100%;
+  background-position: -150% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 0.2px 1px #ffe08288) drop-shadow(0 0 2px #fff8);
+  animation: shine-move 4s cubic-bezier(0.4,0,0.2,1) 2s infinite;
+}
+
+
+/* Remove duplicate and make the shine move smooth and consistent */
+/* Only one @keyframes shine-move should exist, and it should match the main animation above */
+/* The shine should start off-screen left, move smoothly to off-screen right, and pause at the end */
+@keyframes shine-move {
+  0% {
+    background-position: -150% 0;
+    filter: drop-shadow(0 0.2px 1px #ffe08288) drop-shadow(0 0 2px #fff8);
+  }
+  50% {
+    background-position: 120% 0;
+    filter: drop-shadow(0 0.3px 3px #ffd700cc) drop-shadow(0 0 4px #fff8);
+  }
+  100% {
+    background-position: 120% 0;
+    filter: drop-shadow(0 0.2px 1px #ffe08288) drop-shadow(0 0 2px #fff8);
+  }
+}

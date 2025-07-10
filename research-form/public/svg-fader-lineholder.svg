@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="106.488 56.521 52.748 476.245">
+  <defs>
+    <linearGradient id="linearGradient7468" y2="597.36" gradientUnits="userSpaceOnUse" x2="668.76" gradientTransform="translate(203.35 -14.18)" y1="597.36" x1="678.43">
+      <stop id="stop4665-55" style="stop-color:#9a9a9a" offset="0"/>
+      <stop id="stop4667-67" style="stop-color:#000000" offset="1"/>
+    </linearGradient>
+  </defs>
+  <g id="layer1" transform="matrix(1, 0, 0, 1, -744.02301, -284.966492)">
+    <g id="g4544-3" transform="translate(203.35 -14.18)">
+      <path id="path4546-9" d="m673.43 370.93v445.71" style="stroke:#414141;stroke-linecap:round;stroke-width:15;fill:#333333"/>
+      <path id="path4548-0" d="m673.43 370.93v445.71" style="stroke:#494949;stroke-linecap:round;stroke-width:14.545;fill:#454545"/>
+      <path id="path4550-3" d="m673.43 370.93v445.71" style="stroke:#515151;stroke-linecap:round;stroke-width:14.091;fill:#585858"/>
+      <path id="path4552-0" d="m673.43 370.93v445.71" style="stroke:#595959;stroke-linecap:round;stroke-width:13.636;fill:#6a6a6a"/>
+      <path id="path4554-0" d="m673.43 370.93v445.71" style="stroke:#616161;stroke-linecap:round;stroke-width:13.182;fill:#7d7d7d"/>
+      <path id="path4556-7" d="m673.43 370.93v445.71" style="stroke:#696969;stroke-linecap:round;stroke-width:12.727;fill:#8f8f8f"/>
+      <path id="path4558-5" d="m673.43 370.93v445.71" style="stroke:#717171;stroke-linecap:round;stroke-width:12.273;fill:#a2a2a2"/>
+      <path id="path4560-1" d="m673.43 370.93v445.71" style="stroke:#797979;stroke-linecap:round;stroke-width:11.818;fill:#b4b4b4"/>
+      <path id="path4562-0" d="m673.43 370.93v445.71" style="stroke:#818181;stroke-linecap:round;stroke-width:11.364;fill:#c7c7c7"/>
+      <path id="path4564-5" d="m673.43 370.93v445.71" style="stroke:#898989;stroke-linecap:round;stroke-width:10.909;fill:#d9d9d9"/>
+      <path id="path4566-4" d="m673.43 370.93v445.71" style="stroke:#919191;stroke-linecap:round;stroke-width:10.455;fill:#ececec"/>
+      <path id="path4568-1" d="m673.43 370.93v445.71" style="stroke:#9a9a9a;stroke-linecap:round;stroke-width:10;fill:#ffffff"/>
+    </g>
+    <path id="path4179-4" style="stroke:#414141;stroke-linecap:round;stroke-width:15;fill:#333333" d="m876.78 356.75v445.71"/>
+    <path id="path4671-0" style="stroke:#b1b1b1;stroke-linecap:round;stroke-width:0.6;fill:#999999" d="m882.99 802.47v-445.18"/>
+    <path id="path3825-2" d="m876.78 356.75v445.71" style="opacity:.50896;stroke:url(#linearGradient7468);stroke-linecap:round;stroke-width:12;fill:#ffffff"/>
+  </g>
+</svg>
