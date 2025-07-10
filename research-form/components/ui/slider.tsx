@@ -55,8 +55,8 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
             width: 16px;
             height: 100%;
             writing-mode: vertical-lr;
-            -webkit-appearance: slider-vertical;
-            appearance: slider-vertical;
+            -webkit-appearance: none;
+            appearance: none;
             margin: 0;
             padding: 0;
           }
