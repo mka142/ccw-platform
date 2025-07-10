@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Form Definition",
+  "type": "object",
+  "properties": {
+    "formId": { "type": "string" },
+    "formTitle": { "type": "string" },
+    "formDescription": { "type": "string" },
+    "formPages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "displayTitle": { "type": "boolean" },
+          "description": { "type": "string" },
+          "displayDescription": { "type": "boolean" },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "label": { "type": "string" },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "text",
+                    "longText",
+                    "choices",
+                    "select",
+                    "listSelect",
+                    "selectWithCustom",
+                    "choicesWithCustom",
+                    "musicSlider"
+                  ]
+                },
+                "audioSrc": { "type": "string" },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "key": { "type": "string" },
+                          "value": { "type": "string" }
+                        },
+                        "required": ["key", "value"],
+                        "additionalProperties": false
+                      },
+                      { "type": "string" }
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "title",
+                "description",
+                "label",
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "title",
+          "displayTitle",
+          "description",
+          "displayDescription",
+          "fields"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "formId",
+    "formTitle",
+    "formDescription",
+    "formPages"
+  ],
+  "additionalProperties": false
+}
