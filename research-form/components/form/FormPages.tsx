@@ -4,8 +4,14 @@ import React, {
   Children,
   ReactElement,
   cloneElement,
+  useCallback,
 } from "react";
 import dynamic from "next/dynamic";
+
+export interface FormResponseSchema {
+  [key: string]: unknown;
+}
+
 // Dynamically import ConfirmationPage to avoid SSR issues with window
 const ConfirmationPage = dynamic(() => import("./ConfirmationPage"), {
   ssr: false,
@@ -23,16 +29,39 @@ interface FormPagesProps {
   children: React.ReactNode;
   nextLabel?: string;
   prevLabel?: string;
-  onFinish?: () => boolean | Promise<boolean>;
+  onFinish?: (data: FormResponseSchema) => boolean | Promise<boolean>;
+  onPageChange?: (pageIndex: number) => void; // Callback for page change
 }
 
 interface FormPageProps {
   children: React.ReactNode;
+  title?: string;
+  description?: string;
+}
+
+interface ReactElementWithChildren extends ReactElement {
+  props: {
+    children: React.ReactNode;
+  };
 }
 
 // Single page wrapper
-function Page({ children }: FormPageProps) {
-  return <div>{children}</div>;
+function Page({ children, title = "", description = "" }: FormPageProps) {
+  return (
+    <div>
+      <div className="pb-3 mt-1">
+        {title && (
+          <h2 className="text-2xl font-medium font-serif text-primary/80">
+            {title}
+          </h2>
+        )}
+        {description && (
+          <span dangerouslySetInnerHTML={{ __html: description }} />
+        )}
+      </div>
+      {children}
+    </div>
+  );
 }
 
 // Aggregator for multi-page forms
@@ -42,6 +71,7 @@ function FormPages({
   prevLabel = "Wstecz",
   onFinish,
   confetti = true,
+  onPageChange = () => {}, // Callback for page change
 }: FormPagesProps & { confetti?: boolean }) {
   // Split children into pages and find confirmation page
   const form = useFormContext();
@@ -72,36 +102,74 @@ function FormPages({
   const isLast = page === pages.length - 1;
   const isFirst = page === 0;
 
+  const getFormPageChildren = (pageChildren: ReactElementWithChildren) => {
+    // check if pageChildren is FormPages.Page type
+    // if it is React.Fragment we assume that there was a mapping done, so we try
+    // to access the children of that React.Fragment. It it's not FormPages.Page type raise error
+    if (pageChildren.type === FormPages.Page) {
+      return pageChildren.props.children;
+    }
+    if (pageChildren.type === React.Fragment) {
+      if (pageChildren.props.children) {
+        const _children = pageChildren.props.children;
+        if (
+          React.isValidElement(_children) &&
+          _children.type === FormPages.Page
+        ) {
+          return (_children as ReactElementWithChildren).props.children;
+        }
+      }
+      throw new Error(
+        `Invalid FormPages.Page children structure. Expected FormPages.Page or React.Fragment with children, got ${
+          pageChildren.type.name || pageChildren.type
+        }`
+      );
+    }
+    throw new Error(
+      "Invalid FormPages.Page children structure. Expected FormPages.Page or React.Fragment."
+    );
+  };
+
+  const getPageFields = useCallback(() => {
+    const pageChildren = pages[page] as ReactElementWithChildren;
+    const fields: string[] = [];
+    React.Children.forEach(getFormPageChildren(pageChildren), (child) => {
+      if (
+        React.isValidElement(child) &&
+        child.type === Question &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (child.props as { field?: any }).field?.props?.name
+      ) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        fields.push((child.props as { field: any }).field.props.name);
+      }
+    });
+
+    return fields;
+  }, [pages, page]);
+
+  useEffect(() => {
+    // Find which fields are invalid
+    const missing = getPageFields().filter(
+      (field) => form.formState.errors[field]
+    );
+    // Set error fields to show in UI
+    if (missing !== pageErrorFields) {
+      setPageErrorFields(missing);
+    }
+  }, [JSON.stringify(Object.keys(form.formState.errors))]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Hide button, then animate form, then show button with stagger
   const handleNext = async () => {
     // Validate current page fields before allowing next
     if (form && form.trigger) {
       // Find all field names on this page
-      const pageFields: string[] = [];
-      const pageChildren = pages[page] as ReactElement<{
-        children: React.ReactNode;
-      }>;
-      React.Children.forEach(pageChildren.props.children, (child) => {
-        if (
-          React.isValidElement(child) &&
-          child.type === Question &&
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (child.props as { field?: any }).field?.props?.name
-        ) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pageFields.push((child.props as { field: any }).field.props.name);
-        }
-      });
+      const pageFields = getPageFields();
       const valid = await form.trigger(pageFields);
       if (!valid) {
-        // Find which fields are invalid
-        const missing = pageFields.filter(
-          (field) => form.formState.errors[field]
-        );
-        setPageErrorFields(missing);
         return;
       } else {
-        setPageErrorFields([]);
+        await form.clearErrors();
       }
     }
     if (isLast && hasConfirmation) {
@@ -109,7 +177,7 @@ function FormPages({
       let success = true;
       if (onFinish) {
         try {
-          const result = await onFinish();
+          const result = await onFinish(form.getValues());
           if (result === false) success = false;
         } catch {
           success = false;
@@ -123,12 +191,15 @@ function FormPages({
       setShowButton(false);
       setPendingPage(page + 1);
       setPendingDirection(1);
+      onPageChange(page + 1); // Call the page change callback
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
   const handlePrev = () => {
     setShowButton(false);
     setPendingPage(page - 1);
     setPendingDirection(-1);
+    onPageChange(page - 1); // Call the page change callback
   };
 
   // When pendingPage is set, change page after button fade out
@@ -186,8 +257,7 @@ function FormPages({
   function getFieldNameToTitleMap() {
     const map: Record<string, string> = {};
     React.Children.forEach(
-      (pages[page] as ReactElement<{ children: React.ReactNode }>).props
-        .children,
+      getFormPageChildren(pages[page] as ReactElementWithChildren),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (child: any) => {
         if (child?.props?.field?.props?.name && child?.props?.title) {
@@ -251,12 +321,13 @@ function FormPages({
                     transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
                   }}
                   transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                  className="flex gap-2 justify-end mt-4"
+                  className="flex gap-2 justify-end mt-4 pb-4"
+                  style={{ width: "100%" }}
                 >
                   {!isFirst && (
                     <button
                       type="button"
-                      className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      className="hover:cursor-pointer px-6 py-3 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-base sm:text-lg w-full sm:w-auto"
                       onClick={handlePrev}
                     >
                       {prevLabel}
@@ -264,7 +335,7 @@ function FormPages({
                   )}
                   <button
                     type="button"
-                    className="px-4 py-2 rounded bg-orange-800 text-white hover:bg-orange-600 transition-colors font-semibold flex items-center gap-2"
+                    className="hover:cursor-pointer px-6 py-3 rounded bg-orange-800 text-white hover:bg-orange-600 transition-colors font-semibold flex items-center gap-2 text-base sm:text-lg w-full sm:w-auto"
                     onClick={handleNext}
                     disabled={loading}
                   >

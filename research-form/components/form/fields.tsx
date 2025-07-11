@@ -49,6 +49,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
             key={opt}
             selected={value === opt}
             onClick={() => onChange(opt)}
+            onBlur={rest.onBlur as React.FocusEventHandler<HTMLButtonElement>}
             {...rest}
           >
             {opt}
@@ -87,6 +88,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldProps> = ({
             selected={value.includes(opt)}
             onClick={() => toggle(opt)}
             rounded={false}
+            onBlur={rest.onBlur as React.FocusEventHandler<HTMLButtonElement>}
             {...rest}
           >
             {opt}
@@ -170,13 +172,10 @@ export const MultiSelectWithOwnField: React.FC<
     else onChange([...value, opt]);
   };
 
-  console.log("MultiSelectWithOwnField value:", value);
-
   const customValue = useMemo(() => {
     if (!value || value.length === 0) return "";
     // remove options from value and check if custom is set
     const filtered = value.filter((v) => !options.includes(v));
-    console.log("Filtered custom values:", filtered);
     if (filtered.length === 1) {
       return filtered[0];
     }
@@ -231,6 +230,7 @@ interface SelectButtonProps {
   selected: boolean;
   children: React.ReactNode;
   onClick: () => void;
+  onBlur?: React.FocusEventHandler<HTMLButtonElement>;
   rounded?: boolean;
   className?: string;
 }
@@ -238,6 +238,7 @@ const SelectButton = ({
   selected,
   children,
   onClick,
+  onBlur,
   rounded = true,
   className = "",
 }: SelectButtonProps) => {
@@ -256,6 +257,7 @@ const SelectButton = ({
         className
       }
       onClick={onClick}
+      onBlur={onBlur}
       aria-pressed={selected}
     >
       {children}

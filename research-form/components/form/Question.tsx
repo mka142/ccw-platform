@@ -3,7 +3,7 @@ import React from "react";
 interface QuestionProps {
   title: string;
   description?: string;
-  label: string;
+  label?: string;
   field: React.ReactNode;
 }
 
@@ -25,9 +25,11 @@ export const Question = ({
           {description}
         </div>
       )}
-      <label className="block font-medium mb-2 dark:text-primary/90">
-        {label}
-      </label>
+      {label && (
+        <label className="block font-medium mb-2 dark:text-primary/90">
+          {label}
+        </label>
+      )}
       {field}
     </div>
   );
