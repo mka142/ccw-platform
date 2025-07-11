@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
+import "./audioSliderField.css"; // Import your CSS file for styles
 
 interface AudioSliderFieldProps {
   audioSrc: string;
@@ -29,9 +30,11 @@ export const AudioSliderField: React.FC<AudioSliderFieldProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [lastTime, setLastTime] = useState<number | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [vertical, setVertical] = useState(true); // 
+  const [vertical, setVertical] = useState(true); //
   const [ended, setEnded] = useState(false);
   const [listenedFromStart, setListenedFromStart] = useState(false);
+  const [duration, setDuration] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(0);
 
   // Responsive: vertical always (customize if you want to switch back)
   // useEffect(() => {
@@ -53,7 +56,7 @@ export const AudioSliderField: React.FC<AudioSliderFieldProps> = ({
     }
   };
 
-  // Listen for play/pause/end events
+  // Listen for play/pause/end events and update current time/duration
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -66,15 +69,30 @@ export const AudioSliderField: React.FC<AudioSliderFieldProps> = ({
       setIsPlaying(false);
       setEnded(true);
     };
+    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const onLoadedMetadata = () => setDuration(audio.duration);
     audio.addEventListener("play", onPlay);
     audio.addEventListener("pause", onPause);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("loadedmetadata", onLoadedMetadata);
     return () => {
       audio.removeEventListener("play", onPlay);
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("loadedmetadata", onLoadedMetadata);
     };
   }, []);
+  // Format seconds to mm:ss
+  const formatTime = (s: number) => {
+    if (!isFinite(s) || s < 0) return "00:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m.toString().padStart(2, "0")}:${sec
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   // Record slider value with timestamp when changed during playback
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,7 +102,6 @@ export const AudioSliderField: React.FC<AudioSliderFieldProps> = ({
       const t = audioRef.current.currentTime;
       // Only record if time changed (avoid duplicate entries)
       if (lastTime !== t) {
-        console.log(value);
         onChange([...value, [t, newValue]]);
         setLastTime(t);
       }
@@ -155,10 +172,28 @@ export const AudioSliderField: React.FC<AudioSliderFieldProps> = ({
           ? "flex flex-col gap-3 w-full items-center"
           : "flex flex-col gap-3 w-full"
       }
+      style={{
+        background: `rgba(59,130,246,${
+          0 + ((slider - min) / (max - min)) * 0.68
+        })`,
+        boxShadow: `0 0 ${((slider - min) / (max - min)) * 40}px ${
+          ((slider - min) / (max - min)) * 20
+        }px rgba(59,130,246,${0.2 + ((slider - min) / (max - min)) * 0.6})`,
+        borderRadius: "6px",
+        animation:
+          slider > min
+            ? `pulse-bg ${
+                1.2 - ((slider - min) / (max - min)) * 0.4
+              }s cubic-bezier(.4,0,.6,1) infinite`
+            : undefined,
+      }}
     >
       {label && <label className="font-medium mb-1">{label}</label>}
       {/* <audio ref={audioRef} src={audioSrc} controls className="w-full" /> */}
       <audio ref={audioRef} src={audioSrc} style={{ display: "none" }} />
+      <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+        {formatTime(currentTime)} / {formatTime(duration)}
+      </div>
       <div
         className={vertical ? "flex flex-col items-center w-full" : "w-full"}
       >
@@ -170,9 +205,11 @@ export const AudioSliderField: React.FC<AudioSliderFieldProps> = ({
           onChange={handleSliderChange}
           onKeyDown={handleSliderKeyDown}
           data-orientation={vertical ? "vertical" : undefined}
-          style={
-            vertical ? { height: "60vh", transform: "rotate(180deg)" } : {}
-          }
+          style={{
+            ...(vertical
+              ? { height: "60vh", transform: "rotate(180deg)" }
+              : {}),
+          }}
         />
       </div>
       {/* <div className="text-xs text-gray-500 dark:text-gray-400">
