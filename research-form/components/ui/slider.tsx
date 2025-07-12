@@ -12,8 +12,30 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
     // Always vertical, always fader style
     const scaleLabels = Array.from({ length: 11 }, (_, i) => i * 1).reverse();
     const sliderValue = value === undefined ? min : value;
+    // Ref for main slider container
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    // Prevent body scroll on mobile while interacting with slider
+    React.useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const handleTouchStart = () => {
+        document.body.style.overflow = "hidden";
+      };
+      const handleTouchEnd = () => {
+        document.body.style.overflow = "unset";
+      };
+      el.addEventListener("touchstart", handleTouchStart);
+      el.addEventListener("touchend", handleTouchEnd);
+      return () => {
+        el.removeEventListener("touchstart", handleTouchStart);
+        el.removeEventListener("touchend", handleTouchEnd);
+        document.body.style.overflow = "unset";
+      };
+    }, []);
+
     return (
-      <div className="relative flex flex-col items-center justify-center h-[60vh] min-h-[320px] max-h-[700px] w-24 mx-auto">
+      <div ref={containerRef} className="relative flex flex-col items-center justify-center h-[60vh] min-h-[320px] max-h-[700px] w-24 mx-auto">
         {/* HTML SCALE (left of slider) */}
         <div
           className="absolute left-0 top-0 py-[65px] bottom-0 flex flex-col justify-between h-full z-10 pr-2 select-none pointer-events-none"
