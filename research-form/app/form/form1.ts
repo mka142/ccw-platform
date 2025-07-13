@@ -8,7 +8,7 @@ import {
 
 const AUDIO_DIR = "/audio/form1";
 
-const afterPieceQuestions = (s: number | string, isFirst = false): FormPage => {
+/*const afterPieceQuestions = (s: number | string, isFirst = false): FormPage => {
   const fields: FormPage["fields"] = [
     {
       title: "Czy znasz wysłuchany fragment utworu?",
@@ -56,7 +56,7 @@ const afterPieceQuestions = (s: number | string, isFirst = false): FormPage => {
   return {
     fields,
   };
-};
+};*/
 
 const form1: FormSchema = {
   formId: "music-tension-survey-pilot-2025",
