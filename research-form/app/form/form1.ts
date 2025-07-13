@@ -1,4 +1,10 @@
-import { FormSchema, FormPage, setEachFieldRequired, validateEachFieldHasId, validateUniqueId } from "@/lib/formSchema";
+import {
+  FormSchema,
+  FormPage,
+  setEachFieldRequired,
+  validateEachFieldHasId,
+  validateUniqueId,
+} from "@/lib/formSchema";
 
 const AUDIO_DIR = "/audio/form1";
 
@@ -181,7 +187,7 @@ const form1: FormSchema = {
           id: "m1",
         },
       ],
-    },
+    } /*,
     afterPieceQuestions("m1", true),
     {
       fields: [
@@ -542,7 +548,7 @@ const form1: FormSchema = {
           id: "d23",
         },
       ],
-    },
+    },*/,
   ],
 };
 
