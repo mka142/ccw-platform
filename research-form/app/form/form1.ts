@@ -1,6 +1,6 @@
 import {
   FormSchema,
-  //FormPage,
+  FormPage,
   setEachFieldRequired,
   validateEachFieldHasId,
   validateUniqueId,
@@ -8,7 +8,7 @@ import {
 
 const AUDIO_DIR = "/audio/form1";
 
-/*const afterPieceQuestions = (s: number | string, isFirst = false): FormPage => {
+const afterPieceQuestions = (s: number | string, isFirst = false): FormPage => {
   const fields: FormPage["fields"] = [
     {
       title: "Czy znasz wysłuchany fragment utworu?",
@@ -56,7 +56,7 @@ const AUDIO_DIR = "/audio/form1";
   return {
     fields,
   };
-};*/
+};
 
 const form1: FormSchema = {
   formId: "music-tension-survey-pilot-2025",
@@ -187,7 +187,7 @@ const form1: FormSchema = {
           id: "m1",
         },
       ],
-    } /*,
+    },
     afterPieceQuestions("m1", true),
     {
       fields: [
@@ -548,7 +548,7 @@ const form1: FormSchema = {
           id: "d23",
         },
       ],
-    },*/,
+    },
   ],
 };
 
