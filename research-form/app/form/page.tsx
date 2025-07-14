@@ -1,13 +1,23 @@
 "use client";
 import { motion } from "framer-motion";
 import { SchemaForm } from "@/components/SchemaForm/SchemaForm";
-import form1 from "./form1";
-import { form } from "motion/react-client";
+import { getCurrentFormSchema } from "@/config/form";
 
 export default function Page() {
   const formStartDate = new Date();
 
-  const handleFormSubmit = async (data) => {
+  const currentForm = getCurrentFormSchema();
+  if (!currentForm) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-4">
+          Formularz jest już niedostępny
+        </h1>
+      </div>
+    );
+  }
+
+  const handleFormSubmit = async (data: object) => {
     const formEndDate = new Date();
     const formDuration = formEndDate.getTime() - formStartDate.getTime();
     console.log("Form submitted:", data);
@@ -19,9 +29,10 @@ export default function Page() {
         formData: data,
         formStartDate: formStartDate.toISOString(),
         formEndDate: formEndDate.toISOString(),
-        formId: form1.formId,
+        formId: currentForm.formId,
       }),
     });
+    return true; // Indicate successful submission
   };
 
   return (
@@ -32,7 +43,7 @@ export default function Page() {
       transition={{ duration: 0.7, ease: "easeOut" }}
       className="max-w-2xl mx-auto py-10 px-4"
     >
-      <SchemaForm schema={form1} onFinish={handleFormSubmit} />
+      <SchemaForm schema={currentForm} onFinish={handleFormSubmit} />
     </motion.div>
   );
 }

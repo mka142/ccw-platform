@@ -6,7 +6,7 @@ import { FormLocalSaver } from "../form/FormLocalSaver";
 
 interface SchemaFormProps {
   schema: FormSchema;
-  onFinish?: () => Promise<boolean> | boolean;
+  onFinish?: (data: object) => Promise<boolean> | boolean;
 }
 
 export const SchemaForm: React.FC<SchemaFormProps> = ({ schema, onFinish }) => {
