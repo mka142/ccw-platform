@@ -1,3 +1,4 @@
+"use client";
 import React, { useRef, useState, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
 import "./audioSliderField.css"; // Import your CSS file for styles

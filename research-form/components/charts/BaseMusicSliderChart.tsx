@@ -12,6 +12,26 @@ import {
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 
+// Use audio file duration for chart maxDuration
+function useAudioDuration(audioSrc: string, fallback: number) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [audioDuration, setAudioDuration] = useState<number>(fallback);
+  useEffect(() => {
+    const ref = audioRef.current;
+    if (!ref) return;
+    const handleLoadedMetadata = () => {
+      if (ref.duration && !isNaN(ref.duration)) {
+        setAudioDuration(Math.ceil(ref.duration));
+      }
+    };
+    ref.addEventListener("loadedmetadata", handleLoadedMetadata);
+    return () => {
+      ref.removeEventListener("loadedmetadata", handleLoadedMetadata);
+    };
+  }, [audioSrc]);
+  return { audioRef, audioDuration };
+}
+
 interface BaseMusicSliderChartProps {
   data: Array<Array<[number, number]>>;
   audioSrc: string;
@@ -23,23 +43,24 @@ interface BaseMusicSliderChartProps {
   quantStep?: number | null; // step for quantization of x-axis, default is 1
   lineType?: "monotone" | "linear" | "step" | "basis" | "natural";
   keepTreshold?: boolean;
+  defaultMaxValue?: number | null; // default max value for y-axis if no data is provided
 }
 
 export function BaseMusicSliderChart({
   data,
   audioSrc,
-  height = 360,
   zoomEnabled = true,
   setZoomReset = () => {},
   zoomReset = true,
   quantStep = 1,
   lineType = "monotone",
   keepTreshold = false, // if true the value will be kept the same until the next value is set, otherwise it will be set to 0
+  defaultMaxValue = null, // default max value for y-axis if no data is provided
 }: BaseMusicSliderChartProps) {
   // Merged chart data for recharts
   type ChartPoint = { x: number } & { [key: string]: number | undefined };
 
-  const { mergedChartData, audioDuration } = React.useMemo(() => {
+  const { mergedChartData, lastX } = React.useMemo(() => {
     const merged: ChartPoint[] = [];
     let lastX = 0;
     if (data.length > 0) {
@@ -81,20 +102,22 @@ export function BaseMusicSliderChart({
         });
         merged.push(point);
       }
-      console.log("Merged chart data:", merged);
     }
-    return { mergedChartData: merged, audioDuration: lastX };
+    return { mergedChartData: merged, lastX };
   }, [data, quantStep, keepTreshold]);
+
+  const { audioRef, audioDuration } = useAudioDuration(audioSrc, lastX);
 
   const maxDuration = audioDuration;
   const maxValue = React.useMemo(() => {
+    if (defaultMaxValue !== null) return defaultMaxValue;
     if (data.length === 0) return 0;
     return Math.max(...data.flatMap((arr) => arr.map((point) => point[1])));
-  }, [data]);
+  }, [data, defaultMaxValue]);
 
   // Chart sync with audio reference line
   const [currentTime, setCurrentTime] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  //const audioRef = useRef<HTMLAudioElement>(null);
   const handleTimeUpdate = () => {
     if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
   };
@@ -104,6 +127,10 @@ export function BaseMusicSliderChart({
   const [refAreaRight, setRefAreaRight] = useState<number | null>(null);
   const [xDomain, setXDomain] = useState<[number, number]>([0, maxDuration]);
   const [yDomain, setYDomain] = useState<[number, number]>([0, maxValue]);
+
+  useEffect(() => {
+    setXDomain([0, maxDuration]);
+  }, [maxDuration]);
 
   // Chart lines (memoized)
   const chartLines = React.useMemo(
@@ -176,10 +203,13 @@ export function BaseMusicSliderChart({
   }, [zoomReset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="block">
       {/* Reset zoom button is now controlled by parent via onResetZoom prop */}
-      <ChartContainer config={{}} className="w-full h-full">
-        <ResponsiveContainer width="100%" height={height}>
+      <ChartContainer
+        config={{}}
+        // className="w-full h-full"
+      >
+        <ResponsiveContainer>
           <LineChart
             accessibilityLayer
             data={mergedChartData}

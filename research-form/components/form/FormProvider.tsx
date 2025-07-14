@@ -4,11 +4,13 @@ import { useForm, FormProvider as RHFProvider } from "react-hook-form";
 export function FormProvider({
   children,
   defaultValues = {},
+  disabled = false,
 }: {
   children: React.ReactNode;
   defaultValues?: Record<string, unknown>;
+  disabled?: boolean;
 }) {
-  const methods = useForm({ mode: "onChange", defaultValues });
+  const methods = useForm({ mode: "onChange", defaultValues, disabled });
 
   // Note: Preventing reload/navigation is not reliable on mobile browsers (iOS/Android).
   // This will show a warning dialog on desktop and some Android browsers only.

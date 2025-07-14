@@ -3,6 +3,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 import React, { useMemo } from "react";
 
+const DISABLED_CLASS = "disabled:cursor-not-allowed disabled:opacity-50";
+
 // Short text field (validation handled by React Hook Form)
 export const ShortTextField: React.FC<
   React.ComponentProps<typeof Input> & { error?: string }
@@ -43,7 +45,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
 }) => {
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className={`flex flex-wrap gap-2`}>
         {options.map((opt) => (
           <SelectButton
             key={opt}
@@ -148,6 +150,7 @@ export const SelectWithOwnField: React.FC<SelectWithOwnFieldProps> = ({
               placeholder="Wpisz własną odpowiedź"
               value={value}
               onChange={(e) => onChange(e.target.value)}
+              {...rest}
             />
           </div>
         )}
@@ -214,6 +217,7 @@ export const MultiSelectWithOwnField: React.FC<
             Inne
           </label>
           <Input
+            {...rest}
             placeholder="Wpisz własną odpowiedź"
             value={customValue}
             onChange={(e) => onChangeCustom(e.target.value)}
@@ -233,6 +237,7 @@ interface SelectButtonProps {
   onBlur?: React.FocusEventHandler<HTMLButtonElement>;
   rounded?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 const SelectButton = ({
   selected,
@@ -241,6 +246,7 @@ const SelectButton = ({
   onBlur,
   rounded = true,
   className = "",
+  disabled = false,
 }: SelectButtonProps) => {
   return (
     <button
@@ -254,11 +260,14 @@ const SelectButton = ({
             : "bg-field-bg text-field-text border-field-border hover:bg-field-selected-hover/30 dark:hover:bg-field-selected-hover/30"
         } ` +
         `focus:ring-field-ring ` +
+        `
+        ${disabled ? DISABLED_CLASS : ""}` +
         className
       }
       onClick={onClick}
       onBlur={onBlur}
       aria-pressed={selected}
+      disabled={disabled}
     >
       {children}
     </button>

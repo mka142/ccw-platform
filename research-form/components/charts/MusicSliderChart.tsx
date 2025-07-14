@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 import { BaseMusicSliderChart } from "./BaseMusicSliderChart";
 import { Fullscreen } from "../ui/Fullscreen";
@@ -11,12 +12,18 @@ import {
 } from "../ui/select";
 import { Switch } from "../ui/switch";
 
+type lineType = "linear" | "monotone" | "step" | "basis" | "natural";
+
+type chartData = Array<Array<[number, number]>>;
+
 interface MusicSliderChartProps {
   formId: string;
   fieldId: string;
   audioSrc: string;
   height?: number;
   width?: number;
+  defaultData?: null | chartData;
+  defaultMaxValue?: number | null; // default max value for y-axis if no data is provided
 }
 
 export function MusicSliderChart({
@@ -25,22 +32,28 @@ export function MusicSliderChart({
   audioSrc,
   height = 350,
   width = 100,
+  defaultData = null,
+  defaultMaxValue = null,
 }: MusicSliderChartProps) {
-  const [data, setData] = useState<Array<Array<[number, number]>>>([]);
+  const [data, setData] = useState<chartData>([]);
   const [loading, setLoading] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [showMean, setShowMean] = useState(false);
   const [meanLoading, setMeanLoading] = useState(false);
   const [zoomReset, setZoomReset] = useState(false);
   const [quantStep, setQuantStep] = useState<number>(1);
-  const [lineType, setLineType] = useState<"linear" | "monotone">("monotone");
+  const [lineType, setLineType] = useState<lineType>("monotone");
   const [keepTreshold, setKeepTreshold] = useState(true);
 
   const fetchData = async () => {
     setLoading(true);
-    const res = await fetch(`/api/responses/${formId}/${fieldId}`);
-    const json = await res.json();
-    setData(json.data || []);
+    if (defaultData) {
+      setData(defaultData);
+    } else {
+      const res = await fetch(`/api/responses/${formId}/${fieldId}`);
+      const json = await res.json();
+      setData(json.data || []);
+    }
     setLoading(false);
   };
 
@@ -92,105 +105,111 @@ export function MusicSliderChart({
   };
 
   return (
-    <Fullscreen activated={fullscreen} className="p-8">
+    <Fullscreen activated={fullscreen}>
       <div
-        className={`flex flex-col gap-4 m-auto ${
-          fullscreen
-            ? `w-[1200px] h-[700px] max-h-[80vh] max-w-[80vw]`
-            : "w-full h-full"
-        }`}
+        className={`relative basis-10/12  ${fullscreen ? "max-h-[90vh] mb-2" : ""}`}
+        style={{ flexBasis: "83.3333%" }}
       >
-        {!data.length && (
-          <Button
-            variant="outline"
-            onClick={fetchData}
-            disabled={loading}
-            className="w-fit"
-          >
-            {loading ? "Ładowanie..." : "Pobierz dane i wykres"}
-          </Button>
-        )}
-        {data.length > 0 && (
-          <>
-            <div className="flex justify-end items-center gap-2 mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs">Kwantyzacja:</span>
-                <Select
-                  value={String(quantStep)}
-                  onValueChange={(val) => setQuantStep(Number(val))}
+        <div className={"w-auto h-auto"}>
+          {!data.length && (
+            <Button
+              variant="outline"
+              onClick={fetchData}
+              disabled={loading}
+              className="w-fit"
+            >
+              {loading ? "Ładowanie..." : "Pobierz dane i wykres"}
+            </Button>
+          )}
+          {data.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 justify-end mb-2 flex-wrap">
+                {fullscreen && (
+                  <>
+                    <span className="text-xs">Kwantyzacja:</span>
+                    <Select
+                      value={String(quantStep)}
+                      onValueChange={(val) => setQuantStep(Number(val))}
+                    >
+                      <SelectTrigger className="w-[100px] h-8 text-xs">
+                        <SelectValue placeholder="Brak" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[0.1, 0.2, 0.4, 0.6, 0.8, 1, 2, 4].map((step) => (
+                          <SelectItem key={step} value={String(step)}>
+                            {step}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs">Typ linii:</span>
+                    <Select
+                      value={lineType}
+                      onValueChange={(val) => setLineType(val as lineType)}
+                    >
+                      <SelectTrigger className="w-[100px] h-8 text-xs">
+                        <SelectValue placeholder="Typ linii" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="basis">Podstawowa</SelectItem>
+                        <SelectItem value="monotone">Monotoniczna</SelectItem>
+                        <SelectItem value="natural">Naturalna</SelectItem>
+                        <SelectItem value="step">Krokowa</SelectItem>
+                        <SelectItem value="linear">Łamana</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs">Treshold:</span>
+                    <Switch
+                      checked={keepTreshold}
+                      onCheckedChange={setKeepTreshold}
+                      className="ml-1"
+                    />
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  className="px-2 py-1 text-sm w-fit"
+                  onClick={computeMean}
+                  disabled={meanLoading}
                 >
-                  <SelectTrigger className="w-[100px] h-8 text-xs">
-                    <SelectValue placeholder="Brak" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[0.1, 0.2, 0.4, 0.6, 0.8, 1, 2, 4].map((step) => (
-                      <SelectItem key={step} value={String(step)}>
-                        {step}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              <span className="text-xs">Typ linii:</span>
-              <Select
-                value={lineType}
-                onValueChange={val => setLineType(val as "linear" | "monotone")}
-              >
-                <SelectTrigger className="w-[100px] h-8 text-xs">
-                  <SelectValue placeholder="Typ linii" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monotone">Monotone</SelectItem>
-                  <SelectItem value="linear">Linear</SelectItem>
-                </SelectContent>
-              </Select>
-              <span className="text-xs">Treshold:</span>
-              <Switch
-                checked={keepTreshold}
-                onCheckedChange={setKeepTreshold}
-                className="ml-1"
-              />
+                  {meanLoading
+                    ? "Ładowanie..."
+                    : showMean
+                    ? "Wyłącz średnią"
+                    : "Średnia"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setZoomReset(true)}
+                  className="px-2 py-1 text-sm w-fit"
+                >
+                  Resetuj zoom
+                </Button>
+                <Button
+                  variant={fullscreen ? "outline" : "default"}
+                  onClick={() => setFullscreen((v) => !v)}
+                  className="px-2 py-1 text-sm w-fit"
+                >
+                  {fullscreen ? "Wyjdź z pełnego ekranu" : "Pełny ekran"}
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                className="px-2 py-1 text-sm w-fit"
-                onClick={computeMean}
-                disabled={meanLoading}
-              >
-                {meanLoading
-                  ? "Ładowanie..."
-                  : showMean
-                  ? "Wyłącz średnią"
-                  : "Średnia"}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setZoomReset(true)}
-                className="px-2 py-1 text-sm w-fit"
-              >
-                Resetuj zoom
-              </Button>
-              <Button
-                variant={fullscreen ? "outline" : "default"}
-                onClick={() => setFullscreen((v) => !v)}
-                className="px-2 py-1 text-sm w-fit"
-              >
-                {fullscreen ? "Wyjdź z pełnego ekranu" : "Pełny ekran"}
-              </Button>
-            </div>
-            <BaseMusicSliderChart
-              zoomEnabled
-              setZoomReset={setZoomReset}
-              zoomReset={zoomReset}
-              data={showMean ? [meanData] : data}
-              audioSrc={audioSrc}
-              height={chartHeight}
-              quantStep={quantStep}
-              width={chartWidth}
-              keepTreshold={keepTreshold}
-              lineType={lineType}
-            />
-          </>
-        )}
+
+              <BaseMusicSliderChart
+                zoomEnabled
+                setZoomReset={setZoomReset}
+                zoomReset={zoomReset}
+                data={showMean ? [meanData] : data}
+                audioSrc={audioSrc}
+                height={chartHeight}
+                quantStep={quantStep}
+                width={chartWidth}
+                keepTreshold={keepTreshold}
+                lineType={lineType}
+                defaultMaxValue={defaultMaxValue}
+              />
+            </>
+          )}
+        </div>
       </div>
     </Fullscreen>
   );

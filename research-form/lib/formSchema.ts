@@ -38,6 +38,9 @@ export interface Field {
   required?: boolean;
   id?: number | string; // Optional ID for fields that need it
   defaultValue?: string | number | boolean | Array<string | number>;
+  min?: number; // For numeric fields
+  max?: number; // For numeric fields
+  step?: number; // For numeric fields
 }
 
 export function validateUniqueId(form: FormSchema) {

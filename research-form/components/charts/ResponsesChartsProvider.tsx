@@ -85,6 +85,7 @@ export function ResponsesChartsProvider({
                     formId={formSchema.formId}
                     fieldId={field.id as string}
                     audioSrc={field.audioSrc as string}
+                    defaultMaxValue={field.max ? field.max : null}
                   />
                 );
               } else {

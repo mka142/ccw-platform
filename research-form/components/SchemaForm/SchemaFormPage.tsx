@@ -11,7 +11,9 @@ import { SchemaAudioSliderField } from "./SchemaAudioSliderField";
 import { SchemaListSelectField } from "./SchemaListSelectField";
 import FormPages from "../form/FormPages";
 
-export function renderField(field: Field, name: string) {
+export type renderFieldType = (field: Field, name: string) => React.ReactNode;
+
+export function defaultFieldRenderer(field: Field, name: string) {
   switch (field.type) {
     case "text":
       return (
@@ -81,6 +83,9 @@ export function renderField(field: Field, name: string) {
           label={field.label}
           audioSrc={field.audioSrc || ""}
           required={field.required}
+          min={field.min}
+          max={field.max}
+          step={field.step}
         />
       );
     default:
@@ -91,7 +96,8 @@ export function renderField(field: Field, name: string) {
 export const SchemaFormPage: React.FC<{
   page: FormPage;
   pageIndex: number;
-}> = ({ page, pageIndex }) => {
+  renderField: renderFieldType;
+}> = ({ page, pageIndex, renderField = defaultFieldRenderer }) => {
   return (
     <FormPages.Page title={page.title} description={page.description}>
       {page.fields.map((field, idx) => (
@@ -106,7 +112,11 @@ export const SchemaFormPage: React.FC<{
   );
 };
 
-export const renderSchemaFormPage = (page: FormPage, pageIndex: number) => {
+export const renderSchemaFormPage = (
+  page: FormPage,
+  pageIndex: number,
+  renderField: renderFieldType = defaultFieldRenderer
+) => {
   const fieldId = (field: Field, idx: number) => {
     if (field.id !== undefined) {
       return String(field.id);

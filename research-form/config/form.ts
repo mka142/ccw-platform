@@ -10,7 +10,7 @@ export function getFormSchemaForId(formId: string): FormSchema | undefined {
   return formSchemas.find((form) => form.formId === formId);
 }
 
-export function getCustomFormSchema(): FormSchema {
+export function getCurrentFormSchema(): FormSchema {
   // Implement your custom logic to retrieve the form schema
   return form1;
 }

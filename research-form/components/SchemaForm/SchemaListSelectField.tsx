@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { ListSelectField } from "@/components/form/ListSelectField";
@@ -29,6 +30,7 @@ export const SchemaListSelectField: React.FC<SchemaListSelectFieldProps> = ({
           {...field}
           options={options}
           required={required}
+          disabled={field.disabled}
           error={touchedFields[name] && errors[name]?.message}
         />
       )}

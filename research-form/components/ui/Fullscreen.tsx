@@ -26,13 +26,14 @@ export function Fullscreen({
 
   return (
     <div
+      style={{ zIndex: 49 }} // Safari does not like tailwind z-index
       className={
         "fixed inset-0 z-[49] bg-background flex items-center justify-center " +
         (className || "")
       }
       onScroll={(e) => e.stopPropagation()}
     >
-      <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-full h-full flex items-center justify-center overflow-auto">
         {children}
       </div>
     </div>

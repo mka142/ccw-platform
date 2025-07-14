@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { AudioSliderField } from "@/components/form/fields";

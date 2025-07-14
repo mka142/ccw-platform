@@ -31,7 +31,13 @@ export function PieChart({ data }: PieChartProps) {
       >
         <RePieChart>
           <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-          <Pie data={data} dataKey="value" nameKey="label" label>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="label"
+            label
+            animationDuration={400}
+          >
             {data.map((entry, idx) => (
               <Cell
                 key={`cell-${idx}`}
