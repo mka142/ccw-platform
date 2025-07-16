@@ -3,11 +3,17 @@ import { mongoWrapper } from "@/lib/mongoClient";
 import { getFormSchemaForId } from "@/config/form";
 import { FormSchema } from "./formSchema";
 import { ObjectId, WithId, Document } from "mongodb";
+import { revalidateTag } from "next/cache";
 
 const DB_NAME = "ccw";
 const COLLECTION_NAME = "research_form";
 
 const _CORRUPTED_FIELD = "_corrupted";
+
+export const CACHE_TAGS = {
+  form: (formId: string) => `form-${formId}`,
+  response: (formId: string, responseId: string) => `response-${formId}-${responseId}`,
+};
 
 export async function submitForm(
   data: Record<string, unknown>
