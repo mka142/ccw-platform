@@ -2,8 +2,9 @@ import { headers } from "next/headers";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getFormSchemaForId } from "@/config/form";
 import Link from "next/link";
-import { getFirstResponseId, getResponseCounts } from "@/lib/formUtils";
-import { cache } from "react";
+import { CACHE_TAGS, getFirstResponseId, getResponseCounts } from "@/lib/formUtils";
+import { unstable_cache } from "next/cache";
+import { REVALIDATE_INTERVAL } from "@/config";
 
 export default async function Layout({
   children,
@@ -14,12 +15,20 @@ export default async function Layout({
 }) {
   const { formId } = await params;
   const formSchema = getFormSchemaForId(formId);
-  const cacheGetResponseCounts = cache(async (id: string) => {
-    console.log("Fetching response counts for formId:", id);
+  const cacheGetResponseCounts = unstable_cache(async (id: string) => {
     return await getResponseCounts(id);
+  }, [CACHE_TAGS.form(formId)], {
+    tags: [CACHE_TAGS.form(formId)],
+    revalidate: REVALIDATE_INTERVAL
   });
   const { total, corrupted } = await cacheGetResponseCounts(formId);
-  const firstResponseId = await getFirstResponseId(formId);
+  const cacheGetFirstResponseId = unstable_cache(async (formId: string) => {
+    return await getFirstResponseId(formId);
+  }, [CACHE_TAGS.form(formId)], {
+    tags: [CACHE_TAGS.form(formId)],
+    revalidate: REVALIDATE_INTERVAL
+  });
+  const firstResponseId = await cacheGetFirstResponseId(formId);
 
   const headerList = await headers();
   const pathname = headerList.get("x-current-path");
@@ -47,9 +56,8 @@ export default async function Layout({
             </TabsTrigger>
             <TabsTrigger asChild value="responses">
               <Link
-                href={`/responses/${formId}/res${
-                  firstResponseId ? `/${firstResponseId}` : ""
-                }`}
+                href={`/responses/${formId}/res${firstResponseId ? `/${firstResponseId}` : ""
+                  }`}
               >
                 Odpowiedzi ({total})
               </Link>

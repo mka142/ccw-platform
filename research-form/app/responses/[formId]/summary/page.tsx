@@ -1,8 +1,10 @@
-import { getData } from "@/lib/formUtils";
+import { CACHE_TAGS, getData } from "@/lib/formUtils";
 import { getFormSchemaForId } from "@/config/form";
 import { ResponsesChartsProvider } from "@/components/charts/ResponsesChartsProvider";
+import { Button } from "@/components/ui/button";
 import { FormSchema } from "@/lib/formSchema";
-import { cache } from "react";
+import { unstable_cache } from 'next/cache';
+import { REVALIDATE_INTERVAL } from "@/config";
 
 export default async function SummaryPage({
   params,
@@ -11,8 +13,11 @@ export default async function SummaryPage({
 }) {
   const { formId } = await params;
   // Use cache for form data
-  const getCachedData = cache(async (formId: string) => {
+  const getCachedData = unstable_cache(async (formId: string) => {
     return await getData(formId);
+  }, [formId], {
+    tags: [CACHE_TAGS.form(formId)],
+    revalidate: REVALIDATE_INTERVAL, // Revalidate every 6000 seconds
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formData: Record<string, any> | null = await getCachedData(formId);
@@ -31,6 +36,25 @@ export default async function SummaryPage({
 
   return (
     <>
+      <div className="flex gap-4 mb-6 justify-end">
+        <p className="my-auto">Pobierz dane:</p>
+        <a
+          href={`summary/download?type=json`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block"
+        >
+          <Button type="button" variant="outline">JSON</Button>
+        </a>
+        <a
+          href={`summary/download?type=excel`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block"
+        >
+          <Button type="button" variant="outline">XLSX</Button>
+        </a>
+      </div>
       <ResponsesChartsProvider
         formData={formData}
         formSchema={formSchema as FormSchema}

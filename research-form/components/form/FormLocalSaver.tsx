@@ -76,6 +76,8 @@ export function FormLocalSaverResetButton({
   if (!isWindow) return null;
   if (!localStorage.getItem(storageKey)) {
     return null; // Don't show button if no data exists
+  }else if (localStorage.getItem(storageKey) === "{}") {
+    return null; // Don't show button if data is empty
   }
 
   return (

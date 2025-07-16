@@ -44,18 +44,20 @@ interface BaseMusicSliderChartProps {
   lineType?: "monotone" | "linear" | "step" | "basis" | "natural";
   keepTreshold?: boolean;
   defaultMaxValue?: number | null; // default max value for y-axis if no data is provided
+  getDataLabelByIndex?: (idx: number) => string; // function to get label for data series by index
 }
 
 export function BaseMusicSliderChart({
   data,
   audioSrc,
   zoomEnabled = true,
-  setZoomReset = () => {},
+  setZoomReset = () => { },
   zoomReset = true,
   quantStep = 1,
   lineType = "monotone",
   keepTreshold = false, // if true the value will be kept the same until the next value is set, otherwise it will be set to 0
   defaultMaxValue = null, // default max value for y-axis if no data is provided
+  getDataLabelByIndex = (idx: number) => `Odpowiedź ${idx + 1}`,
 }: BaseMusicSliderChartProps) {
   // Merged chart data for recharts
   type ChartPoint = { x: number } & { [key: string]: number | undefined };
@@ -143,12 +145,12 @@ export function BaseMusicSliderChart({
           stroke={`var(--color-chart-${(idx % 5) + 1})`}
           dot={false}
           // isAnimationActive={false}
-          name={`Odpowiedź ${idx + 1}`}
+          name={getDataLabelByIndex(idx)}
           connectNulls
           strokeWidth={2}
         />
       )),
-    [data, lineType]
+    [data, lineType] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Memoized Y domain calculation for zoom
@@ -207,7 +209,7 @@ export function BaseMusicSliderChart({
       {/* Reset zoom button is now controlled by parent via onResetZoom prop */}
       <ChartContainer
         config={{}}
-        // className="w-full h-full"
+      // className="w-full h-full"
       >
         <ResponsiveContainer>
           <LineChart
@@ -217,31 +219,31 @@ export function BaseMusicSliderChart({
             onMouseDown={
               zoomEnabled
                 ? (e) => {
-                    if (e && e.activeLabel !== undefined) {
-                      const labelNum =
-                        typeof e.activeLabel === "number"
-                          ? e.activeLabel
-                          : Number(e.activeLabel);
-                      if (!isNaN(labelNum)) setRefAreaLeft(labelNum);
-                    }
+                  if (e && e.activeLabel !== undefined) {
+                    const labelNum =
+                      typeof e.activeLabel === "number"
+                        ? e.activeLabel
+                        : Number(e.activeLabel);
+                    if (!isNaN(labelNum)) setRefAreaLeft(labelNum);
                   }
+                }
                 : undefined
             }
             onMouseMove={
               zoomEnabled
                 ? (e) => {
-                    if (
-                      refAreaLeft !== null &&
-                      e &&
-                      e.activeLabel !== undefined
-                    ) {
-                      const labelNum =
-                        typeof e.activeLabel === "number"
-                          ? e.activeLabel
-                          : Number(e.activeLabel);
-                      if (!isNaN(labelNum)) setRefAreaRight(labelNum);
-                    }
+                  if (
+                    refAreaLeft !== null &&
+                    e &&
+                    e.activeLabel !== undefined
+                  ) {
+                    const labelNum =
+                      typeof e.activeLabel === "number"
+                        ? e.activeLabel
+                        : Number(e.activeLabel);
+                    if (!isNaN(labelNum)) setRefAreaRight(labelNum);
                   }
+                }
                 : undefined
             }
             onMouseUp={zoomEnabled ? zoom : undefined}
@@ -253,10 +255,11 @@ export function BaseMusicSliderChart({
               type="number"
               domain={xDomain}
               allowDataOverflow
-              tickLine={false}
+              tickLine={true}
               axisLine={false}
               tickMargin={8}
-              minTickGap={32}
+              tickCount={Math.ceil(maxDuration / 4)}
+
               label={{
                 value: "Czas (s)",
                 position: "insideBottomRight",
