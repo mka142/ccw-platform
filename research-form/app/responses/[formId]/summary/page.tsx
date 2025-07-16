@@ -1,6 +1,7 @@
 import { CACHE_TAGS, getData } from "@/lib/formUtils";
 import { getFormSchemaForId } from "@/config/form";
 import { ResponsesChartsProvider } from "@/components/charts/ResponsesChartsProvider";
+import { Button } from "@/components/ui/button";
 import { FormSchema } from "@/lib/formSchema";
 import { unstable_cache } from 'next/cache';
 import { REVALIDATE_INTERVAL } from "@/config";
@@ -35,6 +36,25 @@ export default async function SummaryPage({
 
   return (
     <>
+      <div className="flex gap-4 mb-6 justify-end">
+        <p className="my-auto">Pobierz dane:</p>
+        <a
+          href={`summary/download?type=json`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block"
+        >
+          <Button type="button" variant="outline">JSON</Button>
+        </a>
+        <a
+          href={`summary/download?type=excel`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block"
+        >
+          <Button type="button" variant="outline">XLSX</Button>
+        </a>
+      </div>
       <ResponsesChartsProvider
         formData={formData}
         formSchema={formSchema as FormSchema}
