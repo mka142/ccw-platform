@@ -86,7 +86,6 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                                 onChange(options.map(opt => opt.value));
                             }
                         }}
-                        aria-selected={selected.length === options.length}
                         className={
                             "flex w-full items-center gap-2 px-3 py-2 text-sm font-semibold border-b border-border " +
                             (selected.length === options.length
@@ -102,10 +101,9 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                             key={opt.value}
                             type="button"
                             onMouseDown={e => e.preventDefault()}
-                            onClick={e => {
+                            onClick={() => {
                                 handleToggle(opt.value);
                             }}
-                            aria-selected={selected.includes(opt.value)}
                             className={
                                 "flex w-full items-center gap-2 px-3 py-2 text-sm" +
                                 (selected.includes(opt.value)

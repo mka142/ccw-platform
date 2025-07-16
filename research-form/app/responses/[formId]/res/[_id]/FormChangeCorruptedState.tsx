@@ -8,7 +8,7 @@ interface FormChangeCorruptedStateProps {
 }
 
 
-function Submit({ isCorrupted }) {
+function Submit({ isCorrupted }: { isCorrupted: boolean }) {
     const { pending } = useFormStatus();
     return (
         <Button
