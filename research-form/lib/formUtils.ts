@@ -86,21 +86,16 @@ export async function getData(formId: string) {
 export async function getMusicSliderData(
   formId: string,
   fieldId: string
-): Promise<Array<Array<[number, number]>>> {
+): Promise<Array<{ _id: string; values: Array<[number, number]> }>> {
   const pipeline = [
     { $match: { formId, [_CORRUPTED_FIELD]: { $ne: true } } },
     {
-      $group: {
-        _id: null,
-        allArrays: { $push: `$formData.${fieldId}` },
-      },
-    },
-    {
       $project: {
-        _id: 0,
-        allArrays: 1,
+        _id: 1,
+        values: `$formData.${fieldId}`,
       },
     },
+    { $sort: { _id: 1 } },
   ];
   return await mongoWrapper(
     async (client) => {
@@ -109,7 +104,8 @@ export async function getMusicSliderData(
         .collection(COLLECTION_NAME)
         .aggregate(pipeline)
         .toArray();
-      return data.length > 0 ? data[0].allArrays : [];
+      // Convert _id to string for consistency
+      return data.map((doc: any) => ({ _id: doc._id.toString(), values: doc.values }));
     },
     () => []
   );
@@ -129,6 +125,15 @@ export async function getResponseIds(formId: string): Promise<string[]> {
     },
     () => []
   );
+}
+
+export async function getResponseIdIndexMap(formId: string): Promise<Record<string, number>> {
+  const ids = await getResponseIds(formId);
+  const map: Record<string, number> = {};
+  ids.forEach((id, idx) => {
+    map[id] = idx;
+  });
+  return map;
 }
 
 // Get count all responses and corrupted responses for a given formId
