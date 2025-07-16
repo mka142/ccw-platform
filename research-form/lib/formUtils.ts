@@ -3,7 +3,6 @@ import { mongoWrapper } from "@/lib/mongoClient";
 import { getFormSchemaForId } from "@/config/form";
 import { FormSchema } from "./formSchema";
 import { ObjectId, WithId, Document } from "mongodb";
-import { revalidateTag } from "next/cache";
 
 const DB_NAME = "ccw";
 const COLLECTION_NAME = "research_form";
@@ -105,7 +104,7 @@ export async function getMusicSliderData(
         .aggregate(pipeline)
         .toArray();
       // Convert _id to string for consistency
-      return data.map((doc: any) => ({ _id: doc._id.toString(), values: doc.values }));
+      return data.map((doc) => ({ _id: doc._id.toString(), values: doc.values }));
     },
     () => []
   );
@@ -209,4 +208,43 @@ export async function setResponseCorrupted(
     },
     () => null
   );
+}
+
+
+// download all responses for a given formId.
+// 1. Get formSchea for formId
+// 2. Get all responses for formId
+// 3. Return as array of objects with field titles as keys
+export async function downloadAllResponses(formId: string, includeCorrupted = false,): Promise<Array<Record<string, unknown>>> {
+  const formSchema = getFormSchemaForId(formId);
+  if (!formSchema) {
+    throw new Error(`Form schema not found for formId: ${formId}`);
+  }
+
+  const responses = await mongoWrapper(
+    async (client) => {
+      if (includeCorrupted) {
+        return await client
+          .db(DB_NAME)
+          .collection(COLLECTION_NAME)
+          .find({ formId })
+          .toArray();
+      }
+      // Exclude corrupted responses
+      return await client
+        .db(DB_NAME)
+        .collection(COLLECTION_NAME)
+        .find({ formId, [_CORRUPTED_FIELD]: { $ne: true } })
+        .toArray();
+    },
+    () => []
+  );
+
+  // add data rozpoczecia i zakończenia
+  const withDates = responses.map(response => ({
+    ...response,
+    formStartDate: response.formStartDate ? new Date(response.formStartDate).toJSON() : "",
+    formEndDate: response.formEndDate ? new Date(response.formEndDate).toJSON() : "",
+  }));
+  return withDates;
 }
