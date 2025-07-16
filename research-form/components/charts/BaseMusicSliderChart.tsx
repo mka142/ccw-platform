@@ -150,7 +150,7 @@ export function BaseMusicSliderChart({
           strokeWidth={2}
         />
       )),
-    [data, lineType]
+    [data, lineType] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Memoized Y domain calculation for zoom
@@ -255,10 +255,11 @@ export function BaseMusicSliderChart({
               type="number"
               domain={xDomain}
               allowDataOverflow
-              tickLine={false}
+              tickLine={true}
               axisLine={false}
               tickMargin={8}
-              minTickGap={32}
+              tickCount={Math.ceil(maxDuration / 4)}
+
               label={{
                 value: "Czas (s)",
                 position: "insideBottomRight",

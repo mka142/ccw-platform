@@ -317,7 +317,7 @@ export function MusicSliderChart({
 
   useEffect(() => {
     compute(currentOperation);
-  }, [data, selectedIndexes.join('-'), quantStep]);
+  }, [selectedIndexes.join('-'), quantStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   return (
@@ -374,22 +374,29 @@ export function MusicSliderChart({
                         <SelectItem value="linear">Łamana</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-xs">Treshold:</span>
-                    <Switch
-                      checked={keepTreshold}
-                      onCheckedChange={setKeepTreshold}
-                      className="ml-1"
-                    />
+                    <SimpleTooltip text="Utrzymuj ostatnią wartość w każdym punkcie czasowym">
+                      <div className="flex items-center">
+                        <span className="text-xs m-auto">Utrzymuj próg</span>
+                        <Switch
+                          checked={keepTreshold}
+                          onCheckedChange={setKeepTreshold}
+                          className="ml-1"
+                        />
+                      </div>
+                    </SimpleTooltip>
                     {/* Multi-select for records, only if data.length > 1 */}
                     {data.length > 1 && (
                       <SimpleTooltip text="Wybierz odpowiedzi do wyświetlenia na wykresie">
-                      <MultiSelect
-                        options={labels.map((label, i) => ({ label, value: i }))}
-                        selected={selectedIndexes}
-                        onChange={setSelectedIndexes}
-                        placeholder="Wybierz rekordy"
-                        className="min-w-[180px]"
-                      />
+                        <div>
+
+                          <MultiSelect
+                            options={labels.map((label, i) => ({ label, value: i }))}
+                            selected={selectedIndexes}
+                            onChange={setSelectedIndexes}
+                            placeholder="Wybierz rekordy"
+                            className="min-w-[180px]"
+                          />
+                        </div>
                       </SimpleTooltip>
                     )}
                   </>
