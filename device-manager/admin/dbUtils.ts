@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import type { User, Concert, Event, DB } from "./types";
+import type { User, Concert, Event, DB, deviceType } from "./types";
 
 const DB_PATH = path.join(__dirname, "db.json");
 
@@ -27,4 +27,28 @@ export function updateDeviceStatus(userId: string, isActive: boolean) {
     user.last_ping = Date.now();
     saveDB(db);
   }
+}
+
+export function generateNewUser(activeConcert: Concert, device_type: deviceType): User {
+  const id = "user-" + Date.now() + "-" + Math.floor(Math.random() * 10000);
+  const user: User = {
+    id,
+    concert_id: activeConcert.id,
+    device_type,
+    created_at: Date.now(),
+    is_active: true,
+    last_ping: Date.now(),
+  };
+  return user;
+}
+export function getActiveConcertOrNull(): Concert | null {
+  const db = loadDB();
+  const activeConcert = db.concerts.find((c) => c.is_active);
+  return activeConcert || null;
+}
+
+export function getUserForIdOrNull(userId: string): User | null {
+  const users = getUsers();
+  const user = users.find((u) => u.id === userId);
+  return user || null;
 }

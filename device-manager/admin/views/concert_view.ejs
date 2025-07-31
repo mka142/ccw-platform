@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
-  <%- include('_semantic_head', { title }) %>
+<%- include('_semantic_head', { title }) %>
+
   <body>
     <div class="ui top menu blue" style="height: 42px">
       <div class="ui container">
@@ -11,7 +12,8 @@
       <div class="ui stackable two column grid">
         <div class="column">
           <div class="">
-            <h2 class="ui header">Koncert: <%= concert.name %></h2>
+            <h2 class="ui header">Koncert: <%= concert.name %>
+            </h2>
             <div class="ui segment">
               <div class="ui grid">
                 <div class="eight wide column">
@@ -22,13 +24,19 @@
                     </div>
                     <div class="item">
                       <strong>Status:</strong>
-                      <span class="ui <%= concert.is_active ? 'green' : 'grey' %> label"><%= concert.is_active ? 'Aktywny' : 'Nieaktywny' %></span>
+                      <span class="ui <%= concert.is_active ? 'green' : 'grey' %> label">
+                        <%= concert.is_active ? 'Aktywny' : 'Nieaktywny' %>
+                      </span>
                     </div>
                   </div>
                 </div>
                 <div class="eight wide column" style="text-align: right">
-                  <form method="POST" action="/concerts/<%= concert.id %>/<%= concert.is_active ? 'deactivate' : 'activate' %>" style="display: inline">
-                    <button type="submit" class="ui <%= concert.is_active ? 'red' : 'green' %> button"><%= concert.is_active ? 'Dezaktywuj' : 'Aktywuj' %> koncert</button>
+                  <form method="POST"
+                    action="/concerts/<%= concert.id %>/<%= concert.is_active ? 'deactivate' : 'activate' %>"
+                    style="display: inline">
+                    <button type="submit" class="ui <%= concert.is_active ? 'red' : 'green' %> button">
+                      <%= concert.is_active ? 'Dezaktywuj' : 'Aktywuj' %> koncert
+                    </button>
                   </form>
                 </div>
               </div>
@@ -36,54 +44,64 @@
 
             <div class="ui clearing segment">
               <h3 class="ui left floated header">Komunikaty</h3>
-              <a href="/concerts/<%= concert.id %>/events/new" class="ui right floated basic blue button"><i class="plus icon"></i>Dodaj komunikat</a>
+              <a href="/concerts/<%= concert.id %>/events/new" class="ui right floated basic blue button"><i
+                  class="plus icon"></i>Dodaj komunikat</a>
             </div>
 
             <div class="ui divided items" style="margin-top: 1em">
               <% events.forEach(function(event, idx) { %>
-              <div class="item">
-                <div class="content" style="width: 100%">
-                  <div class="<% if (concert.active_event_id !== event.id) { %> weight-normal <% } %> header">
-                    <%= event.event_type %> (<%= event.label %>) <% if (concert.active_event_id === event.id) { %>
-                    <span class="ui green horizontal label" style="margin-left: 8px">AKTYWNY</span>
-                    <% } %>
-                  </div>
-                  <div class="description" style="overflow: auto">
-                    <pre style="margin: 0.5em 0 0.5em 0.5em; background: #f8f8f8; padding: 0.5em; border-radius: 4px; display: inline-block; font-size: small">
-<%= JSON.stringify(JSON.parse(event.payload), undefined, 2) %></pre
-                    >
-                  </div>
-                  <div class="extra">
-                    <div class="ui right floated">
-                      <div class="ui icon buttons basic mini">
-                        <form id="move-event-<%= event.id %>" method="POST" action="/events/<%= event.id %>/move" style="display: inline"></form>
-
-                        <button type="submit" name="direction" value="up" class="ui button" title="Przesuń w górę" form="move-event-<%= event.id %>">
-                          <i class="arrow up icon"></i>
-                        </button>
-
-                        <button type="submit" name="direction" value="down" class="ui button" title="Przesuń w dół" form="move-event-<%= event.id %>">
-                          <i class="arrow down icon"></i>
-                        </button>
-
-                        <a href="/events/<%= event.id %>/edit" class="ui button" title="Edytuj komunikat"><i class="edit icon"></i> </a>
-
-                        <form id="delete-event-<%= event.id %>" method="POST" action="/events/<%= event.id %>/delete" style="display: inline"></form>
-                        <button type="submit" class="ui red basic button" title="Usuń komunikat" form="delete-event-<%= event.id %>">
-                          <i class="trash icon"></i>
-                        </button>
-                      </div>
+                <div class="item">
+                  <div class="content" style="width: 100%">
+                    <div class="<% if (concert.active_event_id !== event.id) { %> weight-normal <% } %> header">
+                      <%= event.event_type %> (<%= event.label %>) <% if (concert.active_event_id===event.id) { %>
+                            <span class="ui green horizontal label" style="margin-left: 8px">AKTYWNY</span>
+                            <% } %>
                     </div>
-                    <form method="POST" action="/concerts/<%= concert.id %>/active_event" style="display: inline">
-                      <input type="hidden" name="event_id" value="<%= event.id %>" />
-                      <button type="submit" class="ui small button <%= concert.active_event_id === event.id ? 'disabled' : '' %>" title="Ustaw jako aktywny">
-                        <i class="play icon"></i> Ustaw jako aktywny
-                      </button>
-                    </form>
+                    <div class="description" style="overflow: auto">
+                      <pre
+                        style="margin: 0.5em 0 0.5em 0.5em; background: #f8f8f8; padding: 0.5em; border-radius: 4px; display: inline-block; font-size: small">
+                    <%= JSON.stringify(event.payload, undefined, 2) %>
+                    </pre>
+                    </div>
+                    <div class="extra">
+                      <div class="ui right floated">
+                        <div class="ui icon buttons basic mini">
+                          <form id="move-event-<%= event.id %>" method="POST" action="/events/<%= event.id %>/move"
+                            style="display: inline"></form>
+
+                          <button type="submit" name="direction" value="up" class="ui button" title="Przesuń w górę"
+                            form="move-event-<%= event.id %>">
+                            <i class="arrow up icon"></i>
+                          </button>
+
+                          <button type="submit" name="direction" value="down" class="ui button" title="Przesuń w dół"
+                            form="move-event-<%= event.id %>">
+                            <i class="arrow down icon"></i>
+                          </button>
+
+                          <a href="/events/<%= event.id %>/edit" class="ui button" title="Edytuj komunikat"><i
+                              class="edit icon"></i> </a>
+
+                          <form id="delete-event-<%= event.id %>" method="POST" action="/events/<%= event.id %>/delete"
+                            style="display: inline"></form>
+                          <button type="submit" class="ui red basic button" title="Usuń komunikat"
+                            form="delete-event-<%= event.id %>">
+                            <i class="trash icon"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <form method="POST" action="/concerts/<%= concert.id %>/active_event" style="display: inline">
+                        <input type="hidden" name="event_id" value="<%= event.id %>" />
+                        <button type="submit"
+                          class="ui small button <%= concert.active_event_id === event.id ? 'disabled' : '' %>"
+                          title="Ustaw jako aktywny">
+                          <i class="play icon"></i> Ustaw jako aktywny
+                        </button>
+                      </form>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <% }) %>
+                <% }) %>
             </div>
             <a href="/" class="ui button"><i class="arrow left icon"></i>Powrót</a>
           </div>
@@ -140,4 +158,5 @@
       });
     </script>
   </body>
+
 </html>

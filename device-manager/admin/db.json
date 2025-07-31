@@ -1,5 +1,49 @@
 {
-  "concerts": [],
-  "events": [],
-  "users": []
+  "concerts": [
+    {
+      "id": "1753910846633",
+      "name": "Koncert Kompozytorski",
+      "metadata": "{}",
+      "is_active": true,
+      "active_event_id": "1753910896008"
+    }
+  ],
+  "events": [
+    {
+      "id": "1753910896008",
+      "concert_id": "1753910846633",
+      "event_type": "CONCERT_OUTCOMMING",
+      "label": "Przed koncertem",
+      "payload": {
+        "name": "KONCERT"
+      },
+      "position": 0
+    },
+    {
+      "id": "1753910922213",
+      "concert_id": "1753910846633",
+      "event_type": "CONCERT_OUTCOMMING",
+      "label": "Przed koncertem",
+      "payload": {},
+      "position": 1
+    }
+  ],
+  "users": [
+    {
+      "id": "user-1753952228211-4298",
+      "concert_id": "1753910846633",
+      "device_type": "Web",
+      "created_at": 1753952228211,
+      "is_active": false,
+      "last_ping": 1753956269895
+    },
+    {
+      "id": "user-1753953556489-9470",
+      "concert_id": "1753910846633",
+      "device_type": "M5Dial",
+      "created_at": 1753953556489,
+      "is_active": true,
+      "last_ping": 1753956269897
+    }
+  ]
 }
