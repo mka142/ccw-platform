@@ -1,8 +1,9 @@
 // --- USERS & WEBSOCKET ---
+export type deviceType = "Web" | "M5Dial";
 export interface User {
   id: string;
   concert_id: string;
-  device_type: "Web" | "M5Dial";
+  device_type: deviceType;
   created_at: number;
   is_active?: boolean;
   last_ping?: number;
