@@ -27,17 +27,19 @@ interface MusicSliderChartProps {
   defaultData?: null | chartData;
   defaultLabels?: null | string[]; // default labels for x-axis if no data is provided
   defaultMaxValue?: number | null; // default max value for y-axis if no data is provided
+  documentId?: string | null; // If provided, fetch data for a specific document
 }
 
-export function MusicSliderChart({
+export function MusicSliderChart({  // TODO: REFACTOR
   formId,
   fieldId,
   audioSrc,
   height = 350,
   width = 100,
-  defaultData = null,
-  defaultLabels = null,
-  defaultMaxValue = null,
+  defaultData = null, // if provided, use this data instead of fetching
+  defaultLabels = null, // if provided, use these labels instead of fetching
+  defaultMaxValue = null, // if provided, use this max value for y-axis
+  documentId = null, // If provided, fetch data for a specific document
 }: MusicSliderChartProps) {
   const [data, setData] = useState<chartData>([]);
   const [labels, setLabels] = useState<string[]>([]);
@@ -51,12 +53,30 @@ export function MusicSliderChart({
   const [lineType, setLineType] = useState<lineType>("monotone");
   const [keepTreshold, setKeepTreshold] = useState(true);
 
-
   const fetchLabels = async (dataIds: string[]) => {
     const res = await fetch(`/api/responses/${formId}/labels`);
     const json = await res.json();
-    return json.filter((e: { _id: string; label: string }) => dataIds.includes(e._id)).map((e: { _id: string; label: string }) => e.label);
-  }
+    return json
+      .filter((e: { _id: string; label: string }) => dataIds.includes(e._id))
+      .map((e: { _id: string; label: string }) => e.label);
+  };
+
+  const fetchMusicData = async () => {
+    if (documentId) {
+      // Fetch data for a specific document
+      const res = await fetch(
+        `/api/responses/${formId}/${fieldId}/?responseId=${documentId}`
+      );
+      const json = await res.json();
+      return [json.data];
+    }
+    if (formId === "" || fieldId === "") {
+      throw new Error("formId and fieldId must be provided");
+    }
+    const res = await fetch(`/api/responses/${formId}/${fieldId}`);
+    const json = await res.json();
+    return json.data;
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -66,18 +86,18 @@ export function MusicSliderChart({
     if (defaultData) {
       setData(defaultData);
     } else {
-      const res = await fetch(`/api/responses/${formId}/${fieldId}`);
-      const json = await res.json()
-      const _data = json.data.map((e: { _id: string, values: [] }) => e.values);
-      const _dataIds = json.data.map((e: { _id: string }) => e._id);
+      const json = await fetchMusicData();
+      const _data = json.map((e: { _id: string; values: [] }) => e.values);
+      const _dataIds = json.map((e: { _id: string }) => e._id);
       const labels = await fetchLabels(_dataIds);
-      console.log("Fetched data:", _data, "Labels:", labels);
       if (!_data || !_data.length) {
         setData([]);
         setSelectedIndexes([]);
       } else {
         setLabels(labels);
-        setSelectedIndexes(json.data?.length ? json.data.map((_: unknown, i: number) => i) : []);
+        setSelectedIndexes(
+          json?.length ? json.map((_: unknown, i: number) => i) : []
+        );
         setData(_data as chartData);
       }
     }
@@ -90,9 +110,7 @@ export function MusicSliderChart({
 
   // Filtered data for chart
   const filteredData =
-    data.length > 1
-      ? selectedIndexes.map((i) => data[i])
-      : data;
+    data.length > 1 ? selectedIndexes.map((i) => data[i]) : data;
 
   const filteredLabels =
     labels.length > 1 && selectedIndexes.length > 0
@@ -109,7 +127,9 @@ export function MusicSliderChart({
   const [medianLoading, setMedianLoading] = useState(false);
   const [stdDevLoading, setStdDevLoading] = useState(false);
   const [movingAvgLoading, setMovingAvgLoading] = useState(false);
-  const [currentOperation, setCurrentOperation] = useState<"mean" | "median" | "stdDev" | "movingAvg" | null>(null);
+  const [currentOperation, setCurrentOperation] = useState<
+    "mean" | "median" | "stdDev" | "movingAvg" | null
+  >(null);
   // Median calculation
   function calculateMedian(dt: chartData, quantStep: number) {
     if (!dt.length) return [];
@@ -153,7 +173,9 @@ export function MusicSliderChart({
         });
       });
       const mean = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : 0;
-      const variance = ys.length ? ys.reduce((a, b) => a + (b - mean) ** 2, 0) / ys.length : 0;
+      const variance = ys.length
+        ? ys.reduce((a, b) => a + (b - mean) ** 2, 0) / ys.length
+        : 0;
       const stdDev = Math.sqrt(variance);
       return [x, stdDev];
     });
@@ -275,7 +297,9 @@ export function MusicSliderChart({
     });
   };
 
-  const hideAllExcept = (operation: "mean" | "median" | "stdDev" | "movingAvg" | null) => {
+  const hideAllExcept = (
+    operation: "mean" | "median" | "stdDev" | "movingAvg" | null
+  ) => {
     setShowMean(operation === "mean");
     setShowMedian(operation === "median");
     setShowStdDev(operation === "stdDev");
@@ -283,7 +307,9 @@ export function MusicSliderChart({
     setCurrentOperation(operation);
   };
 
-  const compute = (operation: "mean" | "median" | "stdDev" | "movingAvg" | null) => {
+  const compute = (
+    operation: "mean" | "median" | "stdDev" | "movingAvg" | null
+  ) => {
     switch (operation) {
       case "mean":
         computeMean(filteredData);
@@ -304,7 +330,9 @@ export function MusicSliderChart({
     }
   };
 
-  const onOperationClick = (operation: "mean" | "median" | "stdDev" | "movingAvg") => {
+  const onOperationClick = (
+    operation: "mean" | "median" | "stdDev" | "movingAvg"
+  ) => {
     const shouldCompute = currentOperation !== operation;
     if (!shouldCompute) {
       hideAllExcept(null);
@@ -317,13 +345,14 @@ export function MusicSliderChart({
 
   useEffect(() => {
     compute(currentOperation);
-  }, [selectedIndexes.join('-'), quantStep]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  }, [selectedIndexes.join("-"), quantStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Fullscreen activated={fullscreen}>
       <div
-        className={`relative basis-10/12  ${fullscreen ? "max-h-[90vh] mb-2" : ""}`}
+        className={`relative basis-10/12  ${
+          fullscreen ? "max-h-[90vh] mb-2" : ""
+        }`}
         style={{ flexBasis: "83.3333%" }}
       >
         <div className={"w-auto h-auto"}>
@@ -388,9 +417,11 @@ export function MusicSliderChart({
                     {data.length > 1 && (
                       <SimpleTooltip text="Wybierz odpowiedzi do wyświetlenia na wykresie">
                         <div>
-
                           <MultiSelect
-                            options={labels.map((label, i) => ({ label, value: i }))}
+                            options={labels.map((label, i) => ({
+                              label,
+                              value: i,
+                            }))}
                             selected={selectedIndexes}
                             onChange={setSelectedIndexes}
                             placeholder="Wybierz rekordy"
@@ -450,7 +481,13 @@ export function MusicSliderChart({
                     Resetuj zoom
                   </Button>
                 </SimpleTooltip>
-                <SimpleTooltip text={fullscreen ? "Wyjdź z trybu pełnoekranowego" : "Wyświetl wykres na pełnym ekranie"}>
+                <SimpleTooltip
+                  text={
+                    fullscreen
+                      ? "Wyjdź z trybu pełnoekranowego"
+                      : "Wyświetl wykres na pełnym ekranie"
+                  }
+                >
                   <Button
                     variant={fullscreen ? "outline" : "default"}
                     onClick={() => setFullscreen((v) => !v)}
@@ -469,12 +506,12 @@ export function MusicSliderChart({
                   showMovingAvg
                     ? [movingAvgData]
                     : showStdDev
-                      ? [stdDevData]
-                      : showMedian
-                        ? [medianData]
-                        : showMean
-                          ? [meanData]
-                          : filteredData
+                    ? [stdDevData]
+                    : showMedian
+                    ? [medianData]
+                    : showMean
+                    ? [meanData]
+                    : filteredData
                 }
                 audioSrc={audioSrc}
                 height={chartHeight}
@@ -488,8 +525,7 @@ export function MusicSliderChart({
                     return filteredLabels[index];
                   }
                   return `Odpowiedź ${index + 1}`;
-                }
-                }
+                }}
               />
             </>
           )}
