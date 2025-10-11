@@ -1,11 +1,10 @@
 import express from "express";
 import type { Request, Response } from "express";
-import { loadDB, saveDB, getUsers, updateDeviceStatus } from "./dbUtils";
+import { loadDB, saveDB, updateDeviceStatus, generateNewUser, getActiveConcertOrNull, getUserForIdOrNull } from "./dbUtils";
 import path from "path";
 import bodyParser from "body-parser";
 import http from "http";
-import type { User } from "./types";
-import { wssServerSetup, wsClients, broadcastEvent } from "./wsUtils";
+import { wssServerSetup, wsClients } from "./wsUtils";
 import adminRoutes from "./adminRoutes";
 
 const app = express();
@@ -28,7 +27,7 @@ app.get("/test-iot", (req: Request, res: Response) => {
   res.sendFile(path.join(__dirname, "public", "test-iot.html"));
 });
 
-// AJAX endpoint for admin device polling
+// AJAX endpoint for admin panel polling
 app.get("/api/concert-devices/:concertId", (req: Request, res: Response) => {
   const concertId = req.params.concertId;
   const db = loadDB();
@@ -49,22 +48,14 @@ app.get("/api/concert-devices/:concertId", (req: Request, res: Response) => {
 app.post("/api/iot-init", (req: Request, res: Response) => {
   const { device_type } = req.body;
   const db = loadDB();
-  const activeConcert = db.concerts.find((c) => c.is_active);
+  const activeConcert = getActiveConcertOrNull();
   if (!activeConcert) {
     res.json({ ok: false, message: "Brak aktywnego koncertu" });
     return;
   }
   // Generate new user
   let users = db.users || [];
-  const id = "user-" + Date.now() + "-" + Math.floor(Math.random() * 10000);
-  const user: User = {
-    id,
-    concert_id: activeConcert.id,
-    device_type,
-    created_at: Date.now(),
-    is_active: true,
-    last_ping: Date.now(),
-  };
+  const user = generateNewUser(activeConcert, device_type);
   users.push(user);
   db.users = users;
   saveDB(db);
@@ -89,11 +80,11 @@ wss.on("connection", (ws: AliveWebSocket, req) => {
   ws.on("message", (msg) => {
     try {
       const data = JSON.parse(msg.toString());
-      if (data.type === "init" && typeof data.userId === "string") {
-        ws.userId = data.userId;
+      const isUserIdValid = typeof data.userId === "string";
+      if (data.type === "init" && isUserIdValid) {
+        ws.userId = data.userId as string;
         // Check user
-        const users = getUsers();
-        const user = users.find((u) => u.id === ws.userId);
+        const user = getUserForIdOrNull(ws.userId);
         if (!user) {
           ws.send(JSON.stringify({ type: "error", message: "Unknown user" }));
           ws.close();
@@ -102,9 +93,7 @@ wss.on("connection", (ws: AliveWebSocket, req) => {
         if (ws.userId) wsClients.set(ws.userId, ws);
         // Send current event if active
         const db = loadDB();
-        const concert = db.concerts.find(
-          (c) => c.id === user.concert_id && c.is_active
-        );
+        const concert = db.concerts.find((c) => c.id === user.concert_id && c.is_active);
         if (concert && concert.active_event_id) {
           const event = db.events.find((e) => e.id === concert.active_event_id);
           if (event) {
@@ -132,11 +121,9 @@ wss.on("connection", (ws: AliveWebSocket, req) => {
 setInterval(() => {
   console.log("Checking WebSocket clients...");
   // get users for active concert
+  const activeConcert = getActiveConcertOrNull();
   const db = loadDB();
-  const activeConcert = db.concerts.find((c) => c.is_active);
-  const users = (db.users || []).filter(
-    (u) => u.concert_id === activeConcert?.id
-  );
+  const users = (db.users || []).filter((u) => u.concert_id === activeConcert?.id);
   users.forEach((user) => {
     const ws = wsClients.get(user.id) as AliveWebSocket | undefined;
     if (!ws) {
