@@ -26,7 +26,7 @@
         </div>
         <div class="field">
           <label>Payload (JSON)</label>
-          <textarea name="payload" rows="4"><%= event.payload %></textarea>
+          <textarea name="payload" rows="4"><%= JSON.stringify(event.payload) %></textarea>
         </div>
         <button type="submit" class="ui primary button">Zapisz</button>
         <a href="/concerts/<%= event.concert_id %>" class="ui button">Powrót</a>
