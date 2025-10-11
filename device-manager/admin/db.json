@@ -1,5 +1,30 @@
 {
-  "concerts": [],
-  "events": [],
+  "concerts": [
+    {
+      "id": "1753959406043",
+      "name": "Koncert kompozytorski",
+      "metadata": "{}",
+      "is_active": true,
+      "active_event_id": "1753959548171"
+    }
+  ],
+  "events": [
+    {
+      "id": "1753959442451",
+      "concert_id": "1753959406043",
+      "event_type": "SESSION_STANDBY",
+      "label": "Przed koncertem",
+      "payload": {},
+      "position": 0
+    },
+    {
+      "id": "1753959548171",
+      "concert_id": "1753959406043",
+      "event_type": "SESSION_START",
+      "label": "Czas trwania koncertu",
+      "payload": {},
+      "position": 1
+    }
+  ],
   "users": []
 }
