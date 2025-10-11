@@ -82,7 +82,7 @@ wss.on("connection", (ws: AliveWebSocket, req) => {
       const data = JSON.parse(msg.toString());
       const isUserIdValid = typeof data.userId === "string";
       if (data.type === "init" && isUserIdValid) {
-        ws.userId = data.userId;
+        ws.userId = data.userId as string;
         // Check user
         const user = getUserForIdOrNull(ws.userId);
         if (!user) {
@@ -93,9 +93,7 @@ wss.on("connection", (ws: AliveWebSocket, req) => {
         if (ws.userId) wsClients.set(ws.userId, ws);
         // Send current event if active
         const db = loadDB();
-        const concert = db.concerts.find(
-          (c) => c.id === user.concert_id && c.is_active
-        );
+        const concert = db.concerts.find((c) => c.id === user.concert_id && c.is_active);
         if (concert && concert.active_event_id) {
           const event = db.events.find((e) => e.id === concert.active_event_id);
           if (event) {
@@ -125,9 +123,7 @@ setInterval(() => {
   // get users for active concert
   const activeConcert = getActiveConcertOrNull();
   const db = loadDB();
-  const users = (db.users || []).filter(
-    (u) => u.concert_id === activeConcert?.id
-  );
+  const users = (db.users || []).filter((u) => u.concert_id === activeConcert?.id);
   users.forEach((user) => {
     const ws = wsClients.get(user.id) as AliveWebSocket | undefined;
     if (!ws) {
