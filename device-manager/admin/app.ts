@@ -82,7 +82,7 @@ wss.on("connection", (ws: AliveWebSocket, req) => {
       const data = JSON.parse(msg.toString());
       const isUserIdValid = typeof data.userId === "string";
       if (data.type === "init" && isUserIdValid) {
-        ws.userId = data.userId as string;
+        ws.userId = data.userId;
         // Check user
         const user = getUserForIdOrNull(ws.userId);
         if (!user) {
