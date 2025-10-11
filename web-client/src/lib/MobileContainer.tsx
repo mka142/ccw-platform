@@ -46,7 +46,7 @@ export default function MobileContainer({
   children: React.ReactNode;
 }) {
   const orientation = useOrientation();
-  function touchHandler(event) {
+  function touchHandler(event: TouchEvent) {
     if (event.touches.length > 1) {
       //the event is multi-touch
       //you can then prevent the behavior

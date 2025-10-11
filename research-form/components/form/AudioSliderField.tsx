@@ -173,7 +173,7 @@ export const AudioSliderField: React.FC<AudioSliderFieldProps> = ({
           ? "flex flex-col gap-3 w-full items-center"
           : "flex flex-col gap-3 w-full"
       }
-      style={{
+      style={{ // Dynamic glow based on slider value
         background: `rgba(59,130,246,${
           0 + ((slider - min) / (max - min)) * 0.68
         })`,

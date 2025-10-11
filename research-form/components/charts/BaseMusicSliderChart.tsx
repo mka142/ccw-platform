@@ -47,7 +47,7 @@ interface BaseMusicSliderChartProps {
   getDataLabelByIndex?: (idx: number) => string; // function to get label for data series by index
 }
 
-export function BaseMusicSliderChart({
+export function BaseMusicSliderChart({ // TODO: REFACTOR
   data,
   audioSrc,
   zoomEnabled = true,

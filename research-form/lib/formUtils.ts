@@ -11,7 +11,8 @@ const _CORRUPTED_FIELD = "_corrupted";
 
 export const CACHE_TAGS = {
   form: (formId: string) => `form-${formId}`,
-  response: (formId: string, responseId: string) => `response-${formId}-${responseId}`,
+  response: (formId: string, responseId: string) =>
+    `response-${formId}-${responseId}`,
 };
 
 export async function submitForm(
@@ -104,9 +105,36 @@ export async function getMusicSliderData(
         .aggregate(pipeline)
         .toArray();
       // Convert _id to string for consistency
-      return data.map((doc) => ({ _id: doc._id.toString(), values: doc.values }));
+      return data.map((doc) => ({
+        _id: doc._id.toString(),
+        values: doc.values,
+      }));
     },
     () => []
+  );
+}
+
+export async function getMusicSliderDataForResponse(
+  formId: string,
+  fieldId: string,
+  responseId: string
+): Promise<{ _id: string; values: Array<[number, number]> } | null> {
+  return await mongoWrapper(
+    async (client) => {
+      const doc = await client
+        .db(DB_NAME)
+        .collection(COLLECTION_NAME)
+        .findOne<WithId<Document>>(
+          { formId, _id: new ObjectId(responseId) },
+          { projection: { _id: 1, [`formData.${fieldId}`]: 1 } }
+        );
+      if (!doc) return null;
+      return {
+        _id: doc._id.toString(),
+        values: doc.formData?.[fieldId] || [],
+      };
+    },
+    () => null
   );
 }
 
@@ -126,7 +154,9 @@ export async function getResponseIds(formId: string): Promise<string[]> {
   );
 }
 
-export async function getResponseIdIndexMap(formId: string): Promise<Record<string, number>> {
+export async function getResponseIdIndexMap(
+  formId: string
+): Promise<Record<string, number>> {
   const ids = await getResponseIds(formId);
   const map: Record<string, number> = {};
   ids.forEach((id, idx) => {
@@ -190,6 +220,43 @@ export async function getResponse(
   );
 }
 
+// Get a single response without musicSlider data
+export async function getResponseWithoutMusicSlider(
+  formId: string,
+  _id: string
+): Promise<WithId<Document> | null> {
+  const formSchema = getFormSchemaForId(formId);
+
+  if (!formSchema) {
+    return null; // or throw an error if preferred
+  }
+  const nonAudioFields = getNonAudioFields(formSchema);
+
+  const projection: Record<string, 1 | 0> = { formId: 1, _id: 1 };
+  nonAudioFields.forEach((field) => {
+    projection[`formData.${field.id}`] = 1;
+  });
+
+  projection[_CORRUPTED_FIELD] = 1; // Include corrupted field
+  projection["formStartDate"] = 1; // Include form start date
+  projection["formEndDate"] = 1; // Include form end date
+  projection["_id"] = 1; // Include _id field
+
+  return await mongoWrapper(
+    async (client) => {
+      const doc = await client
+        .db(DB_NAME)
+        .collection(COLLECTION_NAME)
+        .findOne<WithId<Document>>(
+          { formId, _id: new ObjectId(_id) },
+          { projection }
+        );
+      return doc || null;
+    },
+    () => null
+  );
+}
+
 // set response as  corrupted - after that  we will exclude the response in the get data function
 export async function setResponseCorrupted(
   formId: string,
@@ -210,12 +277,14 @@ export async function setResponseCorrupted(
   );
 }
 
-
 // download all responses for a given formId.
 // 1. Get formSchea for formId
 // 2. Get all responses for formId
 // 3. Return as array of objects with field titles as keys
-export async function downloadAllResponses(formId: string, includeCorrupted = false,): Promise<Array<Record<string, unknown>>> {
+export async function downloadAllResponses(
+  formId: string,
+  includeCorrupted = false
+): Promise<Array<Record<string, unknown>>> {
   const formSchema = getFormSchemaForId(formId);
   if (!formSchema) {
     throw new Error(`Form schema not found for formId: ${formId}`);
@@ -241,10 +310,14 @@ export async function downloadAllResponses(formId: string, includeCorrupted = fa
   );
 
   // add data rozpoczecia i zakończenia
-  const withDates = responses.map(response => ({
+  const withDates = responses.map((response) => ({
     ...response,
-    formStartDate: response.formStartDate ? new Date(response.formStartDate).toJSON() : "",
-    formEndDate: response.formEndDate ? new Date(response.formEndDate).toJSON() : "",
+    formStartDate: response.formStartDate
+      ? new Date(response.formStartDate).toJSON()
+      : "",
+    formEndDate: response.formEndDate
+      ? new Date(response.formEndDate).toJSON()
+      : "",
   }));
   return withDates;
 }

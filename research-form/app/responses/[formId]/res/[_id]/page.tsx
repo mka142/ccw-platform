@@ -1,7 +1,7 @@
 import {
   CACHE_TAGS,
-  getResponse,
   getResponseIds,
+  getResponseWithoutMusicSlider,
   setResponseCorrupted,
 } from "@/lib/formUtils";
 
@@ -10,8 +10,9 @@ import { SchemaFormViewerWithMusicChart } from "@/app/components/SchemaFormViewe
 import { redirect } from "next/navigation";
 import React from "react";
 import ResponseIdSelect from "./ResponseIdSelect";
-import { revalidateTag, unstable_cache } from 'next/cache';
+import { revalidateTag, unstable_cache } from "next/cache";
 import FormChangeCorruptedState from "./FormChangeCorruptedState";
+import { REVALIDATE_INTERVAL } from "@/config";
 
 export default async function Page({
   params,
@@ -20,13 +21,17 @@ export default async function Page({
 }) {
   // get response data
   const { formId, _id } = await params;
-  const cacheResponseData = unstable_cache(async (formId: string, _id: string) => {
-    console.log("<strong>I am being called</strong>", formId, _id);
-    return await getResponse(formId, _id);
-  }, [CACHE_TAGS.response(formId, _id)], {
-    tags: [CACHE_TAGS.response(formId, _id)],
-    revalidate: 3600, // Revalidate every 600 seconds
-  });
+  const cacheResponseData = unstable_cache(
+    async (formId: string, _id: string) => {
+      console.log("<strong>I am being called</strong>", formId, _id);
+      return await getResponseWithoutMusicSlider(formId, _id);
+    },
+    [CACHE_TAGS.response(formId, _id)],
+    {
+      tags: [CACHE_TAGS.response(formId, _id)],
+      revalidate: REVALIDATE_INTERVAL, // Revalidate every 600 seconds
+    }
+  );
 
   const responseData = await cacheResponseData(formId, _id);
   const formSchema = getFormSchemaForId(formId);
@@ -54,10 +59,14 @@ export default async function Page({
         currentId={_id}
         formId={formId}
       />
-      <FormChangeCorruptedState isCorrupted={isCorrupted} action={markCorruptedAction} />
+      <FormChangeCorruptedState
+        isCorrupted={isCorrupted}
+        action={markCorruptedAction}
+      />
       <SchemaFormViewerWithMusicChart
         schema={formSchema}
         responseData={responseData.formData}
+        responseId={_id}
       />
     </>
   );

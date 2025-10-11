@@ -6,50 +6,64 @@ import type { SchemaFormViewerProps } from "@/components/SchemaForm/SchemaFormVi
 import { Field } from "@/lib/formSchema";
 import { defaultFieldRenderer } from "@/components/SchemaForm/SchemaFormPage";
 import { MusicSliderChart } from "@/components/charts/MusicSliderChart";
-import { useFormContext } from "react-hook-form";
 
-export const SchemaMusicSliderFieldViewer = ({ field }: { field: Field }) => {
-  const { formState } = useFormContext();
-
-  const defaultData = formState.defaultValues
-    ? [formState.defaultValues[field.id as string]]
-    : null;
-
+export const SchemaMusicSliderFieldViewer = ({
+  field,
+  responseId,
+  formId,
+}: {
+  field: Field;
+  responseId: string;
+  formId: string;
+}) => {
   return (
     <MusicSliderChart
-      formId={""}
+      formId={formId}
       fieldId={field.id as string}
       audioSrc={field.audioSrc as string}
       height={350}
       width={100}
-      defaultData={defaultData}
       defaultMaxValue={field.max ? field.max : null}
+      documentId={responseId} // Pass the document ID from form state
     />
   );
 };
 // Custom field renderer
-const renderField = (field: Field, fieldIdx: string) => {
+const renderField = (
+  field: Field,
+  fieldIdx: string,
+  responseId: string,
+  formId: string
+) => {
   if (field.type === "musicSlider") {
     // Use MusicSliderChart for musicSlider type
-    return <SchemaMusicSliderFieldViewer field={field} />;
+    return (
+      <SchemaMusicSliderFieldViewer
+        field={field}
+        responseId={responseId}
+        formId={formId}
+      />
+    );
   }
   // Fallback to default field renderer
   return defaultFieldRenderer(field, fieldIdx);
 };
 
-type SchemaFormViewerWithMusicChart = Omit<
-  SchemaFormViewerProps,
-  "renderField"
->;
+interface SchemaFormViewerWithMusicChart
+  extends Omit<SchemaFormViewerProps, "renderField"> {
+  responseId: string; // Optional response ID for fetching specific data
+}
 
 const SchemaFormViewerWithMusicChart: React.FC<
   SchemaFormViewerWithMusicChart
-> = ({ schema, responseData }) => {
+> = ({ schema, responseData, responseId }) => {
   return (
     <SchemaFormViewer
       schema={schema}
       responseData={responseData}
-      renderField={renderField}
+      renderField={(field, fieldIdx) =>
+        renderField(field, fieldIdx, responseId, schema.formId)
+      }
     />
   );
 };

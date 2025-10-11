@@ -4,13 +4,12 @@ import TextArc from "../../TextArc/TextArc";
 import logo from "../../logo.svg";
 import "../../orange-bg.css";
 import "./main.css";
+import type { StateNavigationComponentProps } from "@/lib/StateNavigationContext";
 
 export default function NoteLoader({
   shouldTransitionBegin,
   setTransitionFinished,
-}: {
-  shouldTransitionBegin: boolean;
-}) {
+}: StateNavigationComponentProps) {
   const [imageLoaded, setimageLoaded] = useState(false);
   const [showRotate, setShowRotate] = useState(false);
   const [showArc, setShowArc] = useState(false);
