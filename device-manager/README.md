@@ -28,5 +28,5 @@ Admin UI available at `http://localhost:3000`
 Start MongoDB and run integration tests: (this requires Docker)
 
 ```bash
-bun run test:int
+bun run test
 ```
