@@ -14,6 +14,15 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
+    // Path mapping
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@/lib/*": ["./lib/*","./lib/utils/*"],
+      "@/shared/*": ["./shared/*"],
+      "@/modules/*": ["./modules/*"]
+    },
+
     // Best practices
     "strict": true,
     "skipLibCheck": true,

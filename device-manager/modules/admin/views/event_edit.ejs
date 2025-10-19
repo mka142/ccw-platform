@@ -15,10 +15,10 @@
           <div class="header"><%= error %></div>
         </div>
       <% } %>
-      <form class="ui form" method="POST" action="/events/<%= event.id %>">
+      <form class="ui form" method="POST" >
         <div class="field">
-          <label>Typ komunikatu (event_type)</label>
-          <input type="text" name="event_type" value="<%= event.event_type %>" required>
+          <label>Typ komunikatu (eventType)</label>
+          <input type="text" name="eventType" value="<%= event.eventType %>" required>
         </div>
         <div class="field">
           <label>Nazwa do czytania (label)</label>
@@ -29,7 +29,7 @@
           <textarea name="payload" rows="4"><%= JSON.stringify(event.payload) %></textarea>
         </div>
         <button type="submit" class="ui primary button">Zapisz</button>
-        <a href="/concerts/<%= event.concert_id %>" class="ui button">Powrót</a>
+        <a href="/concerts/<%= event.concertId %>" class="ui button">Powrót</a>
       </form>
     </div>
   </div>

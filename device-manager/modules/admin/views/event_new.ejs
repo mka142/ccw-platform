@@ -15,10 +15,10 @@
           <div class="header"><%= error %></div>
         </div>
       <% } %>
-      <form class="ui form" method="POST" action="/concerts/<%= concert_id %>/events">
+      <form class="ui form" method="POST" action="/events">
         <div class="field">
-          <label>Typ komunikatu (event_type)</label>
-          <input type="text" name="event_type" value="<%= typeof event_type !== 'undefined' ? event_type : '' %>" required>
+          <label>Typ komunikatu (eventType)</label>
+          <input type="text" name="eventType" value="<%= typeof eventType !== 'undefined' ? eventType : '' %>" required>
         </div>
         <div class="field">
           <label>Nazwa do czytania (label)</label>
@@ -28,8 +28,9 @@
           <label>Payload (JSON)</label>
           <textarea name="payload" rows="4"><%= typeof payload !== 'undefined' ? payload : '{}' %></textarea>
         </div>
+        <input type="hidden" name="concertId" value="<%= concert._id %>" />
         <button type="submit" class="ui primary button">Dodaj</button>
-        <a href="/concerts/<%= concert_id %>" class="ui button">Powrót</a>
+        <a href="/concerts/<%= concert._id %>" class="ui button">Powrót</a>
       </form>
     </div>
   </div>
