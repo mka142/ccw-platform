@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+bun.lock
+
+# Build outputs
+dist/
+build/
+.next/
+
+# Database and Docker
+.mongo-data/
+docker-compose.yml
+*.log
+
+# Environment files
+.env*
+!.env.example
+
+# Backup files
+lib/db/_backup_for_migration/
+
+# Coverage reports
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+Thumbs.db
