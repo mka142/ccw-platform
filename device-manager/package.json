@@ -18,7 +18,7 @@
     "typescript": "^5"
   },
   "scripts": {
-    "start": "bun run modules/admin/app.ts",
+    "start": "bun run index.ts",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "lint:check": "eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 0",
