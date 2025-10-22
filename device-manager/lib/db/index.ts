@@ -3,8 +3,12 @@
  *
  * This library provides a simple MongoDB connection using connection pooling.
  * No abstractions, just direct MongoDB access.
+ * 
+ * This library is self-contained and doesn't depend on app-level configuration.
+ * Configuration is passed when calling connectToDb.
  */
 
-// Export the simple connection function
-export { connectToDb } from "./connection";
+// Export the connection functions and types
+export { connectToDb, getDb, closeDb, isConnected } from "./connection";
+export type { MongoDbConfig } from "./connection";
 
