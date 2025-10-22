@@ -32,10 +32,15 @@
     "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.3",
     "@types/ws": "^8.18.1",
+    "aedes": "^0.51.3",
+    "aedes-persistence-redis": "^11.2.2",
     "body-parser": "^2.2.0",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "mongodb": "^6.20.0",
+    "mqemitter-redis": "^7.2.0",
+    "mqtt": "^5.14.1",
+    "websocket-stream": "^5.5.2",
     "ws": "^8.18.3"
   }
 }
