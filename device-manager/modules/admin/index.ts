@@ -11,7 +11,6 @@
  * - types.ts    Type definitions
  *
  * Features:
- * - User management (create, update, delete, status tracking)
  * - Concert management (create, activate/deactivate)
  * - Event management (create, position handling)
  * - Clean separation between data access and business logic
@@ -23,12 +22,11 @@
 export { default as adminRoutes } from "./routes";
 
 // Type exports
-export type { User, Concert, Event, DeviceType, UserWithId, ConcertWithId, EventWithId } from "./types";
+export type { Concert, Event, ConcertWithId, EventWithId } from "./types";
 
 // Service exports (for direct usage if needed)
-export { UserService } from "./services/userService";
 export { ConcertService } from "./services/concertService";
 export { EventService } from "./services/eventService";
 
 // Database operations exports (for direct usage if needed)
-export { UserOperations, ConcertOperations, EventOperations } from "./db";
+export { ConcertOperations, EventOperations } from "./db";

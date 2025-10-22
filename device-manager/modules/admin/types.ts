@@ -5,20 +5,6 @@ import type { BaseDocument, DocumentWithId, ObjectId } from "@/lib/types";
  * Extends base types with admin-specific properties
  */
 
-export type DeviceType = "Web" | "M5Dial";
-
-interface UserSchema {
-  concertId: ObjectId;
-  deviceType: DeviceType;
-  isActive?: boolean;
-  lastPing?: number;
-}
-
-export interface User extends BaseDocument, UserSchema {}
-export interface UserWithId extends DocumentWithId, UserSchema {
-  concertId: ObjectId;
-}
-
 interface ConcertSchema {
   name: string;
   metadata: Record<string, unknown>;

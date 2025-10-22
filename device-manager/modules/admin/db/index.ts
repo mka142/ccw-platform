@@ -3,4 +3,4 @@
  * Clean separation between database operations and business logic
  */
 
-export { UserOperations, ConcertOperations, EventOperations } from './operations';
+export { ConcertOperations, EventOperations } from "./operations";
