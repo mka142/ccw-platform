@@ -1,36 +1,34 @@
-import { MongoClient } from "mongodb";
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 
 import { parseId } from "@/lib/db/utils";
+import { db, initializeDb, disconnectDb } from "@/modules/db";
 
-import { connectToDb } from "../../lib/db/connection";
 import { ConcertService } from "../../modules/admin/services/concertService";
 import { EventService } from "../../modules/admin/services/eventService";
-import { UserService } from "../../modules/admin/services/userService";
+import { UserService } from "../../modules/user/services";
 
 import type { ObjectId } from "@/lib/types";
-import type { User } from "@/modules/admin";
-
-let client: MongoClient;
+import type { User } from "@/modules/user";
 
 async function clearCollections() {
-  const db = await connectToDb();
-  const collections = await db.collections();
+  const collections = await db().collections();
   await Promise.all(collections.map((c) => c.deleteMany({})));
 }
 
 describe("Admin Services Integration Tests", () => {
   beforeAll(async () => {
-    const db = await connectToDb();
+    // Initialize database connection using the new refactored approach
+    await initializeDb({
+      uri: process.env.MONGO_URI ?? "mongodb://localhost:27017",
+      databaseName: "device_manager_test",
+    });
 
-    client = (db as any).client ?? (db as any).s?.client ?? new MongoClient(process.env.MONGO_URI ?? "mongodb://localhost:27017");
-    await client.connect();
     await clearCollections();
   }, 30000);
 
   afterAll(async () => {
     await clearCollections();
-    await client.close();
+    await disconnectDb();
   });
 
   beforeEach(async () => {
