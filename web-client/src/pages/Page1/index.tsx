@@ -2,13 +2,25 @@ import React, { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 
 import "./main.css"; // Import your main CSS file
-export default function Page() {
+import { StateNavigationComponentProps } from "@/lib/StateNavigationContext";
+export default function Page({
+  shouldTransitionBegin,
+  setTransitionFinished,
+}: StateNavigationComponentProps) {
   const [visible, setVisible] = useState(false);
   const [grow, setGrow] = useState(1);
   const [showCompositions, setShowCompositions] = useState(false);
   const [compositionsAnimated, setCompositionsAnimated] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (shouldTransitionBegin) {
+      setTimeout(() => {
+        setTransitionFinished();
+      }, 1000);
+    }
+  }, [shouldTransitionBegin]);
 
   useEffect(() => {
     // Fade in
