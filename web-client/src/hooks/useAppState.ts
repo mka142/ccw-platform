@@ -1,0 +1,72 @@
+import { useEffect, useState } from "react";
+
+import { useDeviceManager } from "../lib/DeviceManagerClient";
+import { useAutoConnect } from "../hooks/useAutoConnect";
+
+import { EventSchema } from "../lib/mqtt";
+import config, { EventType } from "../config";
+
+export type AppStateType = EventType;
+
+interface AppState {
+  type: AppStateType;
+  payload: Record<string, any>;
+}
+
+const useFetchCurrentEvent = () => {
+  // Fetch the current event from the server
+  const fetcher = async () => {
+    const response = await fetch(config.api.concert.currentEvent);
+    if (!response.ok) {
+      throw new Error("Failed to fetch current event");
+    }
+    const res = await response.json();
+    return res.data as EventSchema<EventType>;
+  };
+  return { fetcher };
+};
+
+export const useAppState = () => {
+  const { fetcher: fetchCurrentEvent } = useFetchCurrentEvent();
+  const { latestEvent, connectionStatus, disconnect } =
+    useDeviceManager<EventSchema<EventType>>();
+
+  const [state, setState] = useState<AppState>({
+    type: "INITIALIZATION",
+    payload: {},
+  });
+
+  useAutoConnect({
+    brokerUrl: config.mqtt.brokerUrl,
+    topics: [config.mqtt.topics.EVENTS_BROADCAST],
+  });
+
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+  }, [disconnect]);
+
+  useEffect(() => {
+    if (connectionStatus === "connected" && latestEvent) {
+      setState({
+        type: latestEvent.eventType,
+        payload: latestEvent.payload,
+      });
+    } else if (connectionStatus === "connected") {
+      //No latest event, fetch from server
+      fetchCurrentEvent()
+        .then((event) => {
+          setState({
+            type: event.eventType,
+            payload: event.payload,
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to fetch current event:", err);
+        });
+    }
+  }, [latestEvent?.eventType, connectionStatus]);
+
+  return { state, connectionStatus };
+};
