@@ -1,14 +1,15 @@
 import express from "express";
 
 import { config } from "./config";
-import adminRoutes from "./modules/admin/routes";
+import adminApiRoutes from "./modules/admin/routes/api";
+import adminViews from "./modules/admin/routes/views";
 import { createMqttBroker, shutdownMqttBroker } from "./modules/connections/broker";
 import { mqttPublisher } from "./modules/connections/publisher";
 import { initializeDb, disconnectDb } from "./modules/db";
 import { mqttHandlers } from "./modules/mqttHandlers";
 import { createServer, shutdownServer } from "./modules/server";
 import { userRoutes } from "./modules/user";
-import { setupMiddleware, setupErrorHandlers } from "./shared/middleware";
+import { setupMiddleware, setupErrorHandlers, basicAuth, setupTemplateLocals } from "./shared/middleware";
 
 const app = express();
 
@@ -19,11 +20,15 @@ app.set("views", [config.paths.views]);
 // Setup middleware
 setupMiddleware(app);
 
+// Setup template locals (must be before routes)
+app.use(setupTemplateLocals);
+
 // Register routes
 // Admin routes: /api/* and view routes at /
-app.use("/", adminRoutes);
+app.use(config.url.admin, basicAuth, adminViews);
 // User routes: /api/users/*
-app.use("/api/users", userRoutes);
+app.use(config.url.apiConcert, adminApiRoutes);
+app.use(config.url.apiUser, userRoutes);
 
 // Setup error handlers (must be last)
 setupErrorHandlers(app);
