@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { config } from "@/config";
 import { isValidJSON, safeJSONParse } from "@/lib/utils";
 
 import { ConcertService, EventService } from "../../services";
@@ -113,7 +114,7 @@ router.post("/edit/:eventId", async (req: Request, res: Response) => {
 
     if (result.success) {
       if (result.data) {
-        res.redirect(`/concerts/${result.data.concertId}`);
+        res.redirect(`${config.url.admin}/concerts/${result.data.concertId}`);
       }
     } else {
       res.status(400).render("error", {
@@ -168,7 +169,7 @@ router.post("/", async (req: Request, res: Response) => {
     const result = await EventService.createEvent(eventData);
 
     if (result.success) {
-      res.redirect(`/concerts/${concertId}`);
+      res.redirect(`${config.url.admin}/concerts/${concertId}`);
     } else {
       res.status(400).render("error", {
         message: result.error || "Nie udało się utworzyć wydarzenia",
@@ -214,7 +215,7 @@ router.post("/move/:eventId", async (req: Request, res: Response) => {
       });
     }
 
-    res.redirect(`/concerts/${event.concertId}`);
+    res.redirect(`${config.url.admin}/concerts/${event.concertId}`);
   } catch (error) {
     console.error("Failed to move event:", error);
   }
@@ -248,7 +249,7 @@ router.post("/delete/:eventId", async (req: Request, res: Response) => {
         title: "Błąd",
       });
     }
-    res.redirect(`/concerts/${event.concertId}`);
+    res.redirect(`${config.url.admin}/concerts/${event.concertId}`);
   } catch (error) {
     console.error("Failed to delete event:", error);
     res.status(500).render("error", {
@@ -281,7 +282,7 @@ router.post("/activate/:eventId", async (req: Request, res: Response) => {
     const result = await ConcertService.setActiveEvent(event.concertId.toString(), eventId);
 
     if (result.success) {
-      res.redirect(`/concerts/${event.concertId}`);
+      res.redirect(`${config.url.admin}/concerts/${event.concertId}`);
     } else {
       res.status(400).render("error", {
         message: result.error ?? "Nie udało się aktywować wydarzenia",

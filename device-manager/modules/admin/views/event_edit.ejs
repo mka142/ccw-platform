@@ -4,7 +4,7 @@
 <body>
   <div class="ui menu blue">
     <div class="ui container">
-      <a href="/" class="header item">Panel Admina</a>
+      <a href="<%= url.admin %>/" class="header item">Panel Admina</a>
     </div>
   </div>
   <div class="ui main text container" style="margin-top:2em;">
@@ -29,7 +29,7 @@
           <textarea name="payload" rows="4"><%= JSON.stringify(event.payload) %></textarea>
         </div>
         <button type="submit" class="ui primary button">Zapisz</button>
-        <a href="/concerts/<%= event.concertId %>" class="ui button">Powrót</a>
+        <a href="<%= url.admin %>/concerts/<%= event.concertId %>" class="ui button">Powrót</a>
       </form>
     </div>
   </div>

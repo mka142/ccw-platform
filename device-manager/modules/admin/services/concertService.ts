@@ -1,6 +1,9 @@
 import { parseId } from "@/lib/db/utils";
+import { PublisherService } from "@/modules/connections/services/publisherService";
 
 import { ConcertOperations } from "../db";
+
+import { EventService } from "./eventService";
 
 import type { Concert } from "../types";
 import type { OperationResult } from "@/lib/types";
@@ -24,6 +27,9 @@ export class ConcertService {
     };
 
     return ConcertOperations.create(concert);
+  }
+  static async findActiveConcert() {
+    return ConcertOperations.findActive();
   }
 
   static async activateConcert(concertId: string | ObjectId): Promise<OperationResult<boolean>> {
@@ -63,7 +69,24 @@ export class ConcertService {
     }
   }
 
-  static async setActiveEvent(concertId: string, eventId: string | null): Promise<OperationResult<boolean>> {
+  static async setActiveEvent(concertId: string, eventId: string | null, publish = true): Promise<OperationResult<boolean>> {
+    if (eventId) {
+      const event = await EventService.getEventById(eventId ?? "");
+
+      if (!event) {
+        return { success: false, error: "Event not found" };
+      }
+
+      if (publish) {
+        // Optionally, publish the event via MQTT when setting it active
+        const pubRes = await PublisherService.publishEvent(event);
+        if (!pubRes.success) {
+          console.error("Failed to publish event when setting active:", pubRes.error);
+          return { success: false, error: "Failed to publish event" };
+        }
+      }
+    }
+
     try {
       const result = await ConcertOperations.updateById(concertId, { activeEventId: eventId ? parseId(eventId) : null });
 

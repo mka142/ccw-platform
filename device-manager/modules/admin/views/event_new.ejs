@@ -4,7 +4,7 @@
 <body>
   <div class="ui menu blue">
     <div class="ui container">
-      <a href="/" class="header item">Panel Admina</a>
+      <a href="<%= url.admin %>/" class="header item">Panel Admina</a>
     </div>
   </div>
   <div class="ui main text container" style="margin-top:2em;">
@@ -15,7 +15,7 @@
           <div class="header"><%= error %></div>
         </div>
       <% } %>
-      <form class="ui form" method="POST" action="/events">
+      <form class="ui form" method="POST" action="<%= url.admin %>/events">
         <div class="field">
           <label>Typ komunikatu (eventType)</label>
           <input type="text" name="eventType" value="<%= typeof eventType !== 'undefined' ? eventType : '' %>" required>
@@ -30,7 +30,7 @@
         </div>
         <input type="hidden" name="concertId" value="<%= concert._id %>" />
         <button type="submit" class="ui primary button">Dodaj</button>
-        <a href="/concerts/<%= concert._id %>" class="ui button">Powrót</a>
+        <a href="<%= url.admin %>/concerts/<%= concert._id %>" class="ui button">Powrót</a>
       </form>
     </div>
   </div>

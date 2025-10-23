@@ -10,13 +10,13 @@
   <div class="ui main text container" style="margin-top:2em;">
     <div class="ui raised very padded text container segment">
       <h2 class="ui header">Koncerty</h2>
-      <a href="/concerts/new" class="ui blue button"><i class="plus icon"></i>Dodaj koncert</a>
+      <a href="<%= url.admin %>/concerts/new" class="ui blue button"><i class="plus icon"></i>Dodaj koncert</a>
       <div class="ui relaxed divided list" style="margin-top:1em;">
         <% concerts.forEach(function(concert) { %>
           <div class="item">
             <i class="large music middle aligned icon"></i>
             <div class="content">
-              <a class="header" href="/concerts/<%= concert._id %>"><%= concert.name %></a>
+              <a class="header" href="<%= url.admin %>/concerts/<%= concert._id %>"><%= concert.name %></a>
               <% if (concert.isActive) { %>
                 <div class="ui green horizontal label">Aktywny</div>
               <% } %>

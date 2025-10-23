@@ -10,7 +10,7 @@ import viewRoutes from './views';
 const router = Router();
 
 // Mount API routes under /api prefix
-router.use('/api', apiRoutes);
+router.use('/api/concert', apiRoutes);
 
 // Mount view routes at root level
 router.use('/', viewRoutes);

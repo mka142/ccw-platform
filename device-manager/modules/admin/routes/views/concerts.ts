@@ -1,5 +1,7 @@
 import { Router } from "express";
 
+import { config } from "@/config";
+
 import { ConcertService, EventService } from "../../services";
 
 import type { Request, Response } from "express";
@@ -77,7 +79,7 @@ router.post("/", async (req: Request, res: Response) => {
     const result = await ConcertService.createConcert(concertData);
 
     if (result.success) {
-      res.redirect("/concerts");
+      res.redirect(`${config.url.admin}/concerts`);
     } else {
       res.status(400).render("error", {
         message: result.error || "Nie udało się utworzyć koncertu",
@@ -107,7 +109,7 @@ router.post("/:id/activate", async (req: Request, res: Response) => {
     const result = await ConcertService.activateConcert(id);
 
     if (result.success) {
-      res.redirect(`/concerts/${id}`);
+      res.redirect(`${config.url.admin}/concerts/${id}`);
     } else {
       res.status(400).render("error", {
         message: result.error || "Nie udało się aktywować koncertu",
@@ -137,7 +139,7 @@ router.post("/:id/deactivate", async (req: Request, res: Response) => {
     const result = await ConcertService.deactivateConcert(id);
 
     if (result.success) {
-      res.redirect(`/concerts/${id}`);
+      res.redirect(`${config.url.admin}/concerts/${id}`);
     } else {
       res.status(400).render("error", {
         message: result.error || "Nie udało się dezaktywować koncertu",

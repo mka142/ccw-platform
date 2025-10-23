@@ -5,7 +5,7 @@
   <body>
     <div class="ui top menu blue" style="height: 42px">
       <div class="ui container">
-        <a href="/" class="header item">Panel Admina</a>
+        <a href="<%= url.admin %>/" class="header item">Panel Admina</a>
       </div>
     </div>
     <div class="ui container" style="margin-top: 2em">
@@ -28,7 +28,7 @@
                   </div>
                 </div>
                 <div class="eight wide column" style="text-align: right">
-                  <form method="POST" action="/concerts/<%= concert._id %>/<%= concert.isActive ? 'deactivate' : 'activate' %>" style="display: inline">
+                  <form method="POST" action="<%= url.admin %>/concerts/<%= concert._id %>/<%= concert.isActive ? 'deactivate' : 'activate' %>" style="display: inline">
                     <button type="submit" class="ui <%= concert.isActive ? 'red' : 'green' %> button"><%= concert.isActive ? 'Dezaktywuj' : 'Aktywuj' %> koncert</button>
                   </form>
                 </div>
@@ -37,7 +37,7 @@
 
             <div class="ui clearing segment">
               <h3 class="ui left floated header">Komunikaty</h3>
-              <a href="/events/new/<%= concert._id %>" class="ui right floated basic blue button"><i class="plus icon"></i>Dodaj komunikat</a>
+              <a href="<%= url.admin %>/events/new/<%= concert._id %>" class="ui right floated basic blue button"><i class="plus icon"></i>Dodaj komunikat</a>
             </div>
 
             <div class="ui divided items" style="margin-top: 1em">
@@ -45,7 +45,7 @@
               <div class="item">
                 <div class="content" style="width: 100%">
                   <div class="<% if (concert.activeEventId !== event._id) { %> weight-normal <% } %> header">
-                    <%= event.eventType %> (<%= event.label %>) <% if (concert.activeEventId.equals(event._id)) { %>
+                    <%= event.eventType %> (<%= event.label %>) <% if (concert.activeEventId?.equals(event._id)) { %>
                     <span class="ui green horizontal label" style="margin-left: 8px">AKTYWNY</span>
                     <% } %>
                   </div>
@@ -57,27 +57,43 @@
                   <div class="extra">
                     <div class="ui right floated">
                       <div class="ui icon buttons basic mini">
-                        <form id="move-event-<%= event._id %>" method="POST" action="/events/move/<%= event._id %>" style="display: inline"></form>
+                        <form id="move-event-<%= event._id %>" method="POST" action="<%= url.admin %>/events/move/<%= event._id %>" style="display: inline"></form>
 
-                        <button type="submit" name="direction" value="up" class="ui button" title="Przesuń w górę" form="move-event-<%= event._id %>">
+                        <button
+                          type="submit"
+                          name="direction"
+                          value="up"
+                          class="ui button"
+                          title="Przesuń w górę"
+                          form="move-event-<%= event._id %>"
+                          <% if (event.position === 0) { %> disabled="disabled" <% } %>
+                        >
                           <i class="arrow up icon"></i>
                         </button>
 
-                        <button type="submit" name="direction" value="down" class="ui button" title="Przesuń w dół" form="move-event-<%= event._id %>">
+                        <button
+                          type="submit"
+                          name="direction"
+                          value="down"
+                          class="ui button"
+                          title="Przesuń w dół"
+                          form="move-event-<%= event._id %>"
+                          <% if (event.position === events.length - 1) { %> disabled="disabled" <% } %>
+                        >
                           <i class="arrow down icon"></i>
                         </button>
 
-                        <a href="/events/edit/<%= event._id %>" class="ui button" title="Edytuj komunikat"><i class="edit icon"></i> </a>
+                        <a href="<%= url.admin %>/events/edit/<%= event._id %>" class="ui button" title="Edytuj komunikat"><i class="edit icon"></i> </a>
 
-                        <form id="delete-event-<%= event._id %>" method="POST" action="/events/delete/<%= event._id %>" style="display: inline"></form>
+                        <form id="delete-event-<%= event._id %>" method="POST" action="<%= url.admin %>/events/delete/<%= event._id %>" style="display: inline"></form>
                         <button type="submit" class="ui red basic button" title="Usuń komunikat" form="delete-event-<%= event._id %>">
                           <i class="trash icon"></i>
                         </button>
                       </div>
                     </div>
-                    <form method="POST" action="/events/activate/<%= event._id %>" style="display: inline">
+                    <form method="POST" action="<%= url.admin %>/events/activate/<%= event._id %>" style="display: inline">
                       <input type="hidden" name="event_id" value="<%= event._id %>" />
-                      <button type="submit" class="ui small button <%= concert.activeEventId === event._id ? 'disabled' : '' %>" title="Ustaw jako aktywny">
+                      <button type="submit" class="ui small button <%= concert.activeEventId?.equals(event._id) ? 'disabled' : '' %>" title="Ustaw jako aktywny">
                         <i class="play icon"></i> Ustaw jako aktywny
                       </button>
                     </form>
@@ -86,7 +102,7 @@
               </div>
               <% }) %>
             </div>
-            <a href="/" class="ui button"><i class="arrow left icon"></i>Powrót</a>
+            <a href="<%= url.admin %>/" class="ui button"><i class="arrow left icon"></i>Powrót</a>
           </div>
         </div>
         <!-- Devices section -->

@@ -4,13 +4,13 @@
 <body>
   <div class="ui menu blue">
     <div class="ui container">
-      <a href="/" class="header item">Panel Admina</a>
+      <a href="<%= url.admin %>/" class="header item">Panel Admina</a>
     </div>
   </div>
   <div class="ui main text container" style="margin-top:2em;">
     <div class="ui raised very padded text container segment">
       <h2 class="ui header">Dodaj koncert</h2>
-      <form class="ui form" method="POST" action="/concerts">
+      <form class="ui form" method="POST" action="<%= url.admin %>/concerts">
         <div class="field">
           <label>Nazwa koncertu</label>
           <input type="text" name="name" required>
@@ -20,7 +20,7 @@
           <textarea name="metadata" rows="4">{}</textarea>
         </div>
         <button type="submit" class="ui primary button">Dodaj</button>
-        <a href="/" class="ui button">Powrót</a>
+        <a href="<%= url.admin %>" class="ui button">Powrót</a>
       </form>
     </div>
   </div>
