@@ -121,7 +121,9 @@
       // Devices AJAX logic (unchanged)
       const concertId = "<%= concert._id %>";
       function renderDevicesTable(devices) {
+        const activeCount = devices.filter((d) => d.isActive).length;
         let html = `<p>Liczba zarejestrowanych: ${devices.length}</p>`;
+        html += `<p>✅ Liczba aktywnych: ${activeCount}</p>`;
         html += `<table class="ui celled striped table">
             <thead><tr>
             <th>ID</th>
@@ -143,7 +145,7 @@
         document.getElementById("devices-table-container").innerHTML = html;
       }
       function fetchDevices() {
-        fetch(`/api/concerts/${concertId}/users`)
+        fetch(`/api/user/concert/${concertId}`)
           .then((res) => res.json())
           .then((data) => {
             if (Array.isArray(data.data)) renderDevicesTable(data.data);

@@ -9,6 +9,6 @@ import apiRoutes from "./api";
 const router = Router();
 
 // Mount API routes under /api/users prefix
-router.use("", apiRoutes);
+router.use("/", apiRoutes);
 
 export default router;

@@ -1,3 +1,4 @@
+import cors from "cors";
 import express from "express";
 
 import { config } from "@/config";
@@ -8,6 +9,15 @@ export { basicAuth } from "./basicAuth";
 export { setupTemplateLocals } from "./locals";
 
 export function setupMiddleware(app: Application): void {
+  // Enable CORS for all routes
+  app.use(
+    cors({
+      origin: config.cors.origin, // Allow requests from your web-client
+      credentials: true, // Allow cookies and auth headers
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", config.api.userIdHeader],
+    })
+  );
   // Parse JSON bodies
   app.use(express.json());
 

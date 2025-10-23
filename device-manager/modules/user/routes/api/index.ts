@@ -104,6 +104,13 @@ router.post("/acquireUserId", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/acquireUserId", async (req: Request, res: Response) => {
+  res.status(405).json({
+    success: false,
+    error: "Method Not Allowed. Use POST to acquire user ID.",
+  });
+});
+
 /**
  * GET /api/users/concert/:concertId - Get users for a specific concert
  */

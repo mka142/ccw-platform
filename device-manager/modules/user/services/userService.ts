@@ -55,14 +55,10 @@ export class UserService {
     const activeConcert: ConcertWithId = activeConcertOrNull;
     if (userId) {
       // Try to find existing user
-      const isUserSameConcert = parseId(userId).equals(activeConcert._id);
+      const existingUser = await UserOperations.findById(userId);
+      const isUserSameConcert = existingUser?.concertId?.equals(activeConcert._id);
       if (isUserSameConcert) {
-        const existingUser = await UserOperations.findById(userId);
-        if (existingUser) {
-          return { success: true, data: existingUser };
-        } else {
-          // Continue to create new user
-        }
+        return { success: true, data: existingUser };
       }
     }
     // Create new user

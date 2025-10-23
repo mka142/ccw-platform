@@ -11,6 +11,16 @@ function env(key: string, defaultValue: string): string {
   return process.env[key] ?? defaultValue;
 }
 
+function envStringOrList(key: string, defaultValue: string | string[]): string | string[] {
+  const value = process.env[key];
+  if (!value) return defaultValue;
+  // Check for comma-separated values
+  if (value.includes(",")) {
+    return value.split(",").map((v) => v.trim());
+  }
+  return value;
+}
+
 /**
  * Environment helper for numbers
  */
@@ -46,6 +56,13 @@ export const config = {
   server: {
     port: envNumber("PORT", 3001),
     host: env("HOST", "localhost"),
+  },
+  /**
+   * CORS Configuration
+   */
+  cors: {
+    // Allow all origins in development, specific origin in production
+    origin: envStringOrList("CORS_ORIGIN", env("NODE_ENV", "development") === "development" ? "*" : ["http://localhost:3000", "http://127.0.0.1:3000"]),
   },
 
   /**
