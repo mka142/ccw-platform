@@ -21,7 +21,7 @@ export function getOrientation() {
   // Fallback for older browsers
   return window.innerWidth > window.innerHeight ? "landscape" : "portrait";
 }
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 
 const useOrientation = () => {
   const [orientation, setOrientation] = React.useState(getOrientation());
