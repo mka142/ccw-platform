@@ -8,14 +8,21 @@
 import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
 import { App } from "./App";
-import MobileContainer from "./lib/MobileContainer";
+import { UserProvider } from "./providers/UserProvider";
+import { DeviceManagerProvider } from "./lib/DeviceManagerClient";
+import { EventSchema } from "./lib/mqtt";
+import { EventType } from "./config";
 
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <MobileContainer>
-      <App />
-    </MobileContainer>
+    <UserProvider>
+      <DeviceManagerProvider<EventSchema<EventType>> maxHistorySize={100}>
+        {/* <MobileContainer> */}
+        <App />
+        {/* </MobileContainer> */}
+      </DeviceManagerProvider>
+    </UserProvider>
   </StrictMode>
 );
 
@@ -29,10 +36,10 @@ if (import.meta.hot) {
 }
 
 // Register service worker for PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').catch((err) => {
-      console.warn('Service worker registration failed:', err);
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch((err) => {
+      console.warn("Service worker registration failed:", err);
     });
   });
 }
