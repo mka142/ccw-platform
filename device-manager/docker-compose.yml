@@ -1,21 +1,76 @@
 services:
+  # Device Manager Application
+  device-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ccw_device_manager
+    restart: unless-stopped
+    ports:
+      - "3001:3001"  # HTTP/WebSocket server
+      - "1883:1883"  # MQTT broker
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOST: 0.0.0.0
+      
+      # Admin Authentication
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+      
+      # MQTT Configuration
+      MQTT_HOST: 0.0.0.0
+      MQTT_PORT: 1883
+      MQTT_SERVER_PASSWORD: ${MQTT_SERVER_PASSWORD:-change-this-in-production-2024}
+      MQTT_WS_PATH: /mqtt
+      
+      # Database Configuration
+      DATABASE_URL: mongodb://root:example@mongo:27017
+      DATABASE_NAME: device_manager
+      
+      # API Configuration
+      API_USER_ID_HEADER: X-User-Id
+      
+      # Monitoring
+      MONITORING_INTERVAL_MS: 60000
+    depends_on:
+      - mongo
+    networks:
+      - ccw-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB Database
   mongo:
-    image: mongo
-    restart: always
+    image: mongo:7
+    restart: unless-stopped
     container_name: ccw_mongo
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     ports:
-      - 27017:27017
+      - "27017:27017"
     volumes:
-      - ./.mongo-data:/data/db
+      - mongo-data:/data/db
+    networks:
+      - ccw-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # MongoDB Admin Interface
   mongo-express:
-    image: mongo-express
-    restart: always
+    image: mongo-express:latest
+    restart: unless-stopped
+    container_name: ccw_mongo_express
     ports:
-      - 8081:8081
+      - "8081:8081"
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
@@ -23,3 +78,13 @@ services:
       ME_CONFIG_BASICAUTH: false
     depends_on:
       - mongo
+    networks:
+      - ccw-network
+
+networks:
+  ccw-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local

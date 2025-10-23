@@ -1,0 +1,39 @@
+# Development Docker Compose
+# Usage: docker compose -f docker-compose.dev.yml up
+
+services:
+  # MongoDB Database (Development)
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    container_name: ccw_mongo_dev
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./.mongo-data:/data/db
+    networks:
+      - ccw-network-dev
+
+  # MongoDB Admin Interface
+  mongo-express:
+    image: mongo-express:latest
+    restart: unless-stopped
+    container_name: ccw_mongo_express_dev
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      - mongo
+    networks:
+      - ccw-network-dev
+
+networks:
+  ccw-network-dev:
+    driver: bridge

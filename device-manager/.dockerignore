@@ -1,0 +1,54 @@
+# Dependencies
+node_modules
+bun.lockb
+
+# Development files
+.git
+.gitignore
+.vscode
+.idea
+
+# Testing
+tests
+*.test.ts
+*.spec.ts
+vitest.config.ts
+
+# Build artifacts
+dist
+build
+.cache
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env.local
+.env.development
+.env.test
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Documentation
+README.md
+*.md
+
+# MongoDB data
+.mongo-data
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Linting
+.eslintrc
+.eslintignore
+eslint.config.mjs
