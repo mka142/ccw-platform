@@ -1,6 +1,9 @@
+import { parseId } from "@/lib/db/utils";
+import { ConcertService, type ConcertWithId } from "@/modules/admin";
+
 import { UserOperations } from "../db";
 
-import type { User } from "../types";
+import type { DeviceType, User } from "../types";
 import type { ObjectId, OperationResult } from "@/lib/types";
 
 /**
@@ -41,5 +44,35 @@ export class UserService {
       isActive,
       lastPing: isActive ? Date.now() : undefined,
     });
+  }
+
+  static async acquireUser(userId: string | undefined, deviceType: DeviceType): Promise<OperationResult<User | null>> {
+    // get active concert
+    const activeConcertOrNull = await ConcertService.findActiveConcert();
+    if (!activeConcertOrNull) {
+      return { success: false, error: "No active concert found" };
+    }
+    const activeConcert: ConcertWithId = activeConcertOrNull;
+    if (userId) {
+      // Try to find existing user
+      const isUserSameConcert = parseId(userId).equals(activeConcert._id);
+      if (isUserSameConcert) {
+        const existingUser = await UserOperations.findById(userId);
+        if (existingUser) {
+          return { success: true, data: existingUser };
+        } else {
+          // Continue to create new user
+        }
+      }
+    }
+    // Create new user
+    const newUser: User = {
+      concertId: activeConcert._id,
+      deviceType,
+      isActive: false,
+      lastPing: undefined,
+    };
+    const result = await UserOperations.create(newUser);
+    return result;
   }
 }

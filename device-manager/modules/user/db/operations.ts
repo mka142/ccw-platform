@@ -42,6 +42,18 @@ export class UserOperations {
     }
   }
 
+  static async findById(id: ObjectId | string): Promise<UserWithId | null> {
+    try {
+      const collection = await this.getCollection();
+      const doc = (await collection.findOne(byId(id))) as UserWithId | null;
+
+      return doc ? this.mapFromDocument(doc) : null;
+    } catch (error) {
+      console.error("Failed to find user by ID:", error);
+      return null;
+    }
+  }
+
   static async updateById(id: ObjectId | string, updates: Partial<User>): Promise<OperationResult<UserWithId | null>> {
     try {
       const collection = await this.getCollection();

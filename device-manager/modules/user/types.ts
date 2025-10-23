@@ -13,6 +13,10 @@ interface UserSchema {
   lastPing?: number;
 }
 
+export interface UserCreateSchema {
+  deviceType: DeviceType;
+}
+
 export interface User extends BaseDocument, UserSchema {}
 export interface UserWithId extends DocumentWithId, UserSchema {
   concertId: ObjectId;
