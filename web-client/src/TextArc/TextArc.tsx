@@ -55,7 +55,6 @@ export default function TextArc({
 
   // Handler for transition end
   const handleTransitionEnd = () => {
-    console.log("Transition ended", visible, transitioned);
     if (visible) {
       setTransitioned(true);
     } else {
@@ -63,15 +62,15 @@ export default function TextArc({
     }
   };
 
-  console.log("Transition state:", { visible, transitioned });
-
   return (
     <div className={className}>
       <section
         className={`${rotate ? ` infinite-rotate-${rotateDirection}` : ""}`}
       >
         <section
-          className={`${!transitioned ? "textarc-transition" : "textarc-transition-out"}
+          className={`${
+            !transitioned ? "textarc-transition" : "textarc-transition-out"
+          }
           
           ${!visible ? " textarc-hidden" : " textarc-visible"}`}
           onTransitionEnd={handleTransitionEnd}
@@ -80,16 +79,16 @@ export default function TextArc({
             <path
               id="circlePath"
               fill="none"
-              stroke-width="4"
+              strokeWidth="4"
               stroke="hsl(0 100% 50% / 0.5)"
               style={{ display: "none" }}
               d={getSVGPATH}
             />
             <text
               id="text"
-              font-family="monospace"
-              font-size={fontSize}
-              font-weight="bold"
+              fontFamily="monospace"
+              fontSize={fontSize}
+              fontWeight="bold"
               fill="inherit"
             >
               <textPath
