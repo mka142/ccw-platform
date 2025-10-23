@@ -77,10 +77,10 @@ export const config = {
    * Database Configuration
    */
   database: {
-    url: env("DATABASE_URL", "mongodb://localhost:27017"),
+    url: env("DATABASE_URL", "mongodb://root:example@localhost:27017"),
     name: env("DATABASE_NAME", "device_manager"),
-    user: env("DATABASE_USER", ""),
-    password: env("DATABASE_PASSWORD", ""),
+    user: env("DATABASE_USER", "root"),
+    password: env("DATABASE_PASSWORD", "example"),
     collections: {
       users: env("DATABASE_COLLECTION_USERS", "users"),
       concerts: env("DATABASE_COLLECTION_CONCERTS", "concerts"),
@@ -106,6 +106,18 @@ export const config = {
     views: path.join(currentDirname, "../modules/admin/views"),
     public: path.join(currentDirname, "../public"),
     logs: path.join(currentDirname, "../logs"),
+  },
+  url: {
+    admin: "/admin",
+    apiConcert: "/api/concert",
+    apiUser: "/api/user",
+  },
+  api: {
+    userIdHeader: env("API_USER_ID_HEADER", "x-user-id"),
+  },
+  admin: {
+    username: env("ADMIN_USERNAME", "admin"),
+    password: env("ADMIN_PASSWORD", "admin123"), // Change in production
   },
 
   monitoringIntervalMs: 60000, // 1 minute
