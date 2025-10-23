@@ -37,7 +37,7 @@ Example:
 
 // Helper function to convert kebab-case to camelCase
 const toCamelCase = (str: string): string => {
-  return str.replace(/-([a-z])/g, g => g[1].toUpperCase());
+  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
 };
 
 // Helper function to parse a value into appropriate type
@@ -51,7 +51,7 @@ const parseValue = (value: string): any => {
   if (/^\d*\.\d+$/.test(value)) return parseFloat(value);
 
   // Handle arrays (comma-separated)
-  if (value.includes(",")) return value.split(",").map(v => v.trim());
+  if (value.includes(",")) return value.split(",").map((v) => v.trim());
 
   // Default to string
   return value;
@@ -74,7 +74,10 @@ function parseArgs(): Partial<BuildConfig> {
     }
 
     // Handle --flag (boolean true)
-    if (!arg.includes("=") && (i === args.length - 1 || args[i + 1].startsWith("--"))) {
+    if (
+      !arg.includes("=") &&
+      (i === args.length - 1 || args[i + 1].startsWith("--"))
+    ) {
       const key = toCamelCase(arg.slice(2));
       config[key] = true;
       continue;
@@ -136,9 +139,13 @@ const start = performance.now();
 
 // Scan for all HTML files in the project
 const entrypoints = [...new Bun.Glob("**.html").scanSync("src")]
-  .map(a => path.resolve("src", a))
-  .filter(dir => !dir.includes("node_modules"));
-console.log(`📄 Found ${entrypoints.length} HTML ${entrypoints.length === 1 ? "file" : "files"} to process\n`);
+  .map((a) => path.resolve("src", a))
+  .filter((dir) => !dir.includes("node_modules"));
+console.log(
+  `📄 Found ${entrypoints.length} HTML ${
+    entrypoints.length === 1 ? "file" : "files"
+  } to process\n`
+);
 
 // Build all the HTML files
 const result = await build({
@@ -150,6 +157,12 @@ const result = await build({
   sourcemap: "linked",
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),
+    "process.env.API_BASE_URL": JSON.stringify(
+      process.env.API_BASE_URL || "http://localhost:3001"
+    ),
+    "process.env.MQTT_BROKER_URL": JSON.stringify(
+      process.env.MQTT_BROKER_URL || "ws://localhost:3001/mqtt"
+    ),
   },
   ...cliConfig, // Merge in any CLI-provided options
 });
@@ -157,10 +170,10 @@ const result = await build({
 // Print the results
 const end = performance.now();
 
-const outputTable = result.outputs.map(output => ({
-  "File": path.relative(process.cwd(), output.path),
-  "Type": output.kind,
-  "Size": formatFileSize(output.size),
+const outputTable = result.outputs.map((output) => ({
+  File: path.relative(process.cwd(), output.path),
+  Type: output.kind,
+  Size: formatFileSize(output.size),
 }));
 
 console.table(outputTable);
