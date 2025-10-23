@@ -128,7 +128,7 @@ describe("Admin Services Integration Tests", () => {
       expect(event.success).toBe(true);
       if (!event.success || !event.data._id) return;
 
-      const setActiveResult = await ConcertService.setActiveEvent(concert.data._id.toString(), event.data._id.toString());
+      const setActiveResult = await ConcertService.setActiveEvent(concert.data._id.toString(), event.data._id.toString(), false);
       expect(setActiveResult.success).toBe(true);
 
       const updated = await ConcertService.getConcertById(concert.data._id.toString());
@@ -146,7 +146,7 @@ describe("Admin Services Integration Tests", () => {
       expect(concert.success).toBe(true);
       if (!concert.success || !concert.data._id) return;
 
-      const clearResult = await ConcertService.setActiveEvent(concert.data._id.toString(), null);
+      const clearResult = await ConcertService.setActiveEvent(concert.data._id.toString(), null, false);
       expect(clearResult.success).toBe(true);
 
       const updated = await ConcertService.getConcertById(concert.data._id.toString());

@@ -12,5 +12,12 @@ export default defineConfig({
       include: ['tests/**/*.test.ts'],
       coverage: { enabled: false },
       reporters: ['default'],
+      // Run tests sequentially to avoid MQTT port conflicts
+      pool: 'forks',
+      poolOptions: {
+        forks: {
+          singleFork: true,
+        },
+      },
     },
 });
