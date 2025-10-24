@@ -8,6 +8,10 @@ services:
       # Docker provider
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+
+      # API and Dashboard
+      # - --api.dashboard=true
+      # - --api.insecure=true
       
       # Entrypoints
       - --entrypoints.web.address=:80
@@ -22,10 +26,16 @@ services:
       - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
       - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+
+
+      # Logging
+      - --log.level=INFO
+      - --accesslog=true
     ports:
       - "80:80"     # HTTP
       - "443:443"   # HTTPS
       - "1883:1883" # MQTT
+      - "3001:8080" # Dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt-data:/letsencrypt
@@ -40,11 +50,11 @@ services:
     container_name: ccw_device_manager
     restart: unless-stopped
     expose:
-      - "80"    # HTTP/WebSocket server (internal only)
+      - "3001"    # HTTP/WebSocket server (internal only)
       - "1883"  # MQTT broker (internal only)
     environment:
       NODE_ENV: production
-      PORT: 80
+      PORT: 3001
       HOST: 0.0.0.0
       
       # Admin Authentication
@@ -63,6 +73,7 @@ services:
       
       # API Configuration
       API_USER_ID_HEADER: X-User-Id
+      CORS_ORIGIN: ${DEVICE_MANAGER_CORS_ORIGIN}
       
       # Monitoring
       MONITORING_INTERVAL_MS: 60000
@@ -73,25 +84,19 @@ services:
       - ccw-network
     labels:
       # Enable Traefik
-      - "traefik.enable=true"
       
-      # HTTP/HTTPS + WebSocket support
-      - "traefik.http.routers.device-manager.rule=Host(${DEVICE_MANAGER_HOST})"
+      # HTTP/HTTPS + WebSocket support - HTTP Router
+      - "traefik.enable=true"
+      - "traefik.http.routers.device-manager.rule=Host(`${DEVICE_MANAGER_HOST}`)"
       - "traefik.http.routers.device-manager.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.device-manager.service=device-manager-http"
-      - "traefik.http.services.device-manager-http.loadbalancer.server.port=80"
+      - "traefik.http.routers.device-manager.service=device-manager"
+      - "traefik.http.services.device-manager.loadbalancer.server.port=3001"
       
       # MQTT TCP passthrough
       - "traefik.tcp.routers.mqtt.rule=HostSNI(`*`)"
       - "traefik.tcp.routers.mqtt.entrypoints=mqtt"
       - "traefik.tcp.routers.mqtt.service=device-manager-mqtt"
       - "traefik.tcp.services.device-manager-mqtt.loadbalancer.server.port=1883"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   # MongoDB Database
   mongo:
@@ -133,7 +138,7 @@ services:
     labels:
       # Optional: Expose mongo-express via HTTPS
       - "traefik.enable=true"
-      - "traefik.http.routers.mongo-express.rule=Host(${MONGO_HOST})"
+      - "traefik.http.routers.mongo-express.rule=Host(`${MONGO_HOST}`)"
       - "traefik.http.routers.mongo-express.tls.certresolver=letsencrypt"
       - "traefik.http.routers.mongo-express.service=mongo-express"
       - "traefik.http.services.mongo-express.loadbalancer.server.port=8081"
@@ -141,6 +146,7 @@ services:
 networks:
   ccw-network:
     driver: bridge
+  traefik_internal:
 
 volumes:
   mongo-data:
