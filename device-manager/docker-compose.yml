@@ -1,4 +1,37 @@
 services:
+  # Traefik Reverse Proxy
+  traefik:
+    image: traefik:v3.0
+    container_name: ccw_traefik
+    restart: unless-stopped
+    command:
+      # Docker provider
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      
+      # Entrypoints
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.mqtt.address=:1883
+      
+      # Redirect HTTP to HTTPS
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      
+      # Let's Encrypt
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "80:80"     # HTTP
+      - "443:443"   # HTTPS
+      - "1883:1883" # MQTT
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt-data:/letsencrypt
+    networks:
+      - ccw-network
+
   # Device Manager Application
   device-manager:
     build:
@@ -6,27 +39,27 @@ services:
       dockerfile: Dockerfile
     container_name: ccw_device_manager
     restart: unless-stopped
-    ports:
-      - "3001:3001"  # HTTP/WebSocket server
-      - "1883:1883"  # MQTT broker
+    expose:
+      - "80"    # HTTP/WebSocket server (internal only)
+      - "1883"  # MQTT broker (internal only)
     environment:
       NODE_ENV: production
-      PORT: 3001
+      PORT: 80
       HOST: 0.0.0.0
       
       # Admin Authentication
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: admin
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       
       # MQTT Configuration
       MQTT_HOST: 0.0.0.0
       MQTT_PORT: 1883
-      MQTT_SERVER_PASSWORD: ${MQTT_SERVER_PASSWORD:-change-this-in-production-2024}
+      MQTT_SERVER_PASSWORD: ${MQTT_SERVER_PASSWORD}
       MQTT_WS_PATH: /mqtt
       
       # Database Configuration
-      DATABASE_URL: mongodb://root:example@mongo:27017
-      DATABASE_NAME: device_manager
+      DATABASE_URL: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017
+      DATABASE_NAME: ${DATABASE_NAME}
       
       # API Configuration
       API_USER_ID_HEADER: X-User-Id
@@ -35,10 +68,26 @@ services:
       MONITORING_INTERVAL_MS: 60000
     depends_on:
       - mongo
+      - traefik
     networks:
       - ccw-network
+    labels:
+      # Enable Traefik
+      - "traefik.enable=true"
+      
+      # HTTP/HTTPS + WebSocket support
+      - "traefik.http.routers.device-manager.rule=Host(${DEVICE_MANAGER_HOST})"
+      - "traefik.http.routers.device-manager.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.device-manager.service=device-manager-http"
+      - "traefik.http.services.device-manager-http.loadbalancer.server.port=80"
+      
+      # MQTT TCP passthrough
+      - "traefik.tcp.routers.mqtt.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.mqtt.entrypoints=mqtt"
+      - "traefik.tcp.routers.mqtt.service=device-manager-mqtt"
+      - "traefik.tcp.services.device-manager-mqtt.loadbalancer.server.port=1883"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -50,10 +99,10 @@ services:
     restart: unless-stopped
     container_name: ccw_mongo
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    ports:
-      - "27017:27017"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    expose:
+      - "27017"  # Internal only
     volumes:
       - mongo-data:/data/db
     networks:
@@ -69,17 +118,25 @@ services:
     image: mongo-express:latest
     restart: unless-stopped
     container_name: ccw_mongo_express
-    ports:
-      - "8081:8081"
+    expose:
+      - "8081"  # Internal only
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/
       ME_CONFIG_BASICAUTH: false
     depends_on:
       - mongo
+      - traefik
     networks:
       - ccw-network
+    labels:
+      # Optional: Expose mongo-express via HTTPS
+      - "traefik.enable=true"
+      - "traefik.http.routers.mongo-express.rule=Host(${MONGO_HOST})"
+      - "traefik.http.routers.mongo-express.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.mongo-express.service=mongo-express"
+      - "traefik.http.services.mongo-express.loadbalancer.server.port=8081"
 
 networks:
   ccw-network:
@@ -87,4 +144,6 @@ networks:
 
 volumes:
   mongo-data:
+    driver: local
+  letsencrypt-data:
     driver: local
