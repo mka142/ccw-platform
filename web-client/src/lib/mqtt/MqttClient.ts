@@ -49,6 +49,8 @@ export class MqttClient {
       keepalive = 60,
     } = config;
 
+    const protocol = brokerUrl.startsWith("wss://") ? "wss" : "ws";
+
     const options: IClientOptions = {
       clientId,
       username,
@@ -57,7 +59,7 @@ export class MqttClient {
       reconnectPeriod,
       connectTimeout,
       keepalive,
-      protocol: "ws", // WebSocket protocol
+      protocol, // WebSocket protocol
     };
 
     console.log(`🔌 Connecting to MQTT broker: ${brokerUrl}`);
