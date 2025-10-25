@@ -88,6 +88,7 @@ services:
       # HTTP/HTTPS + WebSocket support - HTTP Router
       - "traefik.enable=true"
       - "traefik.http.routers.device-manager.rule=Host(`${DEVICE_MANAGER_HOST}`)"
+      - "traefik.http.routers.device-manager-web.entrypoints=web,websecure"
       - "traefik.http.routers.device-manager.tls.certresolver=letsencrypt"
       - "traefik.http.routers.device-manager.service=device-manager"
       - "traefik.http.services.device-manager.loadbalancer.server.port=3001"
