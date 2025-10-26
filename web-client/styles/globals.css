@@ -5,6 +5,7 @@
 :root {
   --background: hsl(0 0% 98%);
   --orange: #fd8211;
+  --glow: #42b2c2;
   --foreground: hsl(240 10% 3.9%);
   --card: hsl(0 0% 100%);
   --card-foreground: hsl(240 10% 3.9%);
@@ -75,6 +76,7 @@
 }
 
 @theme inline {
+  --color-glow: var(--glow);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-orange: var(--orange);

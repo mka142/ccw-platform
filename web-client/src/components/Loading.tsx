@@ -1,19 +1,22 @@
 import React from "react";
-import logo from "../logo.svg";
+import Logo from "./Logo";
+import clsx from "clsx";
 
-const noteClasses = "w-12 h-12 mx-2 inline-block animate-bounce";
+const noteClasses = "w-12 h-12 mx-2 inline-block animate-bounce text-glow";
 
 /**
  * Musical note component using logo.svg
  */
 function MusicNote({ delay }: { delay: string }) {
   return (
-    <img
-      src={logo}
-      alt="Note"
-      className={noteClasses}
-      style={{ animationDelay: delay }}
-    />
+    <div
+      className={clsx(noteClasses)}
+      style={{
+        animationDelay: delay,
+      }}
+    >
+      <Logo size="100%" fill="currentColor" title="Musical Note" />
+    </div>
   );
 }
 
@@ -25,7 +28,7 @@ export default function Loading() {
         <MusicNote delay="200ms" />
         <MusicNote delay="400ms" />
       </div>
-      <p className="text-gray-600 mt-4 text-2xl">Ładowanie...</p>
+      <p className="text-glow/80 mt-4 text-2xl">Ładowanie...</p>
     </div>
   );
 }
