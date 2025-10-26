@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Logo from "./Logo";
 import clsx from "clsx";
+import { useBackgroundColorSetter } from "@/hooks/useBackgroundColor";
 
 const noteClasses = "w-12 h-12 mx-2 inline-block animate-bounce text-glow";
 
@@ -31,4 +32,29 @@ export default function Loading() {
       <p className="text-glow/80 mt-4 text-2xl">Ładowanie...</p>
     </div>
   );
+}
+
+export function LoadingWithBackgroundTransition({
+  finishBackgroundColor,
+  shouldTransitionBegin,
+  setTransitionFinished,
+}: {
+  finishBackgroundColor: string;
+  shouldTransitionBegin: boolean;
+  setTransitionFinished: (finished: boolean) => void;
+}) {
+  const interval = 1000;
+  const setBackgroundColor = useBackgroundColorSetter(interval);
+
+  useEffect(() => {
+    if (shouldTransitionBegin) {
+      setBackgroundColor(finishBackgroundColor);
+      const int = setTimeout(() => {
+        setTransitionFinished(true);
+      }, interval);
+      return () => clearTimeout(int);
+    }
+  }, [shouldTransitionBegin, setBackgroundColor]);
+
+  return <Loading />;
 }
