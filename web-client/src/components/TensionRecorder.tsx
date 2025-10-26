@@ -277,7 +277,7 @@ function DisplayFaderHolder({ springProps }: { springProps: any }) {
 
   return (
     <>
-      {/* Static SVG edge centered */}
+      {/* Static SVG edge centered (exported from figma design) */}
       <animated.div
         className="absolute left-1/2 pointer-events-none"
         style={{
