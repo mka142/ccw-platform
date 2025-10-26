@@ -9,6 +9,7 @@ import {
 } from "./lib/StateNavigationContext";
 import NoteLoader from "./pages/NoteLoader";
 import Page1 from "./pages/Page1";
+import TensionRecorderPage from "./pages/TensionRecorderPage";
 import Loading from "./components/Loading";
 
 import { useAppState } from "./hooks/useAppState";
@@ -16,6 +17,7 @@ import type { AppStateType } from "./hooks/useAppState";
 
 export function App() {
   const { state, connectionStatus } = useAppState();
+
   if (connectionStatus !== "connected") {
     return <Loading />;
   }
@@ -27,6 +29,10 @@ export function App() {
         component={NoteLoader}
       />
       <StateNavigationPage<AppStateType> pageState="PAGE1" component={Page1} />
+      <StateNavigationPage<AppStateType>
+        pageState="TENSION_RECORDER"
+        component={TensionRecorderPage}
+      />
     </WithStateNavigation>
   );
 }

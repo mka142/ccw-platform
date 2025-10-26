@@ -30,7 +30,7 @@ const scrrenHeight = window.innerHeight;
 const goldenRatio = (1 + Math.sqrt(5)) / 2;
 const tensionFactor = scrrenHeight / Math.pow(goldenRatio, 10);
 
-// Spring configuration for smooth wave movement
+// Spring configuration for smooth movement
 const scaleNumber = (
   num: number,
   inMin: number,

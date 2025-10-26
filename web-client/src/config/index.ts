@@ -56,7 +56,11 @@ export const STORAGE_KEYS = {
 // Event & Device Types (Static Constants)
 // ============================================================================
 
-export const EVENT_TYPES = ["INITIALIZATION", "PAGE1"] as const;
+export const EVENT_TYPES = [
+  "INITIALIZATION",
+  "PAGE1",
+  "TENSION_RECORDER",
+] as const;
 export const DEVICE_TYPES = ["Web", "M5Dial"] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
