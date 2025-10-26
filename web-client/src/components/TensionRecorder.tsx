@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useDrag } from "@use-gesture/react";
 import { useSpring, animated } from "react-spring";
 
-import "../orange-bg.css";
+import clsx from "clsx";
 
 export interface TensionPoint {
   t: number; // timestamp in ms
@@ -28,7 +28,10 @@ const HISTORY_BUFFER_SIZE = 100;
 
 const scrrenHeight = window.innerHeight;
 const goldenRatio = (1 + Math.sqrt(5)) / 2;
-const tensionFactor = scrrenHeight / Math.pow(goldenRatio, 10);
+const tensionFactor = scrrenHeight / Math.pow(goldenRatio, 10); // or 9
+
+const SRPING_TENSION = 170; // or 300
+const SPRING_FRICTION = 26;
 
 // Spring configuration for smooth movement
 const scaleNumber = (
@@ -49,6 +52,9 @@ const getBorderRadius = (tensionValue: number) => {
   }
 };
 
+export const TENSION_RECORDER_CONTAINER_CLASSES =
+  "relative w-full h-full bg-black touch-none select-none overflow-hidden";
+
 export const TensionRecorder: React.FC<TensionRecorderProps> = ({
   currentTimeMs,
   onSample,
@@ -62,8 +68,8 @@ export const TensionRecorder: React.FC<TensionRecorderProps> = ({
   const springProps = useSpring({
     height: scaleNumber(tension, 0, 100, 10, 100 - UP_SCRREN_MARGIN),
     config: {
-      tension: 170,
-      friction: 26,
+      tension: SRPING_TENSION,
+      friction: SPRING_FRICTION,
     },
   });
 
@@ -141,11 +147,12 @@ export const TensionRecorder: React.FC<TensionRecorderProps> = ({
         {...bind()}
         className="relative w-full h-full bg-black touch-none select-none overflow-hidden border rounded-4xl"
       >
-        <DisplayNumberedScale springProps={springProps} />
+        <DisplayNumberedScale springProps={springProps} tension={tension} />
 
         <DisplaySideGlowAccents springProps={springProps} />
         <DisplayGrayCoveredArea springProps={springProps} tension={tension} />
         <DisplayFaderHolder springProps={springProps} />
+        <HandIndicator show={!recordingStart} />
       </animated.div>
       <div role="bottomaligned content" className="absolute bottom-2 left-5">
         <RecordingIndicator recordingStart={recordingStart} />
@@ -228,26 +235,130 @@ function DisplayGrayCoveredArea({
   );
 }
 
-function DisplayNumberedScale({ springProps }: { springProps: any }) {
+function HandIndicator({ show }: { show: boolean }) {
+  const slideAnimation = useSpring({
+    to: async (next: any) => {
+      if (!show) {
+        await next({ opacity: 0, transform: "translateY(0px)" });
+        return;
+      }
+      // Show hand, then animate slide up, then fade out
+      await next({ opacity: 1, transform: "translateY(0px)" });
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await next({ opacity: 1, transform: "translateY(-120px)" });
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      await next({ opacity: 0, transform: "translateY(-120px)" });
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    },
+    from: { opacity: 0, transform: "translateY(0px)" },
+    config: { tension: 120, friction: 20 },
+    loop: show,
+  });
+
+  if (!show) return null;
+
   return (
     <animated.div
-      role="height control"
-      className="absolute inset-x-0 bottom-0 pointer-events-none"
-      style={{ height: springProps.height.to((h: number) => `${h}%`) }}
+      className="absolute bottom-32 left-1/2 pointer-events-none flex flex-row items-center gap-2"
+      style={{
+        ...slideAnimation,
+        transform: slideAnimation.transform.to(
+          (t: string) => `translate(-50%, 0) ${t}`
+        ),
+      }}
     >
+      {/* Caret up icon */}
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M7 14L12 9L17 14"
+          stroke="rgba(66,178,194,0.9)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      {/* Helper text */}
+      <div className="text-white/60 text-sm font-mono text-center whitespace-nowrap">
+        Przesuń w górę
+      </div>
+    </animated.div>
+  );
+}
+
+function DisplayNumberedScale({
+  springProps,
+  tension,
+}: {
+  springProps: any;
+  tension: number;
+}) {
+  return (
+    <>
+      <animated.div
+        role="height control"
+        className="absolute inset-x-0 bottom-0 pointer-events-none"
+        style={{ height: springProps.height.to((h: number) => `${h}%`) }}
+      ></animated.div>
       <div
-        className="absolute inset-0 pointer-events-none bg-black/20 text-white/30 flex flex-col-reverse items-center justify-between text-6xl font-mono tracking-widest select-none  "
+        className="absolute inset-0 bottom-0 pointer-events-none bg-black/20 text-white/20 flex flex-col items-center justify-between text-6xl font-mono tracking-widest select-none  "
         style={{ height: `calc(100vh - ${UP_SCRREN_MARGIN}vh)` }}
       >
         <div>&nbsp;</div>
-        <div>10</div>
-        <div>8</div>
-        <div>6</div>
-        <div>4</div>
-        <div>2</div>
+        <div
+          className={clsx(
+            "transition-colors duration-200",
+            tension >= 100 ? `text-white z-10` : ""
+          )}
+        >
+          10
+        </div>
+
+        <div
+          className={clsx(
+            "transition-colors duration-200",
+            tension >= 80 ? "text-white/95 z-10" : ""
+          )}
+        >
+          8
+        </div>
+
+        <div
+          className={clsx(
+            "transition-colors duration-200",
+            tension >= 60 ? "text-white/90 z-10" : ""
+          )}
+        >
+          6
+        </div>
+
+        <div
+          className={clsx(
+            "transition-colors duration-200",
+            tension >= 40 ? "text-white/80 z-10" : ""
+          )}
+        >
+          4
+        </div>
+
+        <div
+          className={clsx(
+            "transition-colors duration-200",
+            tension >= 20 ? "text-white/70 z-10" : ""
+          )}
+        >
+          2
+        </div>
+
+        {/* <div className={clsx("transition-colors duration-500", tension >= 10 ? 'text-white/40 z-10' : "")}>0</div> */}
         <div>&nbsp;</div>
       </div>
-    </animated.div>
+    </>
   );
 }
 
@@ -279,7 +390,7 @@ function DisplayFaderHolder({ springProps }: { springProps: any }) {
     <>
       {/* Static SVG edge centered (exported from figma design) */}
       <animated.div
-        className="absolute left-1/2 pointer-events-none"
+        className="absolute left-1/2 pointer-events-none z-20"
         style={{
           bottom: springProps.height.to((h: number) => `${h}%`),
           transform: "translate(-50%, 50%)",
