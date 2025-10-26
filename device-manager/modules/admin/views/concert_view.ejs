@@ -97,6 +97,12 @@
                         <i class="play icon"></i> Ustaw jako aktywny
                       </button>
                     </form>
+                     <form method="POST" action="<%= url.admin %>/events/activate/<%= event._id %>" style="display: inline">
+                      <input type="hidden" name="event_id" value="<%= event._id %>" />
+                      <button type="submit" class="ui small button <%= concert.activeEventId?.equals(event._id) ? '' : 'disabled' %>" title="Powtórz wysłanie">
+                        <i class="play icon"></i> Powtórz wysłanie
+                      </button>
+                    </form>
                   </div>
                 </div>
               </div>
