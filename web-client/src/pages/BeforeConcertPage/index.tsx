@@ -7,7 +7,7 @@ import "./main.css";
 import type { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
 import ConcertProgram from "@/components/ConcertProgram";
 import AppGuide from "@/components/AppGuide";
-import ConcertForm from "@/components/ConcertForm";
+// import ConcertForm from "@/components/ConcertForm";
 import SponsorsCarousel from "@/components/SponsorsCarousel";
 import Button from "@/components/Button";
 import FadeInWrapper from "@/components/FadeInWrapper";
@@ -131,7 +131,8 @@ function ConcertFormPage({ onFormSubmitted }: { onFormSubmitted: () => void }) {
   return (
     <div className="page-screen orange-bg w-full h-full ">
       <FadeInWrapper className="w-full h-full flex items-center justify-center">
-        <ConcertForm onFormSubmitted={onFormSubmitted} />
+        <></>
+        {/* <ConcertForm onFormSubmitted={onFormSubmitted} /> */}
       </FadeInWrapper>
     </div>
   );
