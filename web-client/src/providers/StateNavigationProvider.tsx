@@ -1,6 +1,11 @@
-import { EventType } from "@/config";
-import { AppState, isAppState, Payload } from "@/hooks/useAppState";
+import { EVENT_TYPES, EventType } from "@/config";
 import React, { useState, useEffect, useMemo } from "react";
+
+export type Payload = Record<string, any>;
+export interface AppState {
+  type: EventType;
+  payload: Payload;
+}
 
 export const EMPTY_STATE_ID = "EMPTY" as const;
 
@@ -15,6 +20,17 @@ interface StateNavigationContextType<T extends string = string> {
   transitionFinished: boolean;
   setShouldTransitionBegin: (value: boolean) => void;
   setTransitionFinished: (value: boolean) => void;
+}
+
+export function isAppState(state: any): state is AppState {
+  return (
+    typeof state === "object" &&
+    state !== null &&
+    typeof state.type === "string" &&
+    typeof state.payload === "object" &&
+    state.payload !== null &&
+    EVENT_TYPES.includes(state.type as EventType)
+  );
 }
 
 export const StateNavigationContext =

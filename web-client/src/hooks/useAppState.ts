@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
 
-import { useDeviceManager } from "../lib/DeviceManagerClient";
-import { useAutoConnect } from "../hooks/useAutoConnect";
+import { useDeviceManager } from "@/lib/DeviceManagerClient";
+import { useAutoConnect } from "@/hooks/useAutoConnect";
+import { AppState } from "@/providers/StateNavigationProvider";
 
-import { EventSchema } from "../lib/mqtt";
-import config, { EVENT_TYPES, EventType } from "../config";
-
-export type Payload = Record<string, any>;
-export interface AppState {
-  type: EventType;
-  payload: Payload;
-}
+import { EventSchema } from "@/lib/mqtt";
+import config, { EVENT_TYPES, EventType } from "@/config";
 
 export function isAppState(state: any): state is AppState {
   return (

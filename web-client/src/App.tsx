@@ -11,7 +11,7 @@ import NoteLoader from "./pages/NoteLoader";
 import TensionRecorderPage from "./pages/TensionRecorderPage";
 import Loading from "./components/Loading";
 
-import { AppState, useAppState } from "./hooks/useAppState";
+import { useAppState } from "./hooks/useAppState";
 import { EventType } from "./config";
 import PieceAnnouncementPage from "./pages/PieceAnnouncementPage";
 
