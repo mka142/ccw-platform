@@ -54,7 +54,7 @@ export const useAppState = () => {
       setState({
         type: latestEvent.event.eventType,
         payload: latestEvent.event.payload,
-        //changeId: latestEvent.changeId,
+        stateHash: latestEvent.changeId,
       });
     } else if (connectionStatus === "connected") {
       //No latest event, fetch from server
@@ -63,6 +63,7 @@ export const useAppState = () => {
           setState({
             type: event.eventType,
             payload: event.payload,
+            stateHash: "first-load",
           });
         })
         .catch((err) => {
