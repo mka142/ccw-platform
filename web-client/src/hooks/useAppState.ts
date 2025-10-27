@@ -6,6 +6,7 @@ import { AppState } from "@/providers/StateNavigationProvider";
 
 import { EventSchema } from "@/lib/mqtt";
 import config, { EVENT_TYPES, EventType } from "@/config";
+import { randomId } from "@/lib/utils";
 
 export function isAppState(state: any): state is AppState {
   return (
@@ -63,7 +64,7 @@ export const useAppState = () => {
           setState({
             type: event.eventType,
             payload: event.payload,
-            stateHash: "first-load",
+            stateHash: randomId(),
           });
         })
         .catch((err) => {
