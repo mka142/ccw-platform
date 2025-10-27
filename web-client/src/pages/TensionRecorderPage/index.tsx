@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 import {
   TENSION_RECORDER_CONTAINER_CLASSES,
