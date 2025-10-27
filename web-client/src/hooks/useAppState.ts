@@ -54,7 +54,7 @@ export const useAppState = () => {
       setState({
         type: latestEvent.event.eventType,
         payload: latestEvent.event.payload,
-        changeId: latestEvent.changeId,
+        //changeId: latestEvent.changeId,
       });
     } else if (connectionStatus === "connected") {
       //No latest event, fetch from server

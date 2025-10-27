@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import TextArc from "../../components/TextArc/TextArc";
+import TextArc from "@/components/TextArc/TextArc";
 
 import logo from "@/public/logo/logo.svg";
 import "../../orange-bg.css";
@@ -7,6 +7,8 @@ import "./main.css";
 import type { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
 import ConcertProgram from "@/components/ConcertProgram";
 import SponsorsCarousel from "@/components/SponsorsCarousel";
+import { useBackgroundColor } from "@/hooks/useBackgroundColor";
+import config from "@/config";
 
 const TEXTS = [
   "Co czują Wrocławianie?",
@@ -22,7 +24,7 @@ const TEXTS = [
   "Czy są twórczy?",
 ];
 
-export default function NoteLoader({
+export default function BeforeConcertPage({
   shouldTransitionBegin,
   setTransitionFinished,
   payload,
@@ -36,13 +38,14 @@ export default function NoteLoader({
   const [arcText, setArcText] = useState(TEXTS[TEXTS.length - 1]);
   const [internalTransitionBegin, setInternalTransitionBegin] = useState(false);
 
+  useBackgroundColor(config.constants.pagesBackgroundColor.BEFORE_CONCERT, 0);
+
   // Handler for animation end
   const rotateNoteAfterCardAppears = () => {
     setTimeout(() => {
       setShowRotate(true);
     }, 500);
   };
-  console.log(payload);
 
   useEffect(() => {
     // Handle arc text rotation
@@ -68,20 +71,13 @@ export default function NoteLoader({
       setTimeout(() => {
         setTransitionFinished();
         if (internalTransitionBegin) setPageType("ConcertProgram");
-      }, 1000);
+      }, 5000);
     }
   }, [shouldTransitionBegin, internalTransitionBegin]);
 
   return pageType === "NoteLoader" ? (
     <div className="page-screen center orange-bg">
-      <button
-        className="absolute top-[56px] hover:cursor-pointer left-1/2 -translate-x-1/2 px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-lg rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-white/20 hover:border-white/40 active:scale-95"
-        onClick={() => {
-          setInternalTransitionBegin(true);
-        }}
-      >
-        Program koncertu
-      </button>
+      <ProgramButton onClick={() => setInternalTransitionBegin(true)} />
       <TextArc
         text={arcText}
         spread={0}
@@ -126,5 +122,16 @@ export default function NoteLoader({
     </div>
   ) : (
     <ConcertProgram payload={payload} />
+  );
+}
+
+function ProgramButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      className="absolute top-[56px] hover:cursor-pointer left-1/2 -translate-x-1/2 px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold text-lg rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-white/20 hover:border-white/40 active:scale-95"
+      onClick={onClick}
+    >
+      Program koncertu
+    </button>
   );
 }

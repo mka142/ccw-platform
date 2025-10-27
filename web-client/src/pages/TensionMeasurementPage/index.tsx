@@ -1,20 +1,27 @@
-import React, { useEffect } from "react";
+import React from "react";
 
 import {
   TENSION_RECORDER_CONTAINER_CLASSES,
   TensionRecorder,
-} from "../../components/TensionRecorder";
+} from "@/components/TensionRecorder";
 import FadeOutWrapper from "@/components/FadeOutWrapper";
-import { StateNavigationComponentProps } from "@/lib/StateNavigationContext";
+import { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
 import FadeInWrapper from "@/components/FadeInWrapper";
 import { useUserId } from "@/providers/UserProvider";
 import config from "@/config";
+import { useBackgroundColor } from "@/hooks/useBackgroundColor";
 
-export default function TensionRecorderPage({
+export default function TensionMeasurementPage({
   shouldTransitionBegin,
   setTransitionFinished,
+  payload,
 }: StateNavigationComponentProps) {
   const userId = useUserId();
+
+  useBackgroundColor(
+    config.constants.pagesBackgroundColor.TENSION_MEASUREMENT,
+    0
+  );
 
   const sendData = async (data: any) => {
     try {
@@ -30,7 +37,7 @@ export default function TensionRecorderPage({
             timestamp: point.t,
             value: point.v,
           })),
-          pieceId: "tension_recorder_piece_001",
+          pieceId: payload.pieceId ?? "unknown",
         }),
       });
     } catch (error) {

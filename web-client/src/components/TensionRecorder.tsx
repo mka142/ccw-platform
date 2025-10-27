@@ -3,8 +3,6 @@ import { useDrag } from "@use-gesture/react";
 import { useSpring, animated } from "react-spring";
 
 import clsx from "clsx";
-import { useBackgroundColor } from "@/hooks/useBackgroundColor";
-import config from "@/config";
 
 export interface TensionPoint {
   t: number; // timestamp in ms
@@ -74,8 +72,6 @@ export const TensionRecorder: React.FC<TensionRecorderProps> = ({
       friction: SPRING_FRICTION,
     },
   });
-
-  useBackgroundColor(config.constants.pagesBackgroundColor.TENSION_RECORDER, 0);
 
   // Sampling interval - record every SAMPLE_INTERVAL_MS milliseconds
   useEffect(() => {

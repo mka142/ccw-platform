@@ -73,10 +73,15 @@ export type EventType = (typeof EVENT_TYPES)[number];
 export type DeviceType = (typeof DEVICE_TYPES)[number];
 
 export const PAGES_BACKGROUND_COLOR: Record<EventType, string> = {
-  INITIALIZATION: "var(--glow)",
-  PAGE1: "#000000",
-  TENSION_RECORDER: "#000000",
-  EMPTY: "#000000", // Placeholder for empty state
+  BEFORE_CONCERT: "var(--glow)",
+  APP_GUIDE: "var(--glow)",
+  TENSION_MEASUREMENT: "#000000",
+  SLIDER_DEMO: "#000000",
+  CONCERT_START: "#000000",
+  PIECE_ANNOUNCEMENT: "#000000",
+  OVATION: "#000000",
+  FEEDBACK_FORM: "#000000",
+  END_OF_CONCERT: "#000000",
 };
 
 // ============================================================================
