@@ -42,14 +42,17 @@
 
             <div class="ui divided items" style="margin-top: 1em">
               <% events.forEach(function(event, idx) { %>
-              <div class="item">
+              <div class="item <% if (concert.activeEventId?.equals(event._id)) { %> selected <% } %>">
                 <div class="content" style="width: 100%">
-                  <div class="<% if (concert.activeEventId !== event._id) { %> weight-normal <% } %> header">
+                  <div class="<% if (!concert.activeEventId?.equals(event._id)) { %> weight-normal <% } %> header">
                     <%= event.eventType %> (<%= event.label %>) <% if (concert.activeEventId?.equals(event._id)) { %>
                     <span class="ui green horizontal label" style="margin-left: 8px">AKTYWNY</span>
                     <% } %>
+                    <button class="ui mini basic button" style="margin-left: 8px" onclick="togglePayload('<%= event._id %>')">
+                      <i class="eye icon"></i> Pokaż payload
+                    </button>
                   </div>
-                  <div class="description" style="overflow: auto">
+                  <div id="payload-<%= event._id %>" class="description" style="overflow: auto; display: none">
                     <pre style="margin: 0.5em 0 0.5em 0.5em; background: #f8f8f8; padding: 0.5em; border-radius: 4px; display: inline-block; font-size: small">
 <%= JSON.stringify(event.payload, undefined, 2) %></pre
                     >
@@ -124,6 +127,21 @@
     </div>
 
     <script>
+      // Toggle payload visibility
+      function togglePayload(eventId) {
+        const payloadDiv = document.getElementById('payload-' + eventId);
+        const button = event.target.closest('button');
+        const icon = button.querySelector('i');
+        
+        if (payloadDiv.style.display === 'none') {
+          payloadDiv.style.display = 'block';
+          button.innerHTML = '<i class="eye slash icon"></i> Ukryj payload';
+        } else {
+          payloadDiv.style.display = 'none';
+          button.innerHTML = '<i class="eye icon"></i> Pokaż payload';
+        }
+      }
+
       // Devices AJAX logic (unchanged)
       const concertId = "<%= concert._id %>";
       function renderDevicesTable(devices) {
