@@ -3,6 +3,8 @@ import { useDrag } from "@use-gesture/react";
 import { useSpring, animated } from "react-spring";
 
 import clsx from "clsx";
+import { useBackgroundColor } from "@/hooks/useBackgroundColor";
+import config from "@/config";
 
 export interface TensionPoint {
   t: number; // timestamp in ms
@@ -73,40 +75,45 @@ export const TensionRecorder: React.FC<TensionRecorderProps> = ({
     },
   });
 
-  // Sampling interval - record every 50ms
+  useBackgroundColor(config.constants.pagesBackgroundColor.TENSION_RECORDER, 0);
+
+  // Sampling interval - record every SAMPLE_INTERVAL_MS milliseconds
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      const currentValue = springProps.height.get();
-      const point: TensionPoint = {
-        t: currentTimeMs(),
-        v:
-          currentValue === null
-            ? 0
-            : parseFloat(currentValue.toFixed(VALUE_DECIMALS)),
-      };
+    // if (!recordingStart) {
+    //   return;
+    // }
+    // const intervalId = setInterval(() => {
 
-      const lastValue =
-        tensionHistory.current.length > 0
-          ? tensionHistory.current[tensionHistory.current.length - 1].v
-          : null;
+    // }, SAMPLE_INTERVAL_MS);
+    const currentValue = parseInt(tension.toFixed(VALUE_DECIMALS));
+    const point: TensionPoint = {
+      t: currentTimeMs(),
+      v: currentValue,
+    };
 
-      const isSameValue = lastValue === point.v;
+    const lastValue =
+      tensionHistory.current.length > 0
+        ? tensionHistory.current[tensionHistory.current.length - 1].v
+        : null;
 
-      if ((!SEND_IF_VALUE_NOT_CHANGED && isSameValue) || point.v === null) {
-        return;
-      }
-      tensionHistory.current.push(point);
-      if (onSample) {
-        onSample(point);
-      }
-    }, SAMPLE_INTERVAL_MS);
+    const isSameValue = lastValue === point.v;
 
-    return () => clearInterval(intervalId);
-  }, [currentTimeMs, onSample, springProps.height]);
+    if ((!SEND_IF_VALUE_NOT_CHANGED && isSameValue) || point.v === null) {
+      return;
+    }
+
+    tensionHistory.current.push(point);
+    if (onSample) {
+      onSample(point);
+    }
+
+    //return () => clearInterval(intervalId);
+  }, [tension]);
 
   useEffect(() => {
     if (tensionHistory.current.length >= HISTORY_BUFFER_SIZE) {
       if (onComplete) {
+        console.log("Sending complete normally", tensionHistory.current.length);
         onComplete([...tensionHistory.current]);
       }
       tensionHistory.current = [];
@@ -117,8 +124,14 @@ export const TensionRecorder: React.FC<TensionRecorderProps> = ({
   useEffect(() => {
     return () => {
       if (onComplete && tensionHistory.current.length > 0) {
+        console.log(
+          "Sending complete on unmount",
+          tensionHistory.current.length
+        );
         onComplete([...tensionHistory.current]);
+        // Clear history
       }
+      tensionHistory.current = [];
     };
   }, [onComplete]);
 
