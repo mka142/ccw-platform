@@ -8,14 +8,19 @@ import {
   WithStateNavigation,
 } from "./providers/StateNavigationProvider";
 import BeforeConcert from "./pages/BeforeConcertPage";
+import AppGuidePage from "./pages/AppGuidePage";
+import SliderDemoPage from "./pages/SliderDemoPage";
+import ConcertStartPage from "./pages/ConcertStartPage";
 import TensionMeasurementPage from "./pages/TensionMeasurementPage";
+import PieceAnnouncementPage from "./pages/PieceAnnouncementPage";
+import OvationPage from "./pages/OvationPage";
+import FeedbackFormPage from "./pages/FeedbackFormPage";
+import EndOfConcertPage from "./pages/EndOfConcertPage";
 import { LoadingWithBackgroundTransition } from "./components/Loading";
 
 import { useAppState } from "./hooks/useAppState";
 import { EventType } from "./config";
-import PieceAnnouncementPage from "./pages/PieceAnnouncementPage";
 import config from "./config";
-import SliderDemoPage from "./pages/SliderDemoPage";
 
 export function App() {
   const { state, connectionStatus, userId } = useAppState();
@@ -56,8 +61,16 @@ export function App() {
         component={BeforeConcert}
       />
       <StateNavigationPage<EventType>
+        pageState="APP_GUIDE"
+        component={AppGuidePage}
+      />
+      <StateNavigationPage<EventType>
         pageState="SLIDER_DEMO"
         component={SliderDemoPage}
+      />
+      <StateNavigationPage<EventType>
+        pageState="CONCERT_START"
+        component={ConcertStartPage}
       />
       <StateNavigationPage<EventType>
         pageState="PIECE_ANNOUNCEMENT"
@@ -66,6 +79,18 @@ export function App() {
       <StateNavigationPage<EventType>
         pageState="TENSION_MEASUREMENT"
         component={TensionMeasurementPage}
+      />
+      <StateNavigationPage<EventType>
+        pageState="OVATION"
+        component={OvationPage}
+      />
+      <StateNavigationPage<EventType>
+        pageState="FEEDBACK_FORM"
+        component={FeedbackFormPage}
+      />
+      <StateNavigationPage<EventType>
+        pageState="END_OF_CONCERT"
+        component={EndOfConcertPage}
       />
     </WithStateNavigation>
   );
