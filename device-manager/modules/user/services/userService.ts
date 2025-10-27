@@ -33,6 +33,10 @@ export class UserService {
     });
   }
 
+  static async findById(userId: string | ObjectId): Promise<User | null> {
+    return UserOperations.findById(userId);
+  }
+
   static async getActiveUsers(concertId: string | ObjectId): Promise<User[]> {
     const users = await UserOperations.findByConcert(concertId);
     return users.filter((user) => user.isActive);
