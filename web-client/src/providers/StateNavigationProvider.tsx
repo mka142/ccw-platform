@@ -2,9 +2,12 @@ import { EVENT_TYPES, EventType } from "@/config";
 import React, { useState, useEffect, useMemo } from "react";
 
 export type Payload = Record<string, any>;
+export type StateHash = string | null;
+
 export interface AppState {
   type: EventType;
   payload: Payload;
+  stateHash?: StateHash;
 }
 
 export const EMPTY_STATE_ID = "EMPTY" as const;
@@ -16,6 +19,7 @@ type ForbidEmpty<T extends string> = T extends TEmptyStateId ? never : T;
 interface StateNavigationContextType<T extends string = string> {
   activeState: T | TEmptyStateId;
   payload: Payload;
+  stateHash: StateHash;
   shouldTransitionBegin: boolean;
   transitionFinished: boolean;
   setShouldTransitionBegin: (value: boolean) => void;
@@ -37,6 +41,7 @@ export const StateNavigationContext =
   React.createContext<StateNavigationContextType>({
     activeState: EMPTY_STATE_ID,
     payload: {},
+    stateHash: null,
     shouldTransitionBegin: false,
     transitionFinished: false,
     setShouldTransitionBegin: (value: boolean) => {},
@@ -63,12 +68,15 @@ export function WithStateNavigation({
   );
   const [nextState, setNextState] = useState<AppState | null>(null);
   const [payload, setPayload] = useState<Payload>({});
+  const [stateHash, setStateHash] = useState<string | null>(null);
   const [shouldTransitionBegin, setShouldTransitionBegin] = useState(false);
   const [transitionFinished, setTransitionFinished] = useState(false);
 
   useEffect(() => {
     if (!isAppState(state)) return;
-    if (state.type !== activeState) {
+    // Since stateHash is unique for each state,
+    // we can use just stateHash to determine if the state has changed
+    if (state.stateHash !== stateHash) {
       setNextState(state);
       setShouldTransitionBegin(true);
     }
@@ -78,6 +86,7 @@ export function WithStateNavigation({
     if ((transitionFinished || activeState === EMPTY_STATE_ID) && nextState) {
       setActiveState(nextState.type);
       setPayload(nextState.payload);
+      setStateHash(nextState.stateHash || null);
       setShouldTransitionBegin(false);
       setTransitionFinished(false);
       setNextState(null);
@@ -89,6 +98,7 @@ export function WithStateNavigation({
       value={{
         activeState,
         payload,
+        stateHash,
         shouldTransitionBegin,
         transitionFinished,
         setShouldTransitionBegin,
@@ -107,8 +117,13 @@ export function StateNavigationPage<T extends string>({
   pageState: ForbidEmpty<T>;
   component: React.ComponentType<StateNavigationComponentProps> | null;
 }) {
-  const { activeState, payload, shouldTransitionBegin, setTransitionFinished } =
-    React.useContext(StateNavigationContext);
+  const {
+    activeState,
+    payload,
+    shouldTransitionBegin,
+    setTransitionFinished,
+    stateHash,
+  } = React.useContext(StateNavigationContext);
 
   const isActive = useMemo(() => {
     return activeState === pageState;
@@ -117,10 +132,12 @@ export function StateNavigationPage<T extends string>({
   if (isActive) {
     // mount the props to the component
     const Component = component;
+    const componentKey = `${pageState}-${String(stateHash ?? "NULL")}`;
     return (
       <>
         {Component ? (
           <Component
+            key={componentKey}
             shouldTransitionBegin={shouldTransitionBegin}
             setTransitionFinished={() => {
               setTransitionFinished(true);

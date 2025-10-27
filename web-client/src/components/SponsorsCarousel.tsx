@@ -7,6 +7,8 @@ interface Sponsor {
   width?: number;
 }
 
+
+
 // import images directly
 import amklLogo from "@/public/logo/amkl.png";
 import kannmLogo from "@/public/logo/kannm.png";
@@ -14,6 +16,7 @@ import knakitmLogo from "@/public/logo/knakitm.png";
 import sknmLogo from "@/public/logo/sknm.png";
 import wcaLogo from "@/public/logo/wca-v2-cropped.png";
 import wroclawLogo from "@/public/logo/wroclaw.png";
+
 
 // Add your sponsor logo filenames from the public folder
 // Example: if you have /public/sponsors/logo1.png, use "sponsors/logo1.png"

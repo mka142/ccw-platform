@@ -3,8 +3,8 @@
   "short_name": "CCW",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ff6600",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "description": "A Bun React PWA app.",
   "icons": [
     {

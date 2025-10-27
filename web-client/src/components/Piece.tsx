@@ -19,7 +19,9 @@ export function Piece({ composerName, pieceTitle, performers }: PieceProps) {
           <span className="font-serif ">Wyk. &nbsp;&nbsp;</span>
           <span className="text-sm flex flex-col">
             {performers.map((performer, index) => (
-              <span key={index}>{performer.name}</span>
+              <span key={index}>
+                {performer.name} - {performer.instrument}
+              </span>
             ))}
           </span>
         </span>

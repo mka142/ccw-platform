@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
 import { Piece } from "@/components/Piece";
 import { PieceData } from "@/types";
-import { AnimatedPage } from "@/components/AnimatedPage";
+import AnimatedPage from "@/components/AnimatedPage";
 
 export default function ConcertProgram({
   payload,

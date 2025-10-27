@@ -50,4 +50,6 @@ export function useAutoConnect(autoConnectConfig: AutoConnectConfig) {
       });
     }
   }, [userId, brokerUrl, connect, JSON.stringify(topics)]);
+
+  return userId;
 }

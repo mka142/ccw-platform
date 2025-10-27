@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
+import "./main.css";
+
 interface AnimatedPageProps {
-  title: string;
+  title: string | React.ReactNode;
   subtitle?: string;
   children: React.ReactNode;
   onTransitionFinished?: () => void;
 }
 
-export function AnimatedPage({
+export default function AnimatedPage({
   title,
   subtitle,
   children,

@@ -7,14 +7,15 @@ import {
   StateNavigationPage,
   WithStateNavigation,
 } from "./providers/StateNavigationProvider";
-import NoteLoader from "./pages/NoteLoader";
-import TensionRecorderPage from "./pages/TensionRecorderPage";
+import BeforeConcert from "./pages/BeforeConcertPage";
+import TensionMeasurementPage from "./pages/TensionMeasurementPage";
 import { LoadingWithBackgroundTransition } from "./components/Loading";
 
 import { useAppState } from "./hooks/useAppState";
 import { EventType } from "./config";
 import PieceAnnouncementPage from "./pages/PieceAnnouncementPage";
 import config from "./config";
+import SliderDemoPage from "./pages/SliderDemoPage";
 
 export function App() {
   const { state, connectionStatus, userId } = useAppState();
@@ -23,21 +24,22 @@ export function App() {
     transitionFinished: false,
   });
 
+  const isLoading =
+    connectionStatus !== "connected" ||
+    !userId ||
+    !loadingState.transitionFinished;
+
   useEffect(() => {
     if (connectionStatus === "connected" && userId) {
       setLoadingState((prev) => ({ ...prev, shouldBeginTransition: true }));
     }
   }, [connectionStatus, userId]);
 
-  if (
-    connectionStatus !== "connected" ||
-    !userId ||
-    !loadingState.transitionFinished
-  ) {
+  if (isLoading) {
     return (
       <LoadingWithBackgroundTransition
         finishBackgroundColor={
-          config.constants.pagesBackgroundColor[state.type]
+          state ? config.constants.pagesBackgroundColor[state.type] : "#000000"
         }
         shouldTransitionBegin={loadingState.shouldBeginTransition}
         setTransitionFinished={(finished) =>
@@ -48,21 +50,22 @@ export function App() {
   }
 
   return (
-    <WithStateNavigation
-      state={state}
-      stateHash={state.changeId}
-    >
+    <WithStateNavigation state={state}>
       <StateNavigationPage<EventType>
         pageState="BEFORE_CONCERT"
-        component={NoteLoader}
+        component={BeforeConcert}
       />
       <StateNavigationPage<EventType>
-        pageState="TENSION_MEASUREMENT"
-        component={TensionRecorderPage}
+        pageState="SLIDER_DEMO"
+        component={SliderDemoPage}
       />
       <StateNavigationPage<EventType>
         pageState="PIECE_ANNOUNCEMENT"
         component={PieceAnnouncementPage}
+      />
+      <StateNavigationPage<EventType>
+        pageState="TENSION_MEASUREMENT"
+        component={TensionMeasurementPage}
       />
     </WithStateNavigation>
   );
