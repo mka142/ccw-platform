@@ -72,6 +72,13 @@ export const DEVICE_TYPES = ["Web", "M5Dial"] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 export type DeviceType = (typeof DEVICE_TYPES)[number];
 
+export const PAGES_BACKGROUND_COLOR: Record<EventType, string> = {
+  INITIALIZATION: "var(--glow)",
+  PAGE1: "#000000",
+  TENSION_RECORDER: "#000000",
+  EMPTY: "#000000", // Placeholder for empty state
+};
+
 // ============================================================================
 // Main Configuration Object
 // ============================================================================
@@ -102,6 +109,9 @@ export const config = {
     /** Concert API endpoints */
     concert: {
       currentEvent: `${API_BASE_URL}/api/concert/currentEvent`,
+    },
+    form: {
+      submitBatch: `${API_BASE_URL}/api/forms/batch`,
     },
   },
 
@@ -156,6 +166,7 @@ export const config = {
   constants: {
     eventTypes: EVENT_TYPES,
     deviceTypes: DEVICE_TYPES,
+    pagesBackgroundColor: PAGES_BACKGROUND_COLOR,
   },
 } as const;
 

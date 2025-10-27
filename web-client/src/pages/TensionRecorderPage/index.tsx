@@ -1,42 +1,56 @@
 import React, { useEffect } from "react";
 
-import { TensionRecorder } from "../../components/TensionRecorder";
-import { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
+import {
+  TENSION_RECORDER_CONTAINER_CLASSES,
+  TensionRecorder,
+} from "../../components/TensionRecorder";
+import FadeOutWrapper from "@/components/FadeOutWrapper";
+import { StateNavigationComponentProps } from "@/lib/StateNavigationContext";
+import FadeInWrapper from "@/components/FadeInWrapper";
+import { useUserId } from "@/providers/UserProvider";
+import config from "@/config";
 
 export default function TensionRecorderPage({
   shouldTransitionBegin,
   setTransitionFinished,
-  payload,
 }: StateNavigationComponentProps) {
-  useEffect(() => {
-    if (shouldTransitionBegin) {
-      setTimeout(() => {
-        setTransitionFinished();
-      }, 1000);
-    }
-  }, [shouldTransitionBegin]);
+  const userId = useUserId();
+
   const sendData = async (data: any) => {
-    console.log("Sending data", data);
     try {
-      const response = await fetch("/api/send-data", {
+      await fetch(config.api.form.submitBatch, {
         // <- Use correct endpoint
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          clientId: userId,
+          data: data.map((point: any) => ({
+            timestamp: point.t,
+            value: point.v,
+          })),
+          pieceId: "tension_recorder_piece_001",
+        }),
       });
     } catch (error) {
       console.error("Error sending data:", error);
     }
-    //return response.json();
   };
   return (
-    <TensionRecorder
-      currentTimeMs={() => Date.now()}
-      onComplete={(points) => {
-        sendData(points);
-      }}
-    />
+    <FadeOutWrapper
+      className={TENSION_RECORDER_CONTAINER_CLASSES}
+      shouldTransitionBegin={shouldTransitionBegin}
+      setTransitionFinished={setTransitionFinished}
+    >
+      <FadeInWrapper className={TENSION_RECORDER_CONTAINER_CLASSES}>
+        <TensionRecorder
+          currentTimeMs={() => Date.now()}
+          onComplete={(points) => {
+            sendData(points);
+          }}
+        />
+      </FadeInWrapper>
+    </FadeOutWrapper>
   );
 }

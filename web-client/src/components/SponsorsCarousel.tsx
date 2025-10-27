@@ -47,9 +47,9 @@ export default function SponsorsCarousel({
   const duplicatedSponsors = [...sponsorData, ...sponsorData, ...sponsorData];
 
   return (
-    <div className="w-full overflow-hidden bg-white/5 py-2">
+    <div className="w-full overflow-hidden bg-white/5 py- relative">
       <motion.div
-        className="flex gap-12 items-center"
+        className="flex gap-12 items-center relative "
         animate={{
           x: [0, -totalWidth],
         }}
