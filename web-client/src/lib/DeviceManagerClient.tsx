@@ -16,6 +16,7 @@ import type {
   DeviceManagerConfig,
   EventSchema,
 } from "./mqtt/types";
+import { randomId } from "./utils";
 
 interface DeviceManagerContextValue<T = any> {
   /** Current connection status */
@@ -124,8 +125,7 @@ export function DeviceManagerProvider<T = any>({
         }
 
         console.log("📨 Event received:", event);
-        const eventRandomID = Math.random().toString(36).substring(2, 8);
-
+        const eventRandomID = randomId();
         // Update latest event
         setLatestEvent({ event, changeId: eventRandomID });
 
