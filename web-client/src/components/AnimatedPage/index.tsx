@@ -8,6 +8,8 @@ interface AnimatedPageProps {
   subtitle?: string;
   children: React.ReactNode;
   onTransitionFinished?: () => void;
+  backgroundClassName?: string;
+  darkFont?: boolean;
 }
 
 export default function AnimatedPage({
@@ -15,10 +17,15 @@ export default function AnimatedPage({
   subtitle,
   children,
   onTransitionFinished,
+  backgroundClassName = "page-dark",
+  darkFont = false,
 }: AnimatedPageProps) {
   const [visible, setVisible] = useState(false);
   const [grow, setGrow] = useState(1);
   const [showContent, setShowContent] = useState(false);
+
+  const titleColor = darkFont ? "text-black" : "text-white";
+  const subtitleColor = darkFont ? "text-gray-700" : "text-gray-400";
 
   useEffect(() => {
     // Fade in
@@ -39,7 +46,9 @@ export default function AnimatedPage({
   }, [onTransitionFinished]);
 
   return (
-    <div className="page-screen page-dark p-8 flex flex-col min-h-screen w-full relative overflow-hidden">
+    <div
+      className={`page-screen ${backgroundClassName} p-8 flex flex-col min-h-screen w-full relative overflow-hidden`}
+    >
       <motion.div
         style={{
           flexGrow: grow,
@@ -55,9 +64,9 @@ export default function AnimatedPage({
           animate={{ opacity: visible ? 1 : 0 }}
           transition={{ duration: 0.7, ease: "easeIn" }}
         >
-          <h1 className="text-4xl font-bold">{title}</h1>
+          <h1 className={`text-4xl font-bold ${titleColor}`}>{title}</h1>
           {subtitle && (
-            <span className="break-all text-gray-400 font-serif text-lg">
+            <span className={`break-all  font-serif text-lg ${subtitleColor}`}>
               {subtitle}
             </span>
           )}

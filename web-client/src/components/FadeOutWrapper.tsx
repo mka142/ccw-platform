@@ -8,13 +8,20 @@ interface FadeOutWrapperProps {
   className?: string;
   shouldTransitionBegin: boolean;
   setTransitionFinished: (finished: boolean) => void;
+  speed?: number;
 }
+
+const getSpeed = (x: number) => ({
+  tension: 60 * x,
+  friction: 26 / x,
+});
 
 export default function FadeOutWrapper({
   children,
   className,
   shouldTransitionBegin,
   setTransitionFinished,
+  speed = 1,
 }: FadeOutWrapperProps) {
   const [isVisible, setIsVisible] = useState(true);
 
@@ -22,8 +29,7 @@ export default function FadeOutWrapper({
     opacity: isVisible ? 1 : 0,
     transform: isVisible ? "scale(1)" : "scale(0.95)",
     config: {
-      tension: 60,
-      friction: 26,
+      ...getSpeed(speed),
     },
     onRest: () => {
       if (!isVisible) {
