@@ -1,7 +1,6 @@
 import { useEffect } from "react";
-import { useUserId } from "../providers/UserProvider";
-import { useDeviceManager } from "../lib/DeviceManagerClient";
-import { config } from "../config";
+import { useUserId } from "@/providers/UserProvider";
+import { useDeviceManager } from "@/lib/DeviceManagerClient";
 
 interface AutoConnectConfig {
   brokerUrl?: string;

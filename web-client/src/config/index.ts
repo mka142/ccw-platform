@@ -57,9 +57,15 @@ export const STORAGE_KEYS = {
 // ============================================================================
 
 export const EVENT_TYPES = [
-  "INITIALIZATION",
-  "PAGE1",
-  "TENSION_RECORDER",
+  "BEFORE_CONCERT",
+  "APP_GUIDE",
+  "SLIDER_DEMO",
+  "CONCERT_START",
+  "PIECE_ANNOUNCEMENT",
+  "TENSION_MEASUREMENT",
+  "OVATION",
+  "FEEDBACK_FORM",
+  "END_OF_CONCERT",
 ] as const;
 export const DEVICE_TYPES = ["Web", "M5Dial"] as const;
 
