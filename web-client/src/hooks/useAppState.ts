@@ -38,7 +38,7 @@ export const useAppState = () => {
 
   const [state, setState] = useState<AppState | null>(null);
 
-  useAutoConnect({
+  const userId = useAutoConnect({
     brokerUrl: config.mqtt.brokerUrl,
     topics: [config.mqtt.topics.EVENTS_BROADCAST],
   });
@@ -52,8 +52,9 @@ export const useAppState = () => {
   useEffect(() => {
     if (connectionStatus === "connected" && latestEvent) {
       setState({
-        type: latestEvent.eventType,
-        payload: latestEvent.payload,
+        type: latestEvent.event.eventType,
+        payload: latestEvent.event.payload,
+        changeId: latestEvent.changeId,
       });
     } else if (connectionStatus === "connected") {
       //No latest event, fetch from server
@@ -68,7 +69,7 @@ export const useAppState = () => {
           console.error("Failed to fetch current event:", err);
         });
     }
-  }, [latestEvent?.eventType, connectionStatus]);
+  }, [latestEvent?.changeId, connectionStatus]);
 
-  return { state, connectionStatus };
+  return { state, connectionStatus, userId };
 };

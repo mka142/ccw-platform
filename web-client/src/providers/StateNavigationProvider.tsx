@@ -54,9 +54,11 @@ export const StateNavigationProvider = StateNavigationContext.Provider;
 export function WithStateNavigation({
   children,
   state,
+  stateHash = null,
 }: {
   children: React.ReactNode;
   state: AppState | null;
+  stateHash?: string | null;
 }) {
   const [activeState, setActiveState] = useState<EventType | TEmptyStateId>(
     EMPTY_STATE_ID
@@ -72,7 +74,7 @@ export function WithStateNavigation({
       setNextState(state);
       setShouldTransitionBegin(true);
     }
-  }, [state]);
+  }, [state, stateHash]);
 
   useEffect(() => {
     if ((transitionFinished || activeState === EMPTY_STATE_ID) && nextState) {

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import TextArc from "../../TextArc/TextArc";
+import TextArc from "../../components/TextArc/TextArc";
 
-import logo from "../../logo.svg";
+import logo from "@/public/logo/logo.svg";
 import "../../orange-bg.css";
 import "./main.css";
 import type { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
 import ConcertProgram from "@/components/ConcertProgram";
+import SponsorsCarousel from "@/components/SponsorsCarousel";
 
 const TEXTS = [
   "Co czują Wrocławianie?",
@@ -84,8 +85,8 @@ export default function NoteLoader({
       <TextArc
         text={arcText}
         spread={0}
-        fontSize={9}
-        radius={30}
+        fontSize={8}
+        radius={28}
         textColor="hsl(0 100% 50% / 0.5)"
         className="absolute w-[480px] h-[480px]"
         visible={showArc}
@@ -96,7 +97,7 @@ export default function NoteLoader({
       <div
         className={`${
           imageLoaded ? "loaded" : "initial"
-        } bg-card/20 backdrop-blur-sm w-[240px] h-[240px] rounded-full flex items-center justify-center text-card-foreground border shadow-sm
+        } bg-card/20 backdrop-blur-sm w-[220px] h-[220px] rounded-full flex items-center justify-center text-card-foreground border shadow-sm
         `}
         onAnimationEnd={rotateNoteAfterCardAppears}
       >
@@ -118,6 +119,9 @@ export default function NoteLoader({
             { "--rotate-transition-duration": "5s" } as React.CSSProperties
           }
         />
+      </div>
+      <div className="absolute bottom-10 -z-10">
+        <SponsorsCarousel />
       </div>
     </div>
   ) : (
