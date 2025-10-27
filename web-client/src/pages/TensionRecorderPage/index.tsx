@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 
 import { TensionRecorder } from "../../components/TensionRecorder";
-import { StateNavigationComponentProps } from "@/lib/StateNavigationContext";
+import { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
 
 export default function TensionRecorderPage({
   shouldTransitionBegin,

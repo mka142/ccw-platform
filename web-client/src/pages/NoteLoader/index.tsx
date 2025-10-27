@@ -4,7 +4,7 @@ import TextArc from "../../TextArc/TextArc";
 import logo from "../../logo.svg";
 import "../../orange-bg.css";
 import "./main.css";
-import type { StateNavigationComponentProps } from "@/lib/StateNavigationContext";
+import type { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
 import ConcertProgram from "@/components/ConcertProgram";
 
 const TEXTS = [

@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-import { StateNavigationComponentProps } from "@/lib/StateNavigationContext";
+import { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
 import { Piece } from "@/components/Piece";
 import { PieceData } from "@/types";
 import { AnimatedPage } from "@/components/AnimatedPage";

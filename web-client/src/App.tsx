@@ -6,7 +6,7 @@ import "./index.css";
 import {
   StateNavigationPage,
   WithStateNavigation,
-} from "./lib/StateNavigationContext";
+} from "./providers/StateNavigationProvider";
 import NoteLoader from "./pages/NoteLoader";
 import TensionRecorderPage from "./pages/TensionRecorderPage";
 import Loading from "./components/Loading";
