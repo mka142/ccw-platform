@@ -6,14 +6,14 @@ import "./index.css";
 import {
   StateNavigationPage,
   WithStateNavigation,
-} from "./lib/StateNavigationContext";
+} from "./providers/StateNavigationProvider";
 import NoteLoader from "./pages/NoteLoader";
-import Page1 from "./pages/Page1";
 import TensionRecorderPage from "./pages/TensionRecorderPage";
 import { LoadingWithBackgroundTransition } from "./components/Loading";
 
 import { useAppState } from "./hooks/useAppState";
-import type { AppStateType } from "./hooks/useAppState";
+import { EventType } from "./config";
+import PieceAnnouncementPage from "./pages/PieceAnnouncementPage";
 import config from "./config";
 
 export function App() {
@@ -48,18 +48,21 @@ export function App() {
   }
 
   return (
-    <WithStateNavigation<AppStateType>
-      state={state.type}
+    <WithStateNavigation
+      state={state}
       stateHash={state.changeId}
     >
-      <StateNavigationPage<AppStateType>
-        pageState="INITIALIZATION"
+      <StateNavigationPage<EventType>
+        pageState="BEFORE_CONCERT"
         component={NoteLoader}
       />
-      <StateNavigationPage<AppStateType> pageState="PAGE1" component={Page1} />
-      <StateNavigationPage<AppStateType>
-        pageState="TENSION_RECORDER"
+      <StateNavigationPage<EventType>
+        pageState="TENSION_MEASUREMENT"
         component={TensionRecorderPage}
+      />
+      <StateNavigationPage<EventType>
+        pageState="PIECE_ANNOUNCEMENT"
+        component={PieceAnnouncementPage}
       />
     </WithStateNavigation>
   );
