@@ -1,0 +1,47 @@
+.textarc-transition {
+  transition: opacity 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55),
+    transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.textarc-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.textarc-transition-out {
+  transition: opacity 0.4s ease-out;
+  transform: scale(
+    1
+  ) !important; /* Ensure scale is maintained during transition out */
+}
+
+.textarc-hidden {
+  opacity: 0;
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.infinite-rotate-right {
+  animation: infiniteRotate 20s linear infinite;
+}
+.infinite-rotate-left {
+  animation: infiniteRotateLeft 20s linear infinite;
+}
+
+@keyframes infiniteRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes infiniteRotateLeft {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
