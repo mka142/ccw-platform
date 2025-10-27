@@ -1,8 +1,20 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 import { TensionRecorder } from "../../components/TensionRecorder";
+import { StateNavigationComponentProps } from "@/lib/StateNavigationContext";
 
-export default function TensionRecorderPage() {
+export default function TensionRecorderPage({
+  shouldTransitionBegin,
+  setTransitionFinished,
+  payload,
+}: StateNavigationComponentProps) {
+  useEffect(() => {
+    if (shouldTransitionBegin) {
+      setTimeout(() => {
+        setTransitionFinished();
+      }, 1000);
+    }
+  }, [shouldTransitionBegin]);
   const sendData = async (data: any) => {
     console.log("Sending data", data);
     try {

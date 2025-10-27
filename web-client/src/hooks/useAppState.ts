@@ -4,13 +4,23 @@ import { useDeviceManager } from "../lib/DeviceManagerClient";
 import { useAutoConnect } from "../hooks/useAutoConnect";
 
 import { EventSchema } from "../lib/mqtt";
-import config, { EventType } from "../config";
+import config, { EVENT_TYPES, EventType } from "../config";
 
-export type AppStateType = EventType;
+export type Payload = Record<string, any>;
+export interface AppState {
+  type: EventType;
+  payload: Payload;
+}
 
-interface AppState {
-  type: AppStateType;
-  payload: Record<string, any>;
+export function isAppState(state: any): state is AppState {
+  return (
+    typeof state === "object" &&
+    state !== null &&
+    typeof state.type === "string" &&
+    typeof state.payload === "object" &&
+    state.payload !== null &&
+    EVENT_TYPES.includes(state.type as EventType)
+  );
 }
 
 const useFetchCurrentEvent = () => {
@@ -31,10 +41,7 @@ export const useAppState = () => {
   const { latestEvent, connectionStatus, disconnect } =
     useDeviceManager<EventSchema<EventType>>();
 
-  const [state, setState] = useState<AppState>({
-    type: "INITIALIZATION",
-    payload: {},
-  });
+  const [state, setState] = useState<AppState | null>(null);
 
   useAutoConnect({
     brokerUrl: config.mqtt.brokerUrl,

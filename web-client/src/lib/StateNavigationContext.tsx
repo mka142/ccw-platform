@@ -1,3 +1,5 @@
+import { EventType } from "@/config";
+import { AppState, isAppState, Payload } from "@/hooks/useAppState";
 import React, { useState, useEffect, useMemo } from "react";
 
 export const EMPTY_STATE_ID = "EMPTY" as const;
@@ -8,9 +10,9 @@ type TEmptyStateId = typeof EMPTY_STATE_ID;
 type ForbidEmpty<T extends string> = T extends TEmptyStateId ? never : T;
 interface StateNavigationContextType<T extends string = string> {
   activeState: T | TEmptyStateId;
+  payload: Payload;
   shouldTransitionBegin: boolean;
   transitionFinished: boolean;
-  nextActiveState: T | null;
   setShouldTransitionBegin: (value: boolean) => void;
   setTransitionFinished: (value: boolean) => void;
 }
@@ -18,9 +20,9 @@ interface StateNavigationContextType<T extends string = string> {
 export const StateNavigationContext =
   React.createContext<StateNavigationContextType>({
     activeState: EMPTY_STATE_ID,
+    payload: {},
     shouldTransitionBegin: false,
     transitionFinished: false,
-    nextActiveState: null,
     setShouldTransitionBegin: (value: boolean) => {},
     setTransitionFinished: (value: boolean) => {},
   });
@@ -28,43 +30,49 @@ export const StateNavigationContext =
 export interface StateNavigationComponentProps {
   shouldTransitionBegin: boolean;
   setTransitionFinished: () => void;
+  payload: Payload;
 }
 
 export const StateNavigationProvider = StateNavigationContext.Provider;
 
-export function WithStateNavigation<T extends string>({
+export function WithStateNavigation({
   children,
   state,
 }: {
   children: React.ReactNode;
-  state: ForbidEmpty<T>;
+  state: AppState | null;
 }) {
-  const [activeState, setActiveState] = useState<T | TEmptyStateId>(state);
-  const [nextActiveState, setNextActiveState] = useState<T | null>(null);
+  const [activeState, setActiveState] = useState<EventType | TEmptyStateId>(
+    EMPTY_STATE_ID
+  );
+  const [nextState, setNextState] = useState<AppState | null>(null);
+  const [payload, setPayload] = useState<Payload>({});
   const [shouldTransitionBegin, setShouldTransitionBegin] = useState(false);
   const [transitionFinished, setTransitionFinished] = useState(false);
 
   useEffect(() => {
-    if (state !== activeState) {
-      setNextActiveState(state);
+    if (!isAppState(state)) return;
+    if (state.type !== activeState) {
+      setNextState(state);
       setShouldTransitionBegin(true);
     }
   }, [state]);
 
   useEffect(() => {
-    if (transitionFinished && nextActiveState) {
-      setActiveState(nextActiveState);
+    if ((transitionFinished || activeState === EMPTY_STATE_ID) && nextState) {
+      setActiveState(nextState.type);
+      setPayload(nextState.payload);
       setShouldTransitionBegin(false);
       setTransitionFinished(false);
-      setNextActiveState(null);
+      setNextState(null);
     }
-  }, [transitionFinished]);
+  }, [transitionFinished, nextState]);
 
   return (
     <StateNavigationProvider
       value={{
         activeState,
-        nextActiveState,
+        payload,
         shouldTransitionBegin,
         transitionFinished,
         setShouldTransitionBegin,
@@ -83,7 +91,7 @@ export function StateNavigationPage<T extends string>({
   pageState: ForbidEmpty<T>;
   component: React.ComponentType<StateNavigationComponentProps> | null;
 }) {
-  const { activeState, shouldTransitionBegin, setTransitionFinished } =
+  const { activeState, payload, shouldTransitionBegin, setTransitionFinished } =
     React.useContext(StateNavigationContext);
 
   const isActive = useMemo(() => {
@@ -101,6 +109,7 @@ export function StateNavigationPage<T extends string>({
             setTransitionFinished={() => {
               setTransitionFinished(true);
             }}
+            payload={payload}
           />
         ) : null}
       </>
