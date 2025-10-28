@@ -12,17 +12,25 @@ import { UserProvider } from "./providers/UserProvider";
 import { DeviceManagerProvider } from "./lib/DeviceManagerClient";
 import { EventSchema } from "./lib/mqtt";
 import { EventType } from "./config";
+import NoZoomWrapper from "./components/NoZoomWrapper";
+import IosOnlySafari from "./lib/IosOnlySafari";
 
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <UserProvider>
-      <DeviceManagerProvider<EventSchema<EventType>> maxHistorySize={100}>
-        {/* <MobileContainer> */}
-        <App />
-        {/* </MobileContainer> */}
-      </DeviceManagerProvider>
-    </UserProvider>
+    <IosOnlySafari>
+      <UserProvider>
+        <DeviceManagerProvider<EventSchema<EventType>> maxHistorySize={100}>
+          {/* <MobileContainer> */}
+          <NoZoomWrapper includeDoubleTap={true} includePinch={true}>
+            {/* <div className="fixed w-full h-full touch-none select-none overflow-hidden"> */}
+              <App />
+            {/* </div> */}
+          </NoZoomWrapper>
+          {/* </MobileContainer> */}
+        </DeviceManagerProvider>
+      </UserProvider>
+    </IosOnlySafari>
   </StrictMode>
 );
 
