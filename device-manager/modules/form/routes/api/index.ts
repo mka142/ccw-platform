@@ -1,10 +1,11 @@
 import { Router } from "express";
 
+import { UserService } from "@/modules/user";
+
 import { FormService } from "../../services";
 
 import type { FormBatchInput } from "../../types";
 import type { Request, Response } from "express";
-import { UserService } from "@/modules/user";
 
 const router = Router();
 
@@ -19,8 +20,8 @@ const router = Router();
  *   "clientId": "507f1f77bcf86cd799439011",
  *   "pieceId": "piece_123",
  *   "data": [
- *     { "timestamp": 1698345600000, "value": 42 },
- *     { "timestamp": 1698345660000, "value": 43 }
+ *     { "t": 1698345600000, "v": 42 },
+ *     { "t": 1698345660000, "v": 43 }
  *   ]
  * }
  * ```
@@ -54,7 +55,7 @@ const router = Router();
  * Body: {
  *   "clientId": "507f1f77bcf86cd799439011",
  *   "pieceId": "piece_123",
- *   "data": [{ "timestamp": 1698345600000, "value": 42 }]
+ *   "data": [{ "t": 1698345600000, "v": 42 }]
  * }
  */
 router.post("/batch", async (req: Request, res: Response) => {
@@ -88,13 +89,13 @@ router.post("/batch", async (req: Request, res: Response) => {
       return;
     }
 
-    // Validate each data point has timestamp and value
-    const isValidDataPoints = data.every((point) => typeof point.timestamp === "number" && typeof point.value === "number");
+    // Validate each data point has t (timestamp) and v (value)
+    const isValidDataPoints = data.every((point) => typeof point.t === "number" && typeof point.v === "number");
 
     if (!isValidDataPoints) {
       res.status(400).json({
         success: false,
-        error: "Invalid data format: each data point must have timestamp and value as numbers",
+        error: "Invalid data format: each data point must have t and v as numbers",
       });
       return;
     }

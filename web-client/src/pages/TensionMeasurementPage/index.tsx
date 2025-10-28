@@ -34,8 +34,8 @@ export default function TensionMeasurementPage({
         body: JSON.stringify({
           clientId: userId,
           data: data.map((point: any) => ({
-            timestamp: point.t,
-            value: point.v,
+            t: point.t,
+            v: point.v,
           })),
           pieceId: payload.pieceId ?? "unknown",
         }),

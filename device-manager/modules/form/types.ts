@@ -29,20 +29,22 @@ export interface FormDataWithId extends DocumentWithId, FormDataSchema {
 /**
  * Batch input format for API
  * Allows submitting multiple data points for the same client and piece
+ * Uses short property names to save bandwidth: t=timestamp, v=value
  */
 export interface FormBatchInput {
   clientId: string; // Will be converted to ObjectId
   pieceId: string;
   data: Array<{
-    timestamp: number;
-    value: number;
+    t: number; // timestamp
+    v: number; // value
   }>;
 }
 
 /**
  * Individual data point in a batch
+ * Uses short property names to save bandwidth: t=timestamp, v=value
  */
 export interface FormDataPoint {
-  timestamp: number;
-  value: number;
+  t: number; // timestamp
+  v: number; // value
 }

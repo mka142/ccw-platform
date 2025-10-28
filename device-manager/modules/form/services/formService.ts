@@ -19,11 +19,12 @@ export class FormService {
       const clientId = parseId(batchInput.clientId);
 
       // Convert batch input to individual form data records
+      // Map short property names (t, v) to full database property names (timestamp, value)
       const formDataArray: FormData[] = batchInput.data.map((dataPoint) => ({
         clientId,
         pieceId: batchInput.pieceId,
-        timestamp: dataPoint.timestamp,
-        value: dataPoint.value,
+        timestamp: dataPoint.t,
+        value: dataPoint.v,
       }));
 
       // Use batch insert operation
