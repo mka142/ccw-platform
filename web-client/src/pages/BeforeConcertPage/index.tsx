@@ -7,13 +7,17 @@ import "./main.css";
 import type { StateNavigationComponentProps } from "@/providers/StateNavigationProvider";
 import ConcertProgram from "@/components/ConcertProgram";
 import AppGuide from "@/components/AppGuide";
-// import ConcertForm from "@/components/ConcertForm";
+import ConcertForm from "@/components/ConcertForm";
 import SponsorsCarousel from "@/components/SponsorsCarousel";
 import Button from "@/components/Button";
 import FadeInWrapper from "@/components/FadeInWrapper";
-import FadeOutWrapper from "@/components/FadeOutWrapper";
-import { useBackgroundColor } from "@/hooks/useBackgroundColor";
+import {
+  useBackgroundColor,
+  useBackgroundColorSetter,
+} from "@/hooks/useBackgroundColor";
 import config from "@/config";
+import { useUserResponseExist } from "@/components/form/useUserResponseExist";
+import ResearchForm, { FORM_ID } from "@/components/form/ResearchForm";
 
 const TEXTS = [
   "Co czują Wrocławianie?",
@@ -37,41 +41,49 @@ export default function BeforeConcertPage({
   const [pageType, setPageType] = useState<
     "NoteLoader" | "ConcertProgram" | "AppGuide" | "ConcertForm"
   >("NoteLoader");
-  const [nextPageType, setNextPageType] = useState<
-    "ConcertProgram" | "AppGuide" | "ConcertForm" | null
-  >(null);
   const [formCompleted, setFormCompleted] = useState(false);
-  const [internalShouldTransitionBegin, setInternalShouldTransitionBegin] =
-    useState(false);
+  const { exist } = useUserResponseExist(FORM_ID);
 
   useBackgroundColor(config.constants.pagesBackgroundColor.BEFORE_CONCERT, 0);
+
+  useEffect(() => {
+    if (exist) {
+      setFormCompleted(true);
+    }
+  }, [exist]);
+
+  useEffect(() => {
+    if (shouldTransitionBegin && pageType !== "NoteLoader") {
+      setPageType("NoteLoader");
+    }
+  }, [shouldTransitionBegin, pageType]);
 
   // Handler for form submission
   const handleFormSubmitted = () => {
     setFormCompleted(true);
-    setNextPageType(null);
     setPageType("NoteLoader");
-    setInternalShouldTransitionBegin(false);
   };
 
   if (pageType === "NoteLoader") {
     return (
       <FadeInWrapper className="page-screen center orange-bg">
         <div className="page-screen center orange-bg">
-          <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 right-4 px-10">
-            <FormButton
-              onClick={() => setPageType("ConcertForm")}
-              completed={formCompleted}
-            />
+          <div className="absolute top-4 left-4 right-4">
+            <div className="relative  flex flex-col gap-2 px-10">
+              <FormButton
+                onClick={() => setPageType("ConcertForm")}
+                completed={formCompleted}
+              />
 
-            <ProgramButton
-              onClick={() => setPageType("ConcertProgram")}
-              disabled={!formCompleted}
-            />
-            <AboutEventButton
-              onClick={() => setPageType("AppGuide")}
-              disabled={!formCompleted}
-            />
+              <ProgramButton
+                onClick={() => setPageType("ConcertProgram")}
+                disabled={!formCompleted}
+              />
+              <AboutEventButton
+                onClick={() => setPageType("AppGuide")}
+                disabled={!formCompleted}
+              />
+            </div>
           </div>
           <AwaitingContent
             shouldTransitionBegin={shouldTransitionBegin}
@@ -106,33 +118,54 @@ export default function BeforeConcertPage({
     return <AppGuidePage onGoBack={() => setPageType("NoteLoader")} />;
   }
   if (pageType === "ConcertForm") {
-    return <ConcertFormPage onFormSubmitted={handleFormSubmitted} />;
+    return (
+      <ConcertFormPage
+        onFormSubmitted={handleFormSubmitted}
+        onCancel={() => setPageType("NoteLoader")}
+      />
+    );
   }
 }
 
 function AppGuidePage({ onGoBack }: { onGoBack: () => void }) {
   return (
     <div className="page-screen center orange-bg flex items-center justify-center">
-      <FadeInWrapper className="w-full h-full flex flex-col items-center justify-center">
-        <AppGuide />
-        <Button
-          className="my-2 self-start mx-4"
-          onClick={onGoBack}
-          variant="secondary"
-        >
-          Powrót
-        </Button>
+      <FadeInWrapper className="relative w-full h-full p-6 box-border touch-manipulation overflow-y-auto">
+        <AppGuide
+          footer={
+            <>
+              <Button
+                className="mb-4 self-start mx-4"
+                onClick={onGoBack}
+                variant="secondary"
+              >
+                Powrót
+              </Button>
+              <div className="h-4"></div>
+            </>
+          }
+        />
       </FadeInWrapper>
     </div>
   );
 }
 
-function ConcertFormPage({ onFormSubmitted }: { onFormSubmitted: () => void }) {
+function ConcertFormPage({
+  onFormSubmitted,
+  onCancel,
+}: {
+  onFormSubmitted: () => void;
+  onCancel: () => void;
+}) {
   return (
-    <div className="page-screen orange-bg w-full h-full ">
-      <FadeInWrapper className="w-full h-full flex items-center justify-center">
-        <></>
-        {/* <ConcertForm onFormSubmitted={onFormSubmitted} /> */}
+    <div className="orange-bg page-screen">
+      <FadeInWrapper className="relative w-full h-full box-border touch-manipulation overflow-y-auto">
+        <ConcertForm
+          onFormSubmitted={onFormSubmitted}
+          onCancel={onCancel}
+          formComponent={ResearchForm}
+          formId={FORM_ID}
+        />
       </FadeInWrapper>
     </div>
   );
@@ -149,6 +182,8 @@ function AwaitingContent({
   const [showRotate, setShowRotate] = useState(false);
   const [showArc, setShowArc] = useState(false);
   const [arcText, setArcText] = useState(TEXTS[TEXTS.length - 1]);
+
+  useBackgroundColor("#000000", 5000, shouldTransitionBegin);
 
   // Handler for animation end
   const rotateNoteAfterCardAppears = () => {
@@ -192,7 +227,7 @@ function AwaitingContent({
         fontSize={8}
         radius={28}
         textColor="hsl(0 100% 50% / 0.5)"
-        className="absolute w-[480px] h-[480px]"
+        className="absolute w-[480px] h-[480px] select-none -z-10"
         visible={showArc}
         inside={false}
         rotate
@@ -208,7 +243,7 @@ function AwaitingContent({
         <img
           src={logo}
           alt="Bun Logo"
-          className={`h-[120px] w-[120px] z-10${
+          className={`select-none pointer-events-none touch-none h-[120px] w-[120px] z-100 ${
             !shouldTransitionBegin && showRotate ? " complex-rotate" : ""
           }
           ${shouldTransitionBegin ? " complex-rotate-transition" : ""} `}
@@ -265,14 +300,16 @@ function FormButton({
   onClick: () => void;
   completed: boolean;
 }) {
+  const isCompleted = completed;
+
   return (
     <Button
       className="whitespace-nowrap flex items-center gap-2 justify-center"
       onClick={onClick}
-      disabled={completed}
+      disabled={isCompleted}
       variant="primary"
     >
-      {completed && (
+      {isCompleted && (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-6 w-6"
@@ -281,6 +318,7 @@ function FormButton({
           stroke="currentColor"
         >
           <path
+            color="green"
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
@@ -288,7 +326,11 @@ function FormButton({
           />
         </svg>
       )}
-      Wypełnij formularz
+      {isCompleted ? (
+        <span className="line-through">Wypełniono formularz</span>
+      ) : (
+        <span>Wypełnij formularz</span>
+      )}
     </Button>
   );
 }

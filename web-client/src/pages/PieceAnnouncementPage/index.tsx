@@ -22,7 +22,7 @@ export default function PieceAnnouncementPage({
 
   return (
     <FadeOutWrapper
-      className="flex flex-col items-center justify-center w-full h-full"
+      className="flex flex-col items-center justify-center w-full h-full overflow-hidden page-screen"
       shouldTransitionBegin={shouldTransitionBegin}
       setTransitionFinished={setTransitionFinished}
     >
