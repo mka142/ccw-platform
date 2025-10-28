@@ -96,7 +96,7 @@ export default function BeforeConcertPage({
 
   if (pageType === "ConcertProgram") {
     return (
-      <div className="flex flex-row">
+      <div className="flex flex-row relative w-full h-full p-6 box-border touch-manipulation overflow-y-auto">
         <ConcertProgram
           payload={payload}
           backgroundClassName="orange-bg"
