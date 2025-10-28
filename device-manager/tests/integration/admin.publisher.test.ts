@@ -4,7 +4,6 @@ import { config } from "@/config";
 import { mqttPublisher } from "@/modules/connections/publisher";
 import { db, initializeDb, disconnectDb } from "@/modules/db";
 
-
 import { ConcertService } from "../../modules/admin/services/concertService";
 import { EventService } from "../../modules/admin/services/eventService";
 
@@ -99,8 +98,11 @@ describe("Admin Publisher Integration Tests", () => {
       const result = await ConcertService.setActiveEvent(concertId.toString(), eventId.toString(), false);
 
       expect(result.success).toBe(true);
-
-      expect(result.data).toBe(true);
+      if (result.success) {
+        expect(result.data).toBe(true);
+      } else {
+        expect.fail("Expected success to be true");
+      }
 
       // Verify the event was set as active
       const concert = await ConcertService.getConcertById(concertId.toString());

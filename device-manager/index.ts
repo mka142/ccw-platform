@@ -6,6 +6,7 @@ import adminViews from "./modules/admin/routes/views";
 import { createMqttBroker, shutdownMqttBroker } from "./modules/connections/broker";
 import { mqttPublisher } from "./modules/connections/publisher";
 import { initializeDb, disconnectDb } from "./modules/db";
+import { examinationFormRoutes } from "./modules/examination-form";
 import { formRoutes } from "./modules/form";
 import { mqttHandlers } from "./modules/mqttHandlers";
 import { createServer, shutdownServer } from "./modules/server";
@@ -32,6 +33,8 @@ app.use(config.url.apiConcert, adminApiRoutes);
 app.use(config.url.apiUser, userRoutes);
 // Form routes: /api/forms/*
 app.use(config.url.apiForm, formRoutes);
+// Examination form routes: /api/examination-forms/*
+app.use(config.url.apiExaminationForm, examinationFormRoutes);
 
 // Setup error handlers (must be last)
 setupErrorHandlers(app);

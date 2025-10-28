@@ -103,6 +103,7 @@ export const config = {
       concerts: env("DATABASE_COLLECTION_CONCERTS", "concerts"),
       events: env("DATABASE_COLLECTION_EVENTS", "events"),
       forms: env("DATABASE_COLLECTION_FORMS", "forms"),
+      examinationForms: env("DATABASE_COLLECTION_EXAMINATION_FORMS", "examination_forms"),
     },
   },
 
@@ -130,6 +131,7 @@ export const config = {
     apiConcert: "/api/concert",
     apiUser: "/api/user",
     apiForm: "/api/forms",
+    apiExaminationForm: "/api/examination-forms",
   },
   api: {
     userIdHeader: env("API_USER_ID_HEADER", "x-user-id"),
