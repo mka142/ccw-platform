@@ -1,6 +1,6 @@
 import { config } from "@/config";
 import { documentMapper } from "@/lib/db/mapper";
-import { parseId, setTimestamps } from "@/lib/db/utils";
+import { parseId } from "@/lib/db/utils";
 import { db } from "@/modules/db";
 
 import type { FormData, FormDataWithId } from "../types";
