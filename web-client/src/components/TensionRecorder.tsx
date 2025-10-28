@@ -53,7 +53,7 @@ const getBorderRadius = (tensionValue: number) => {
 };
 
 export const TENSION_RECORDER_CONTAINER_CLASSES =
-  "relative w-full h-full bg-black touch-none select-none overflow-hidden";
+  "fixed w-full h-full bg-black touch-none select-none overflow-hidden";
 
 export const TensionRecorder: React.FC<TensionRecorderProps> = ({
   currentTimeMs,
