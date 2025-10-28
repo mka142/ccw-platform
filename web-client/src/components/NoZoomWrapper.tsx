@@ -42,7 +42,7 @@ export function NoZoomWrapper({
 
   return (
     <div
-      className={`no-zoom-wrapper ${className} relative w-full h-full touch-none select-none overflow-hidden`}
+      className={`no-zoom-wrapper ${className} absolute w-full h-full touch-none select-none overflow-hidden`}
       style={defaultStyles}
     >
       {children}
