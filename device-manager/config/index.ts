@@ -134,6 +134,7 @@ export const config = {
     apiConcert: "/api/concert",
     apiUser: "/api/user",
     apiForm: "/api/forms",
+    examinationForm: '/examination-forms',
     apiExaminationForm: "/api/examination-forms",
   },
   api: {

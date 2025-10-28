@@ -30,7 +30,7 @@ app.use(setupTemplateLocals);
 // Admin routes: /api/* and view routes at /
 app.use(config.url.admin, basicAuth, adminViews);
 // Examination form view routes at /examination-forms/*
-app.use("/examination-forms", basicAuth, examinationFormViews);
+app.use(config.url.examinationForm, examinationFormViews);
 // User routes: /api/users/*
 app.use(config.url.apiConcert, adminApiRoutes);
 app.use(config.url.apiUser, userRoutes);
