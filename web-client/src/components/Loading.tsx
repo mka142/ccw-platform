@@ -23,7 +23,7 @@ function MusicNote({ delay }: { delay: string }) {
 
 export default function Loading() {
   return (
-    <div className="flex flex-col items-center justify-center py-8">
+    <div className="w-full h-full flex flex-col items-center justify-center py-8 ">
       <div className="flex items-center mt-2">
         <MusicNote delay="0ms" />
         <MusicNote delay="200ms" />
