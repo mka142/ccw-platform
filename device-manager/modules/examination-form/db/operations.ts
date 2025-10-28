@@ -80,6 +80,19 @@ export class ExaminationFormOperations {
   }
 
   /**
+   * Count examination form responses by form ID
+   */
+  static async countByFormId(formId: string): Promise<number> {
+    try {
+      const collection = await this.getCollection();
+      return await collection.countDocuments({ formId });
+    } catch (error) {
+      console.error("Error counting examination forms by form ID:", error);
+      return 0;
+    }
+  }
+
+  /**
    * Map document from database
    */
   private static mapFromDocument(doc: ExaminationFormResponseWithId) {

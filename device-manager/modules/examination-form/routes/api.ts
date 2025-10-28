@@ -66,6 +66,37 @@ router.get("/form/:formId", async (req, res) => {
 });
 
 /**
+ * GET /api/examination-forms/form/:formId/count
+ * Get count of responses for a specific form
+ */
+router.get("/form/:formId/count", async (req, res) => {
+  try {
+    const { formId } = req.params;
+    const count = await ExaminationFormService.getFormResponseCount(formId);
+    res.json(count);
+  } catch (error: unknown) {
+    const message = typeof error === "object" && error && "message" in error ? (error as { message?: string }).message : String(error);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/examination-forms/form/:formId/users
+ * Get userIds of all users who responded to a specific form
+ */
+router.get("/form/:formId/users", async (req, res) => {
+  try {
+    const { formId } = req.params;
+    const responses = await ExaminationFormService.getResponsesByFormId(formId);
+    const userIds = responses.map(response => response.userId);
+    res.json(userIds);
+  } catch (error: unknown) {
+    const message = typeof error === "object" && error && "message" in error ? (error as { message?: string }).message : String(error);
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
  * GET /api/examination-forms/user/:userId/form/:formId
  * Get a specific user's response to a specific form
  */

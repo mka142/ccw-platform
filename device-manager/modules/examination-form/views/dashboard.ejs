@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard Formularzy</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.css" />
+  <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    .stats-container {
+      margin-top: 2em;
+    }
+    .stat-item {
+      margin-bottom: 1em;
+      padding: 1em;
+      background: #f8f9fa;
+      border-radius: 5px;
+      border-left: 4px solid #2185d0;
+    }
+    .stat-label {
+      font-weight: bold;
+      color: #2185d0;
+    }
+    .stat-value {
+      font-size: 1.2em;
+      margin-top: 0.5em;
+    }
+    .loading {
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="ui menu blue">
+    <div class="ui container">
+      <div class="header item">Dashboard Formularzy</div>
+      <div class="right menu">
+        <div class="item">
+          <div class="ui green circular label" id="status-indicator">●</div>
+          <span style="margin-left: 0.5em;">Aktualizacja co 5s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="ui main text container stats-container">
+    <div class="ui raised very padded text container segment">
+      <h2 class="ui header">
+        <i class="chart bar icon"></i>
+        <div class="content">
+          Statystyki Formularzy
+          <div class="sub header">Aktualny stan odpowiedzi na formularze</div>
+        </div>
+      </h2>
+      
+      <div class="ui three column grid">
+        <div class="column">
+          <div class="stat-item">
+            <div class="stat-label">Aktywni użytkownicy</div>
+            <div class="stat-value" id="active-users">
+              <div class="ui active inline loader"></div>
+              Ładowanie...
+            </div>
+          </div>
+        </div>
+        
+        <div class="column">
+          <div class="stat-item">
+            <div class="stat-label">Formularz początkowy</div>
+            <div class="stat-value" id="form1-count">
+              <div class="ui active inline loader"></div>
+              Ładowanie...
+            </div>
+          </div>
+        </div>
+        
+        <div class="column">
+          <div class="stat-item">
+            <div class="stat-label">Formularz końcowy</div>
+            <div class="stat-value" id="form2-count">
+              <div class="ui active inline loader"></div>
+              Ładowanie...
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="ui divider"></div>
+      
+      <div class="ui small text">
+        <i class="info circle icon"></i>
+        Dane są automatycznie odświeżane co 5 sekund
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isLoading = false;
+    const concertId = '<%= concertId %>'; // This should be passed from the route
+    
+    function updateStatusIndicator(isActive) {
+      const indicator = document.getElementById('status-indicator');
+      if (isActive) {
+        indicator.className = 'ui green circular label';
+        indicator.textContent = '●';
+      } else {
+        indicator.className = 'ui red circular label';
+        indicator.textContent = '●';
+      }
+    }
+    
+    function showLoading(elementId) {
+      const element = document.getElementById(elementId);
+      element.innerHTML = '<div class="ui active inline loader"></div> Ładowanie...';
+    }
+    
+    function showError(elementId, error) {
+      const element = document.getElementById(elementId);
+      element.innerHTML = '<i class="exclamation triangle icon red"></i> Błąd';
+      console.error(`Error loading ${elementId}:`, error);
+    }
+    
+    async function fetchDevices() {
+      try {
+        const response = await fetch(`/api/user/concert/${concertId}`);
+        const data = await response.json();
+        
+        if (Array.isArray(data.data)) {
+          const activeUsers = data.data.filter(user => user.isActive).length;
+          const totalUsers = data.data.length;
+          document.getElementById('active-users').innerHTML = 
+            `<strong>${activeUsers}</strong> / ${totalUsers}`;
+          return true;
+        } else {
+          throw new Error('Invalid data format');
+        }
+      } catch (error) {
+        showError('active-users', error);
+        return false;
+      }
+    }
+    
+    async function fetchFormCount(formId, elementId) {
+      try {
+        const response = await fetch(`/api/examination-forms/form/${formId}/count`);
+        const count = await response.json();
+        document.getElementById(elementId).innerHTML = `<strong>${count}</strong> odpowiedzi`;
+        return true;
+      } catch (error) {
+        showError(elementId, error);
+        return false;
+      }
+    }
+    
+    async function updateData() {
+      if (isLoading) return;
+      
+      isLoading = true;
+      updateStatusIndicator(true);
+      
+      try {
+        // Show loading indicators
+        showLoading('active-users');
+        showLoading('form1-count');
+        showLoading('form2-count');
+        
+        // Fetch all data in parallel
+        const [devicesSuccess, form1Success, form2Success] = await Promise.all([
+          fetchDevices(),
+          fetchFormCount('concert-preexamination-form', 'form1-count'),
+          fetchFormCount('concert-feedback-form', 'form2-count')
+        ]);
+        
+        // Update status based on success
+        const allSuccess = devicesSuccess && form1Success && form2Success;
+        updateStatusIndicator(allSuccess);
+        
+      } catch (error) {
+        console.error('Error updating data:', error);
+        updateStatusIndicator(false);
+      } finally {
+        isLoading = false;
+      }
+    }
+    
+    // Initial load
+    updateData();
+    
+    // Set up periodic updates every 5 seconds
+    setInterval(updateData, 5000);
+    
+    // Update immediately when page becomes visible again
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        updateData();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -83,4 +83,11 @@ export class ExaminationFormService {
 
     return ExaminationFormOperations.findByUserAndForm(userId, formId);
   }
+
+  /**
+   * Get count of responses for a specific form
+   */
+  static async getFormResponseCount(formId: string): Promise<number> {
+    return ExaminationFormOperations.countByFormId(formId);
+  }
 }

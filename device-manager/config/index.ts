@@ -122,7 +122,10 @@ export const config = {
    */
   paths: {
     root: path.join(currentDirname, ".."),
-    views: path.join(currentDirname, "../modules/admin/views"),
+    views: {
+      admin: path.join(currentDirname, "../modules/admin/views"),
+      examinationForm: path.join(currentDirname, "../modules/examination-form/views"),
+    },
     public: path.join(currentDirname, "../public"),
     logs: path.join(currentDirname, "../logs"),
   },

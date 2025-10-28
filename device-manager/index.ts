@@ -7,6 +7,7 @@ import { createMqttBroker, shutdownMqttBroker } from "./modules/connections/brok
 import { mqttPublisher } from "./modules/connections/publisher";
 import { initializeDb, disconnectDb } from "./modules/db";
 import { examinationFormRoutes } from "./modules/examination-form";
+import examinationFormViews from "./modules/examination-form/routes/views/examination-form";
 import { formRoutes } from "./modules/form";
 import { mqttHandlers } from "./modules/mqttHandlers";
 import { createServer, shutdownServer } from "./modules/server";
@@ -17,7 +18,7 @@ const app = express();
 
 // Configure Express
 app.set("view engine", "ejs");
-app.set("views", [config.paths.views]);
+app.set("views", [config.paths.views.admin, config.paths.views.examinationForm]);
 
 // Setup middleware
 setupMiddleware(app);
@@ -28,6 +29,8 @@ app.use(setupTemplateLocals);
 // Register routes
 // Admin routes: /api/* and view routes at /
 app.use(config.url.admin, basicAuth, adminViews);
+// Examination form view routes at /examination-forms/*
+app.use("/examination-forms", basicAuth, examinationFormViews);
 // User routes: /api/users/*
 app.use(config.url.apiConcert, adminApiRoutes);
 app.use(config.url.apiUser, userRoutes);
