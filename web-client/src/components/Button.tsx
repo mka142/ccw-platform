@@ -13,7 +13,7 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    "px-8 py-3 font-bold text-lg rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 active:scale-95";
+    "select-none touch-manipulation px-8 py-3 font-bold text-lg rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 active:scale-95";
 
   const variantClasses = {
     primary:
