@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function AppGuide() {
+export default function AppGuide({ footer }: { footer?: React.ReactNode }) {
   return (
     <div className="max-w-3xl text-white space-y-6 overflow-y-auto p-3 h-full">
       <h1 className="text-4xl font-bold mb-8 text-center">Drogi Słuchaczu</h1>
@@ -56,6 +56,7 @@ export default function AppGuide() {
           Dziękujemy za uczestnictwo w tym wyjątkowym doświadczeniu!
         </p>
       </div>
+      {footer && <div className="mt-8">{footer}</div>}
     </div>
   );
 }
