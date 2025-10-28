@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
   <head>
     <meta charset="UTF-8" />
 
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+      content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
     />
+    <meta name="HandheldFriendly" content="true" />
 
     <link rel="icon" type="image/svg+xml" href="./public/logo/logo.svg" />
     <link rel="manifest" href="./manifest.json" />
@@ -19,8 +20,13 @@
     <link rel="apple-touch-icon" href="./public/logo/logo.svg" />
     <title>Co czują Wrocławianie?</title>
     <script type="module" src="./frontend.tsx" async></script>
+    <style>
+      html {
+        height: 100%;
+      }
+    </style>
   </head>
-  <body style="background-color: #000000">
+  <body style="background-color: #000000; position: fixed" className="">
     <div id="root"></div>
   </body>
 </html>
