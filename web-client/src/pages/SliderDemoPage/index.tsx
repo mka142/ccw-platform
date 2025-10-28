@@ -33,7 +33,7 @@ export default function SliderDemoPage({
               Instrukcja obsługi suwaka napięcia
             </h1>
 
-            <div className="space-y-6 mb-12">
+            {/* <div className="space-y-6 mb-12">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -68,7 +68,7 @@ export default function SliderDemoPage({
                   odczucia są cenne dla naszego badania.
                 </p>
               </motion.div>
-            </div>
+            </div> */}
 
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
