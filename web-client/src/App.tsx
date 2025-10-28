@@ -14,13 +14,23 @@ import ConcertStartPage from "./pages/ConcertStartPage";
 import TensionMeasurementPage from "./pages/TensionMeasurementPage";
 import PieceAnnouncementPage from "./pages/PieceAnnouncementPage";
 import OvationPage from "./pages/OvationPage";
-import FeedbackFormPage from "./pages/FeedbackFormPage";
+
 import EndOfConcertPage from "./pages/EndOfConcertPage";
 import { LoadingWithBackgroundTransition } from "./components/Loading";
 
 import { useAppState } from "./hooks/useAppState";
 import { EventType } from "./config";
 import config from "./config";
+
+function getColor(color: string | { [key: string]: string } | undefined) {
+  if (typeof color === "string") {
+    return color;
+  } else if (typeof color === "object" && color !== null) {
+    return color?.color || "#000000";
+  } else {
+    return "#000000";
+  }
+}
 
 export function App() {
   const { state, connectionStatus, userId } = useAppState();
@@ -44,7 +54,9 @@ export function App() {
     return (
       <LoadingWithBackgroundTransition
         finishBackgroundColor={
-          state ? config.constants.pagesBackgroundColor[state.type] : "#000000"
+          state
+            ? getColor(config.constants.pagesBackgroundColor[state.type])
+            : "#000000"
         }
         shouldTransitionBegin={loadingState.shouldBeginTransition}
         setTransitionFinished={(finished) =>
@@ -83,10 +95,6 @@ export function App() {
       <StateNavigationPage<EventType>
         pageState="OVATION"
         component={OvationPage}
-      />
-      <StateNavigationPage<EventType>
-        pageState="FEEDBACK_FORM"
-        component={FeedbackFormPage}
       />
       <StateNavigationPage<EventType>
         pageState="END_OF_CONCERT"
