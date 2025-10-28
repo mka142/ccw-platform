@@ -7,8 +7,6 @@ interface Sponsor {
   width?: number;
 }
 
-
-
 // import images directly
 import amklLogo from "@/public/logo/amkl.png";
 import kannmLogo from "@/public/logo/kannm.png";
@@ -17,10 +15,9 @@ import sknmLogo from "@/public/logo/sknm.png";
 import wcaLogo from "@/public/logo/wca-v2-cropped.png";
 import wroclawLogo from "@/public/logo/wroclaw.png";
 
-
 // Add your sponsor logo filenames from the public folder
 // Example: if you have /public/sponsors/logo1.png, use "sponsors/logo1.png"
-const sponsors: Sponsor[] = [
+export const sponsors: Sponsor[] = [
   { name: "AMKL", logo: amklLogo, width: 300 },
   { name: "KNAKITM", logo: knakitmLogo, width: 300 },
   { name: "WCA", logo: wcaLogo, width: 300 },
@@ -71,7 +68,7 @@ export default function SponsorsCarousel({
             key={index}
             src={sponsor.logo}
             alt={sponsor.name}
-            className="h-18 object-contain opacity-60 hover:opacity-100 transition-opacity max-h-24 active:opacity-100 user-select-none"
+            className="select-none pointer-events-none touch-none h-18 object-contain opacity-60 hover:opacity-100 transition-opacity max-h-24 active:opacity-100 user-select-none"
             style={{
               width: sponsor.width ? `${sponsor.width}px` : "200px",
               flexShrink: 0,
