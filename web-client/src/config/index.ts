@@ -72,16 +72,27 @@ export const DEVICE_TYPES = ["Web", "M5Dial"] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 export type DeviceType = (typeof DEVICE_TYPES)[number];
 
-export const PAGES_BACKGROUND_COLOR: Record<EventType, string> = {
+export const PAGES_BACKGROUND_COLOR: Record<
+  EventType,
+  | string
+  | {
+      color: string;
+      gradient: string;
+    }
+> = {
   BEFORE_CONCERT: "var(--glow)",
-  APP_GUIDE: "var(--glow)",
+  APP_GUIDE: "#000000",
   TENSION_MEASUREMENT: "#000000",
   SLIDER_DEMO: "#000000",
   CONCERT_START: "#000000",
   PIECE_ANNOUNCEMENT: "#000000",
   OVATION: "#000000",
   FEEDBACK_FORM: "#000000",
-  END_OF_CONCERT: "#000000",
+  // gradient blck top to glow bottom
+  END_OF_CONCERT: {
+    color: "#000000",
+    gradient: "linear-gradient(to bottom, #000,#000,#000, var(--glow),#000)",
+  },
 };
 
 // ============================================================================
@@ -117,6 +128,11 @@ export const config = {
     },
     form: {
       submitBatch: `${API_BASE_URL}/api/forms/batch`,
+    },
+    examinationForm: {
+      submit: `${API_BASE_URL}/api/examination-forms`,
+      getUserFormResponse: (userId: string, formId: string) =>
+        `${API_BASE_URL}/api/examination-forms/user/${userId}/form/${formId}`,
     },
   },
 
