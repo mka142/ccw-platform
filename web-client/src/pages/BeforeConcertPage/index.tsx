@@ -103,7 +103,7 @@ export default function BeforeConcertPage({
           darkFont={true}
           fotter={
             <Button
-              className="my-6"
+              className="my-7"
               onClick={() => setPageType("NoteLoader")}
               variant="secondary"
             >
