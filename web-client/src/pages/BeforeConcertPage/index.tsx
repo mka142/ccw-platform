@@ -11,13 +11,11 @@ import ConcertForm from "@/components/ConcertForm";
 import SponsorsCarousel from "@/components/SponsorsCarousel";
 import Button from "@/components/Button";
 import FadeInWrapper from "@/components/FadeInWrapper";
-import {
-  useBackgroundColor,
-  useBackgroundColorSetter,
-} from "@/hooks/useBackgroundColor";
+import { useBackgroundColor } from "@/hooks/useBackgroundColor";
 import config from "@/config";
 import { useUserResponseExist } from "@/components/form/useUserResponseExist";
 import ResearchForm, { FORM_ID } from "@/components/form/ResearchForm";
+import { useIsMobileChromium } from "@/lib/MobileContainer";
 
 const TEXTS = [
   "Co czują Wrocławianie?",
@@ -183,6 +181,8 @@ function AwaitingContent({
   const [showArc, setShowArc] = useState(false);
   const [arcText, setArcText] = useState(TEXTS[TEXTS.length - 1]);
 
+  const isMobileChromium = useIsMobileChromium();
+
   useBackgroundColor("#000000", 5000, shouldTransitionBegin);
 
   // Handler for animation end
@@ -224,7 +224,8 @@ function AwaitingContent({
       <TextArc
         text={arcText}
         spread={0}
-        fontSize={8}
+        fontSize={isMobileChromium ? 0.27 : 0.7}
+        fontSizeUnit="rem"
         radius={28}
         textColor="hsl(0 100% 50% / 0.5)"
         className="absolute w-[480px] h-[480px] select-none -z-10"
