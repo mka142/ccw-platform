@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import "./TextArc.css";
 
 export default function TextArc({
@@ -11,6 +11,7 @@ export default function TextArc({
   rotate = false,
   rotateDirection = "right",
   visible = true,
+  fontSizeUnit = "px",
 }: {
   text?: string;
   className?: string;
@@ -22,6 +23,7 @@ export default function TextArc({
   rotate?: boolean;
   rotateDirection?: "left" | "right";
   visible?: boolean;
+  fontSizeUnit?: "px" | "em" | "rem" | "%";
 }) {
   const VIEWBOX = 100;
 
@@ -76,6 +78,10 @@ export default function TextArc({
           onTransitionEnd={handleTransitionEnd}
         >
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <style type="text/css">
+              @import
+              url(https://fonts.googleapis.com/css?family=Droid+Sans+Mono);
+            </style>
             <path
               id="circlePath"
               fill="none"
@@ -87,7 +93,7 @@ export default function TextArc({
             <text
               id="text"
               fontFamily="monospace"
-              fontSize={fontSize}
+              fontSize={`${fontSize}${fontSizeUnit}`} //- this seems to work unpredictably across browsers
               fontWeight="bold"
               fill="inherit"
             >
