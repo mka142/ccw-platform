@@ -6,6 +6,25 @@ export function isMobile() {
   );
 }
 
+export function useIsMobileChromium() {
+  const [isMobileChromium, setIsMobileChromium] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof navigator === "undefined") return;
+
+    const userAgent = navigator.userAgent;
+    const isChromium =
+      /Chrome|Chromium|CriOS/.test(userAgent) && !/Edge|Edg|OPR/.test(userAgent);
+    const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      userAgent
+    );
+
+    setIsMobileChromium(isChromium && isMobileDevice);
+  }, []);
+
+  return isMobileChromium;
+}
+
 // Utility to check orientation: returns 'portrait' or 'landscape'
 export function getOrientation() {
   if (typeof window === "undefined") return "unknown";
