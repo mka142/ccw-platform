@@ -23,10 +23,10 @@ interface DeviceManagerContextValue<T = any> {
   connectionStatus: ConnectionStatus;
 
   /** Latest event received from the device manager */
-  latestEvent: { event: T; changeId: string } | null;
+  latestEvent: { event: T; changeId: string; timestamp: number } | null;
 
   /** All events received in this session */
-  eventHistory: { event: T; changeId: string }[];
+  eventHistory: { event: T; changeId: string; timestamp: number }[];
 
   /** Connect to the device manager */
   connect: (config: DeviceManagerConfig) => void;
@@ -99,9 +99,10 @@ export function DeviceManagerProvider<T = any>({
   const [latestEvent, setLatestEvent] = useState<{
     event: T;
     changeId: string;
+    timestamp: number;
   } | null>(null);
   const [eventHistory, setEventHistory] = useState<
-    { event: T; changeId: string }[]
+    { event: T; changeId: string; timestamp: number }[]
   >([]);
   const [error, setError] = useState<Error | null>(null);
 
@@ -127,11 +128,18 @@ export function DeviceManagerProvider<T = any>({
         console.log("📨 Event received:", event);
         const eventRandomID = randomId();
         // Update latest event
-        setLatestEvent({ event, changeId: eventRandomID });
+        setLatestEvent({
+          event,
+          changeId: eventRandomID,
+          timestamp: message.timestamp,
+        });
 
         // Add to history (with size limit)
         setEventHistory((prev) => {
-          const newHistory = [{ event, changeId: eventRandomID }, ...prev];
+          const newHistory = [
+            { event, changeId: eventRandomID, timestamp: message.timestamp },
+            ...prev,
+          ];
           return newHistory.slice(0, maxHistorySize);
         });
       } catch (err) {
