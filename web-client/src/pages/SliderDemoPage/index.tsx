@@ -28,12 +28,12 @@ export default function SliderDemoPage({
     >
       <FadeInWrapper className={TENSION_RECORDER_CONTAINER_CLASSES}>
         {!showDemo ? (
-          <div className="flex flex-col text-center justify-center items-center w-full h-full max-w-2xl mx-auto px-6">
-            <h1 className="text-3xl font-bold text-white mb-8">
+          <div className="flex flex-col text-center justify-start items-center w-full h-full max-w-2xl mx-auto px-6 overflow-auto">
+            <h1 className="text-3xl font-bold text-white mb-8 mt-12">
               Instrukcja obsługi suwaka napięcia
             </h1>
 
-            {/* <div className="space-y-6 mb-12">
+            <div className="space-y-6 mb-12">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -53,7 +53,7 @@ export default function SliderDemoPage({
                 </p>
               </motion.div>
 
-              <motion.div
+              {/* <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1, duration: 0.8, ease: "easeOut" }}
@@ -67,8 +67,8 @@ export default function SliderDemoPage({
                   Nie ma złych odpowiedzi! Reaguj naturalnie na muzykę. Twoje
                   odczucia są cenne dla naszego badania.
                 </p>
-              </motion.div>
-            </div> */}
+              </motion.div> */}
+            </div>
 
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
