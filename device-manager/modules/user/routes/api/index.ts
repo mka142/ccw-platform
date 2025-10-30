@@ -9,7 +9,7 @@ import type { Request, Response, RequestHandler } from "express";
 
 const router = Router();
 
-const DEVICE_TYPES: DeviceType[] = ["Web", "M5Dial"];
+const DEVICE_TYPES: DeviceType[] = ["Web", "M5Stack"];
 
 /**
  * POST /api/users/acquireUserId
@@ -23,7 +23,7 @@ const DEVICE_TYPES: DeviceType[] = ["Web", "M5Dial"];
  *
  * **Request:**
  * - Header: `X-User-Id` (optional) - Existing user ID
- * - Body: `{ deviceType: "Web" | "M5Dial" }` - Type of device requesting ID
+ * - Body: `{ deviceType: "Web" | "M5Stack" }` - Type of device requesting ID
  *
  * **Response Success (200):**
  * ```json
@@ -42,13 +42,13 @@ const DEVICE_TYPES: DeviceType[] = ["Web", "M5Dial"];
  * @example
  * // New device connecting
  * POST /api/users/acquireUserId
- * Body: { "deviceType": "M5Dial" }
+ * Body: { "deviceType": "M5Stack" }
  * → Returns new userId
  *
  * // Existing device reconnecting
  * POST /api/users/acquireUserId
  * Headers: { "X-User-Id": "507f1f77bcf86cd799439011" }
- * Body: { "deviceType": "M5Dial" }
+ * Body: { "deviceType": "M5Stack" }
  * → Returns same userId if concert matches, or new userId if concert changed
  */
 router.post("/acquireUserId", async (req: Request, res: Response) => {

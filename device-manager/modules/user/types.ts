@@ -4,7 +4,7 @@ import type { BaseDocument, DocumentWithId, ObjectId } from "@/lib/types";
  * User Module Types
  */
 
-export type DeviceType = "Web" | "M5Dial";
+export type DeviceType = "Web" | "M5Stack";
 
 interface UserSchema {
   concertId: ObjectId;

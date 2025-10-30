@@ -376,7 +376,7 @@ describe("Admin Services Integration Tests", () => {
     it("updates user status", async () => {
       const user = await UserService.createUser({
         concertId,
-        deviceType: "M5Dial",
+        deviceType: "M5Stack",
         isActive: false,
       });
 
@@ -421,7 +421,7 @@ describe("Admin Services Integration Tests", () => {
 
       await UserService.createUser({
         concertId,
-        deviceType: "M5Dial",
+        deviceType: "M5Stack",
         isActive: false,
       });
 
@@ -447,7 +447,7 @@ describe("Admin Services Integration Tests", () => {
       if (!user.success) return;
 
       const updateResult = await UserService.updateUser(user.data._id.toString(), {
-        deviceType: "M5Dial",
+        deviceType: "M5Stack",
         isActive: true,
       });
 
@@ -455,7 +455,7 @@ describe("Admin Services Integration Tests", () => {
 
       if (!updateResult.success || !updateResult.data) return;
 
-      expect(updateResult.data.deviceType).toBe("M5Dial");
+      expect(updateResult.data.deviceType).toBe("M5Stack");
       expect(updateResult.data.isActive).toBe(true);
     });
 
