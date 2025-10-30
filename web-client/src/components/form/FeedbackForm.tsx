@@ -28,14 +28,14 @@ const OVERALL_EXPERIENCE_OPTIONS = [
 ];
 
 const EMOTIONAL_IMPACT_ITEMS = [
-  "zrelaksowany/a",
-  "pobudzony/a",
-  "zainspirowany/a",
-  "zmęczony/a",
-  "usatysfakcjonowany/a",
-  "skoncentrowany/a",
-  "poruszony/a",
-  "spokojny/a",
+  "jestem zrelaksowany/a",
+  "jestem pobudzony/a",
+  "jestem zainspirowany/a",
+  "jestem zmęczony/a",
+  "jestem usatysfakcjonowany/a",
+  "jestem skoncentrowany/a",
+  "jestem poruszony/a",
+  "jestem spokojny/a",
 ];
 
 const EMOTIONAL_IMPACT_OPTIONS = [
