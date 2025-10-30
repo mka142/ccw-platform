@@ -47,22 +47,33 @@ export function App() {
   useEffect(() => {
     if (connectionStatus === "connected" && userId) {
       setLoadingState((prev) => ({ ...prev, shouldBeginTransition: true }));
+    } else if (connectionStatus !== "connected" || !userId) {
+      setLoadingState({
+        shouldBeginTransition: false,
+        transitionFinished: false,
+      });
     }
   }, [connectionStatus, userId]);
 
   if (isLoading) {
     return (
-      <LoadingWithBackgroundTransition
-        finishBackgroundColor={
-          state
-            ? getColor(config.constants.pagesBackgroundColor[state.type])
-            : "#000000"
-        }
-        shouldTransitionBegin={loadingState.shouldBeginTransition}
-        setTransitionFinished={(finished) =>
-          setLoadingState((prev) => ({ ...prev, transitionFinished: finished }))
-        }
-      />
+      <>
+        <LoadingWithBackgroundTransition
+          startBackgroundColor="#000000"
+          finishBackgroundColor={
+            state
+              ? getColor(config.constants.pagesBackgroundColor[state.type])
+              : "#000000"
+          }
+          shouldTransitionBegin={loadingState.shouldBeginTransition}
+          setTransitionFinished={(finished) =>
+            setLoadingState((prev) => ({
+              ...prev,
+              transitionFinished: finished,
+            }))
+          }
+        />
+      </>
     );
   }
 
