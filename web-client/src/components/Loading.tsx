@@ -36,10 +36,12 @@ export default function Loading() {
 
 export function LoadingWithBackgroundTransition({
   finishBackgroundColor,
+  startBackgroundColor = "#000000",
   shouldTransitionBegin,
   setTransitionFinished,
 }: {
   finishBackgroundColor: string;
+  startBackgroundColor?: string;
   shouldTransitionBegin: boolean;
   setTransitionFinished: (finished: boolean) => void;
 }) {
@@ -53,6 +55,8 @@ export function LoadingWithBackgroundTransition({
         setTransitionFinished(true);
       }, interval);
       return () => clearTimeout(int);
+    } else {
+      setBackgroundColor(startBackgroundColor);
     }
   }, [shouldTransitionBegin, setBackgroundColor]);
 
