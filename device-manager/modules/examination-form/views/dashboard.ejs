@@ -120,36 +120,23 @@
       console.error(`Error loading ${elementId}:`, error);
     }
     
-    async function fetchDevices() {
+    async function fetchFormUsers(formId) {
       try {
-        const response = await fetch(`/api/user/concert/${concertId}`);
-        const data = await response.json();
-        
-        if (Array.isArray(data.data)) {
-          const activeUsers = data.data.filter(user => user.isActive).length;
-          const totalUsers = data.data.length;
-          document.getElementById('active-users').innerHTML = 
-            `<strong>${activeUsers}</strong> / ${totalUsers}`;
-          return true;
-        } else {
-          throw new Error('Invalid data format');
-        }
+        const response = await fetch(`/api/examination-forms/form/${formId}/users`);
+        const users = await response.json();
+        return Array.isArray(users) ? users : [];
       } catch (error) {
-        showError('active-users', error);
-        return false;
+        console.error(`Error fetching form users for ${formId}:`, error);
+        return [];
       }
     }
     
-    async function fetchFormCount(formId, elementId) {
-      try {
-        const response = await fetch(`/api/examination-forms/form/${formId}/count`);
-        const count = await response.json();
-        document.getElementById(elementId).innerHTML = `<strong>${count}</strong> odpowiedzi`;
-        return true;
-      } catch (error) {
-        showError(elementId, error);
-        return false;
-      }
+    async function countFormResponsesInConcert(formId, concertDevices) {
+      const formUsers = await fetchFormUsers(formId);
+      // Filter form users to only include those in the current concert
+      const concertUserIds = new Set(concertDevices.map(device => device._id));
+      const filteredUsers = formUsers.filter(userId => concertUserIds.has(userId));
+      return filteredUsers.length;
     }
     
     async function updateData() {
@@ -164,16 +151,35 @@
         showLoading('form1-count');
         showLoading('form2-count');
         
-        // Fetch all data in parallel
-        const [devicesSuccess, form1Success, form2Success] = await Promise.all([
-          fetchDevices(),
-          fetchFormCount('concert-preexamination-form', 'form1-count'),
-          fetchFormCount('concert-feedback-form', 'form2-count')
+        // First fetch devices to get concert participants
+        const devicesResponse = await fetch(`/api/user/concert/${concertId}`);
+        const devicesData = await devicesResponse.json();
+        
+        let devicesSuccess = false;
+        let concertDevices = [];
+        
+        if (Array.isArray(devicesData.data)) {
+          concertDevices = devicesData.data;
+          const activeUsers = concertDevices.filter(user => user.isActive).length;
+          const totalUsers = concertDevices.length;
+          document.getElementById('active-users').innerHTML = 
+            `<strong>${activeUsers}</strong> / ${totalUsers}`;
+          devicesSuccess = true;
+        } else {
+          showError('active-users', new Error('Invalid data format'));
+        }
+        
+        // Fetch form responses and filter by concert participants
+        const [form1Count, form2Count] = await Promise.all([
+          countFormResponsesInConcert('concert-preexamination-form', concertDevices),
+          countFormResponsesInConcert('concert-feedback-form', concertDevices)
         ]);
         
+        document.getElementById('form1-count').innerHTML = `<strong>${form1Count}</strong> odpowiedzi`;
+        document.getElementById('form2-count').innerHTML = `<strong>${form2Count}</strong> odpowiedzi`;
+        
         // Update status based on success
-        const allSuccess = devicesSuccess && form1Success && form2Success;
-        updateStatusIndicator(allSuccess);
+        updateStatusIndicator(devicesSuccess);
         
       } catch (error) {
         console.error('Error updating data:', error);
