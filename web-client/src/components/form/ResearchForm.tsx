@@ -266,9 +266,10 @@ export default function ResearchForm({
             Wyślij formularz
           </Button>
           {onCancel && (
-            <Button type="button" variant="secondary" onClick={onCancel}>
-              Anuluj
-            </Button>
+            // <Button type="button" variant="secondary" onClick={onCancel}>
+            //   Anuluj
+            // </Button>
+            <></>
           )}
         </div>
       </form>
