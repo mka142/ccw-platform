@@ -29,6 +29,7 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
     setCurrentSet,
     updateRecordMetadata,
     toggleIdFilter,
+    toggleTagFilter,
     removeOperationFromRecord,
     toggleGlobalVisibility,
   } = useDashboard();
@@ -150,7 +151,7 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
                       }
                       className="cursor-pointer"
                       onClick={() =>
-                        !isLeftPanelDisabled && toggleIdFilter(tag)
+                        !isLeftPanelDisabled && toggleTagFilter(tag)
                       }
                     >
                       {tag}
