@@ -634,10 +634,30 @@ export function DashboardProvider({
         throw new Error(`Set with name "${name}" already exists`);
       }
 
-      // Get records to include in set
-      const recordIds = fromFiltered && prev.filterByIds.length > 0
-        ? prev.filterByIds
-        : Object.keys(prev.recordMetadata);
+      let recordIds: string[];
+      
+      if (fromFiltered) {
+        // Start with all records
+        let filteredIds = Object.keys(prev.recordMetadata);
+        
+        // Apply ID filter if any IDs are selected
+        if (prev.filterByIds.length > 0) {
+          filteredIds = filteredIds.filter(id => prev.filterByIds.includes(id));
+        }
+        
+        // Apply tag filter if any tags are selected
+        if (prev.filterByTags.length > 0) {
+          filteredIds = filteredIds.filter(id => {
+            const metadata = prev.recordMetadata[id];
+            return metadata && metadata.tags.some(tag => prev.filterByTags.includes(tag));
+          });
+        }
+        
+        recordIds = filteredIds;
+      } else {
+        // Use all records if not filtering
+        recordIds = Object.keys(prev.recordMetadata);
+      }
 
       // Create record metadata for set (copy from global)
       const setRecordMetadata: Record<string, RecordMetadata> = {};
