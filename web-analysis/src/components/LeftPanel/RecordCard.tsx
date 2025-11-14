@@ -1,15 +1,23 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { Edit2, X, Plus, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
-import { RecordMetadata } from '@/lib/types';
+import React, { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import {
+  Edit2,
+  X,
+  Plus,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+} from "lucide-react";
+import { RecordMetadata } from "@/lib/types";
 
 interface RecordCardProps {
   id: string;
@@ -38,22 +46,22 @@ export default function RecordCard({
   onRemoveOperation,
   onEditModeChange,
   resamplingApplied = false,
-  showLabel = true
+  showLabel = true,
 }: RecordCardProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [labelInput, setLabelInput] = useState(metadata.label || '');
-  const [tagInput, setTagInput] = useState('');
+  const [labelInput, setLabelInput] = useState(metadata.label || "");
+  const [tagInput, setTagInput] = useState("");
 
   const handleEditClick = () => {
     setIsEditing(true);
-    setLabelInput(metadata.label || '');
+    setLabelInput(metadata.label || "");
     onEditModeChange?.(id, true);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setLabelInput('');
-    setTagInput('');
+    setLabelInput("");
+    setTagInput("");
     onEditModeChange?.(id, false);
   };
 
@@ -65,28 +73,29 @@ export default function RecordCard({
     if (!tagInput.trim()) return;
     const newTags = [...metadata.tags, tagInput.trim()];
     onUpdateMetadata(id, { tags: newTags });
-    setTagInput('');
+    setTagInput("");
   };
 
   const handleRemoveTag = (tag: string) => {
-    const newTags = metadata.tags.filter(t => t !== tag);
+    const newTags = metadata.tags.filter((t) => t !== tag);
+    console.log(tag, newTags);
     onUpdateMetadata(id, { tags: newTags });
   };
 
-  const handleMove = (direction: 'up' | 'down' | 'left' | 'right') => {
+  const handleMove = (direction: "up" | "down" | "left" | "right") => {
     const step = 1000; // 1 second or 1 unit
 
     switch (direction) {
-      case 'up':
+      case "up":
         onUpdateMetadata(id, { yMove: metadata.yMove + step });
         break;
-      case 'down':
+      case "down":
         onUpdateMetadata(id, { yMove: metadata.yMove - step });
         break;
-      case 'left':
+      case "left":
         onUpdateMetadata(id, { xMove: metadata.xMove - step });
         break;
-      case 'right':
+      case "right":
         onUpdateMetadata(id, { xMove: metadata.xMove + step });
         break;
     }
@@ -94,8 +103,8 @@ export default function RecordCard({
 
   return (
     <Card
-      className={`p-3 ${isHighlighted ? 'ring-2 ring-primary' : ''} ${
-        isDisabled ? 'opacity-50' : ''
+      className={`p-3 ${isHighlighted ? "ring-2 ring-primary" : ""} ${
+        isDisabled ? "opacity-50" : ""
       }`}
     >
       <div className="flex items-start justify-between mb-2">
@@ -115,11 +124,7 @@ export default function RecordCard({
           </div>
         </div>
         {!isEditing && !isDisabled && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleEditClick}
-          >
+          <Button size="sm" variant="ghost" onClick={handleEditClick}>
             <Edit2 className="h-3 w-3" />
           </Button>
         )}
@@ -128,7 +133,7 @@ export default function RecordCard({
       {/* Tags */}
       {metadata.tags.length > 0 && !isEditing && (
         <div className="flex flex-wrap gap-1 mb-2">
-          {metadata.tags.map(tag => (
+          {metadata.tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="text-xs">
               {tag}
             </Badge>
@@ -146,7 +151,7 @@ export default function RecordCard({
               <div className="flex gap-2 mt-1">
                 <Input
                   value={labelInput}
-                  onChange={e => setLabelInput(e.target.value)}
+                  onChange={(e) => setLabelInput(e.target.value)}
                   placeholder="Niestandardowa etykieta"
                   className="text-sm"
                 />
@@ -163,23 +168,22 @@ export default function RecordCard({
             <div className="flex gap-2 mt-1">
               <Input
                 value={tagInput}
-                onChange={e => setTagInput(e.target.value)}
+                onChange={(e) => setTagInput(e.target.value)}
                 placeholder="Dodaj tag"
                 className="text-sm"
-                onKeyDown={e => e.key === 'Enter' && handleAddTag()}
+                onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
               />
               <Button size="sm" onClick={handleAddTag}>
                 <Plus className="h-3 w-3" />
               </Button>
             </div>
             <div className="flex flex-wrap gap-1 mt-2">
-              {metadata.tags.map(tag => (
+              {metadata.tags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}
-                  <X
-                    className="h-3 w-3 ml-1 cursor-pointer"
-                    onClick={() => handleRemoveTag(tag)}
-                  />
+                  <div onClick={() => handleRemoveTag(tag)}>
+                    <X className="h-3 w-3 ml-1 cursor-pointer" />
+                  </div>
                 </Badge>
               ))}
             </div>
@@ -198,7 +202,7 @@ export default function RecordCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleMove('up')}
+                onClick={() => handleMove("up")}
                 disabled={resamplingApplied}
               >
                 <ArrowUp className="h-3 w-3" />
@@ -207,7 +211,7 @@ export default function RecordCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleMove('left')}
+                onClick={() => handleMove("left")}
                 disabled={resamplingApplied}
               >
                 <ArrowLeft className="h-3 w-3" />
@@ -219,7 +223,7 @@ export default function RecordCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleMove('right')}
+                onClick={() => handleMove("right")}
                 disabled={resamplingApplied}
               >
                 <ArrowRight className="h-3 w-3" />
@@ -228,7 +232,7 @@ export default function RecordCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => handleMove('down')}
+                onClick={() => handleMove("down")}
                 disabled={resamplingApplied}
               >
                 <ArrowDown className="h-3 w-3" />
@@ -253,19 +257,21 @@ export default function RecordCard({
                     className="flex items-center justify-between text-xs bg-secondary p-2 rounded"
                   >
                     <span>
-                      {op.type === 'normalize' && 'Normalizacja'}
-                      {op.type === 'quantize' && 'Przybliżenie'}
-                      {op.type === 'custom' && 'Custom'}
-                      {op.type === 'normalize' && op.params.minRange !== undefined && (
-                        <span className="text-muted-foreground ml-1">
-                          ({op.params.minRange}-{op.params.maxRange})
-                        </span>
-                      )}
-                      {op.type === 'quantize' && op.params.step !== undefined && (
-                        <span className="text-muted-foreground ml-1">
-                          (krok: {op.params.step})
-                        </span>
-                      )}
+                      {op.type === "normalize" && "Normalizacja"}
+                      {op.type === "quantize" && "Przybliżenie"}
+                      {op.type === "custom" && "Custom"}
+                      {op.type === "normalize" &&
+                        op.params.minRange !== undefined && (
+                          <span className="text-muted-foreground ml-1">
+                            ({op.params.minRange}-{op.params.maxRange})
+                          </span>
+                        )}
+                      {op.type === "quantize" &&
+                        op.params.step !== undefined && (
+                          <span className="text-muted-foreground ml-1">
+                            (krok: {op.params.step})
+                          </span>
+                        )}
                     </span>
                     <X
                       className="h-3 w-3 cursor-pointer"
