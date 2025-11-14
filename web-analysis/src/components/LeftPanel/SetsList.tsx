@@ -92,7 +92,8 @@ export default function SetsList() {
     }
 
     // Create from filtered records or all if none filtered
-    const fromFiltered = config.filterByIds.length > 0;
+    const fromFiltered =
+      config.filterByIds.length > 0 || config.filterByTags.length > 0;
     createSet(newSetName.trim(), newSetDescription.trim(), fromFiltered);
 
     setIsCreatingNew(false);
@@ -134,7 +135,9 @@ export default function SetsList() {
         <Card className="p-3 border-2 border-primary">
           <div className="space-y-3">
             <div>
-              <Label className="text-xs">Nazwa zestawu (wymagana, unikalna)</Label>
+              <Label className="text-xs">
+                Nazwa zestawu (wymagana, unikalna)
+              </Label>
               <Input
                 value={newSetName}
                 onChange={(e) => setNewSetName(e.target.value)}
@@ -152,8 +155,18 @@ export default function SetsList() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {config.filterByIds.length > 0
-                ? `Utworzy zestaw z ${config.filterByIds.length} wybranych rekordów`
+              {config.filterByIds.length > 0 || config.filterByTags.length > 0
+                ? `Utworzy zestaw z ${
+                    config.filterByIds.length ||
+                    Object.keys(config.recordMetadata).filter(
+                      (id) =>
+                        // Check if record matches tag filters
+                        config.filterByTags.length === 0 ||
+                        config.recordMetadata[id]?.tags.some((tag) =>
+                          config.filterByTags.includes(tag)
+                        )
+                    ).length
+                  } wybranych rekordów`
                 : "Utworzy zestaw ze wszystkich rekordów"}
             </p>
             <div className="flex gap-2">
@@ -175,7 +188,8 @@ export default function SetsList() {
       {/* Sets List */}
       {config.sets.length === 0 && !isCreatingNew && (
         <p className="text-sm text-muted-foreground text-center py-8">
-          Brak zestawów. Utwórz zestaw, aby grupować i zarządzać rekordami razem.
+          Brak zestawów. Utwórz zestaw, aby grupować i zarządzać rekordami
+          razem.
         </p>
       )}
 
@@ -259,7 +273,9 @@ export default function SetsList() {
                     <Checkbox
                       checked={set.visible}
                       onCheckedChange={() => toggleSetVisibility(set.name)}
-                      title={set.visible ? "Ukryj z wykresu" : "Pokaż na wykresie"}
+                      title={
+                        set.visible ? "Ukryj z wykresu" : "Pokaż na wykresie"
+                      }
                     />
                     <Layers className="h-4 w-4  flex-shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
@@ -270,7 +286,12 @@ export default function SetsList() {
                         </p>
                       )}
                       <Badge variant="secondary" className="text-xs mt-1">
-                        {recordCount} {recordCount === 1 ? "rekord" : recordCount < 5 ? "rekordy" : "rekordów"}
+                        {recordCount}{" "}
+                        {recordCount === 1
+                          ? "rekord"
+                          : recordCount < 5
+                          ? "rekordy"
+                          : "rekordów"}
                       </Badge>
                     </div>
                   </div>
