@@ -8,6 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Eye, EyeOff, ChevronLeft } from "lucide-react";
 import SetsList from "./SetsList";
 import SetRecordsList from "./SetRecordsList";
@@ -138,26 +144,43 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
 
             {/* Tag filters */}
             {allTags.length > 0 && (
-              <div className="p-4 border-b">
-                <Label className="text-sm font-medium">Filtruj według tagów</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {allTags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant={
-                        config.filterByTags.includes(tag)
-                          ? "default"
-                          : "outline"
-                      }
-                      className="cursor-pointer"
-                      onClick={() =>
-                        !isLeftPanelDisabled && toggleTagFilter(tag)
-                      }
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
+              <div className="border-b">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="tags" className="border-0">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm font-medium cursor-pointer">
+                          Filtruj według tagów
+                        </Label>
+                        {config.filterByTags.length > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {config.filterByTags.length}
+                          </Badge>
+                        )}
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="flex flex-wrap gap-2">
+                        {allTags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant={
+                              config.filterByTags.includes(tag)
+                                ? "default"
+                                : "outline"
+                            }
+                            className="cursor-pointer"
+                            onClick={() =>
+                              !isLeftPanelDisabled && toggleTagFilter(tag)
+                            }
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
             )}
 
