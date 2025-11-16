@@ -91,14 +91,20 @@ export function DashboardProvider({
   const [chartVisualizationMode, setChartVisualizationMode] =
     useState<ChartVisualizationMode>("linear");
   const [currentSet, setCurrentSetState] = useState<string | null>(null);
-  
+
   // Web Worker for background processing
   const { processData: processDataWorker, isProcessing } = useDataProcessor();
-  
+
   // State for processed data (will be updated asynchronously by worker)
-  const [globalProcessedData, setGlobalProcessedData] = useState<ProcessedRecord[]>([]);
-  const [setsProcessedData, setSetsProcessedData] = useState<ProcessedRecord[]>([]);
-  const [currentSetProcessedData, setCurrentSetProcessedData] = useState<ProcessedRecord[] | null>(null);
+  const [globalProcessedData, setGlobalProcessedData] = useState<
+    ProcessedRecord[]
+  >([]);
+  const [setsProcessedData, setSetsProcessedData] = useState<ProcessedRecord[]>(
+    []
+  );
+  const [currentSetProcessedData, setCurrentSetProcessedData] = useState<
+    ProcessedRecord[] | null
+  >(null);
 
   // Get current set configuration
   const currentSetConfig = useMemo(() => {
@@ -160,7 +166,7 @@ export function DashboardProvider({
   const globalOperationsStr = JSON.stringify(config.globalOperations);
   const filterByIdsStr = JSON.stringify(config.filterByIds);
   const filterByTagsStr = JSON.stringify(config.filterByTags);
-  
+
   useEffect(() => {
     processDataWorker({
       rawData,
@@ -169,8 +175,10 @@ export function DashboardProvider({
       globalOperations: config.globalOperations,
       filterByIds: config.filterByIds,
       filterByTags: config.filterByTags,
-      idPrefix: "global"
-    }).then(setGlobalProcessedData).catch(console.error);
+      idPrefix: "global",
+    })
+      .then(setGlobalProcessedData)
+      .catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     recordMetadataStr,
@@ -180,10 +188,9 @@ export function DashboardProvider({
     filterByTagsStr,
   ]);
 
-
   // Process sets data in Web Worker
   const setsStr = JSON.stringify(config.sets);
-  
+
   useEffect(() => {
     const processSets = async () => {
       const allSetsData: ProcessedRecord[] = [];
@@ -196,7 +203,7 @@ export function DashboardProvider({
             globalOperations: set.globalOperations,
             filterByIds: set.filterByIds,
             filterByTags: [],
-            idPrefix: set.name
+            idPrefix: set.name,
           });
           allSetsData.push(...setData);
         }
@@ -227,8 +234,21 @@ export function DashboardProvider({
       globalOperations: currentSetData.globalOperations,
       filterByIds: currentSetData.filterByIds,
       filterByTags: [],
-      idPrefix: currentSetData.name
-    }).then(setCurrentSetProcessedData).catch(console.error);
+      idPrefix: currentSetData.name,
+    })
+      .then((e) => {
+        setCurrentSetProcessedData(e);
+        // replace set in setsProcessedData
+
+        const allSetsData = setsProcessedData.filter((r) => {
+          const parsed = parseRecordId(r.id);
+          return parsed.setName !== currentSetData.name;
+        });
+        allSetsData.push(...e);
+        setSetsProcessedData(allSetsData);
+      })
+
+      .catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSet, setsStr]);
 
