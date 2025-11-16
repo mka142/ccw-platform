@@ -1,13 +1,37 @@
 "use client";
 
 import AnalysisDashboard from "@/components/AnalysisDashboard";
-import { DashboardProvider } from "@/context/DashboardContext";
+import { DashboardProvider, useDashboard } from "@/context/DashboardContext";
 import { AudioProvider } from "@/context/AudioContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { DataProvider, useData } from "@/context/DataContext";
 import { ProjectProvider, useProject } from "@/context/ProjectContext";
 import { createEmptyConfig } from "@/lib/sampleData";
 import { useMemo, useEffect } from "react";
+
+function ConfigSetter() {
+  const { currentProject } = useProject();
+
+  const { setConfig } = useDashboard();
+
+  useEffect(() => {
+    if (!currentProject?.config) {
+      return;
+    }
+    const timeout2 = setTimeout(() => {
+      setConfig(JSON.parse(JSON.stringify(currentProject.config)));
+    }, 1000);
+    const timeout3 = setTimeout(() => {
+      setConfig(JSON.parse(JSON.stringify(currentProject.config)));
+    }, 2000);
+    return () => {
+      clearTimeout(timeout2);
+      clearTimeout(timeout3);
+    };
+  }, [currentProject]);
+
+  return null;
+}
 
 function DashboardContent() {
   const { customData, setCustomData } = useData();
@@ -17,14 +41,10 @@ function DashboardContent() {
   const activeData = customData || [];
 
   const initialConfig = useMemo(() => {
-    // Use project config if available
-    if (currentProject?.config) {
-      return currentProject.config;
-    }
     // Otherwise create empty config from active data
     const uniqueIds = Array.from(new Set(activeData.map((r) => r.id)));
     return createEmptyConfig(uniqueIds);
-  }, [currentProject, activeData]);
+  }, [activeData]);
 
   // Update customData when project is loaded
   useEffect(() => {
@@ -44,6 +64,7 @@ function DashboardContent() {
         initialConfig={initialConfig}
         key={currentProject?.name || activeData.length}
       >
+        <ConfigSetter />
         <AnalysisDashboard />
       </DashboardProvider>
     </AudioProvider>
