@@ -29,6 +29,7 @@ function isLightColor(hexColor: string): boolean {
 export default function SetsList() {
   const {
     config,
+    filteredRecordIds,
     createSet,
     updateSet,
     deleteSet,
@@ -156,17 +157,7 @@ export default function SetsList() {
             </div>
             <p className="text-xs text-muted-foreground">
               {config.filterByIds.length > 0 || config.filterByTags.length > 0
-                ? `Utworzy zestaw z ${
-                    config.filterByIds.length ||
-                    Object.keys(config.recordMetadata).filter(
-                      (id) =>
-                        // Check if record matches tag filters
-                        config.filterByTags.length === 0 ||
-                        config.recordMetadata[id]?.tags.some((tag) =>
-                          config.filterByTags.includes(tag)
-                        )
-                    ).length
-                  } wybranych rekordów`
+                ? `Utworzy zestaw z ${filteredRecordIds.length} wybranych rekordów`
                 : "Utworzy zestaw ze wszystkich rekordów"}
             </p>
             <div className="flex gap-2">

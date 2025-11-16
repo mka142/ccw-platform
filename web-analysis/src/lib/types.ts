@@ -16,9 +16,11 @@ export interface RecordMetadata {
 }
 
 export interface RecordOperation {
-  type: 'normalize' | 'quantize' | 'custom';
+  type: 'normalize' | 'quantize' | 'movingAverage' | 'custom';
   params: Record<string, number | string | boolean>;
 }
+
+export type MovingAverageAlgorithm = 'SMA' | 'WMA' | 'RMA';
 
 export type InterpolationMethod = 'linear' | 'step';
 
@@ -95,12 +97,14 @@ export interface DashboardState {
   isLeftPanelDisabled: boolean;
   chartVisualizationMode: ChartVisualizationMode;
   currentSet: string | null; // null = global, string = set name
+  filteredRecordIds: string[]; // Combined result of filterByIds and filterByTags
   effectiveConfig: {
     resampling: ResamplingConfig;
     recordMetadata: Record<string, RecordMetadata>;
     globalOperations: GlobalOperation[];
     filterByIds: string[];
   };
+  isProcessing: boolean;
 }
 
 export interface DashboardContextValue extends DashboardState {

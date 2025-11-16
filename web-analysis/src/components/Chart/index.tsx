@@ -68,6 +68,7 @@ export default function Chart({
     setChartVisualizationMode,
     setYAxisRange,
     clearYAxisRange,
+    isProcessing,
   } = useDashboard();
   const { theme } = useTheme();
 
@@ -169,6 +170,17 @@ export default function Chart({
 
   const isResamplingApplied = effectiveConfig.resampling.applied;
 
+  // Memoize processedData as JSON to prevent unnecessary recalculations
+  const processedDataJson = useMemo(
+    () => JSON.stringify(processedData),
+    [processedData]
+  );
+
+  const configSetsJson = useMemo(
+    () => JSON.stringify(config.sets),
+    [config.sets]
+  );
+
   // Helper function: Generate data series from processed data
   const generateDataSeries = useCallback(
     (
@@ -177,6 +189,8 @@ export default function Chart({
       mode: "linear" | "step",
       recordMetadata: typeof effectiveConfig.recordMetadata
     ): ChartDataSeries[] => {
+      console.log("Generating data series with mode:", mode);
+
       const dataSeries = data.map((record, index) => {
         // Parse the prefixed record ID
         const parsedId = parseRecordId(record.id);
@@ -225,7 +239,8 @@ export default function Chart({
 
       return dataSeries;
     },
-    [setHighlightedRecordId, effectiveConfig, config.sets]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [processedDataJson, configSetsJson]
   );
 
   // Helper function: Add playback indicator
@@ -297,14 +312,30 @@ export default function Chart({
       return null;
     }
 
+    // Data is already downsampled by the worker
     // Get the earliest and latest timestamps
     const allTimestamps = processedData.flatMap((r) =>
       r.data.map((d) => d.timestamp)
     );
+
     // If recordingStartTimestamp is provided, use it as the baseline (time 0)
     // Otherwise, use the earliest timestamp from the data
-    const minTimestamp = recordingStartTimestamp ?? Math.min(...allTimestamps);
-    const maxTimestamp = Math.max(...allTimestamps);
+    // Use reduce instead of Math.min(...array) to avoid stack overflow with large arrays
+    const minTimestamp =
+      recordingStartTimestamp ??
+      (allTimestamps.length > 0
+        ? allTimestamps.reduce(
+            (min, ts) => (ts < min ? ts : min),
+            allTimestamps[0]
+          )
+        : 0);
+    const maxTimestamp =
+      allTimestamps.length > 0
+        ? allTimestamps.reduce(
+            (max, ts) => (ts > max ? ts : max),
+            allTimestamps[0]
+          )
+        : 0;
 
     // Generate data series for each record
     let dataSeries = generateDataSeries(
@@ -338,25 +369,25 @@ export default function Chart({
     const sliderMax = sliderRangeRef.current?.max ?? defaultSliderMax;
 
     return {
-      theme: theme === 'dark' ? 'dark1' : 'light2',
-      backgroundColor: theme === 'dark' ? '#1a1a1a' : '#ffffff',
+      theme: theme === "dark" ? "dark1" : "light2",
+      backgroundColor: theme === "dark" ? "#1a1a1a" : "#ffffff",
       animationEnabled: false,
       exportEnabled: true,
       title: {
         text: "",
-        fontColor: theme === 'dark' ? '#ffffff' : '#000000',
+        fontColor: theme === "dark" ? "#ffffff" : "#000000",
       },
       charts: [
         {
-          backgroundColor: theme === 'dark' ? '#1a1a1a' : '#ffffff',
+          backgroundColor: theme === "dark" ? "#1a1a1a" : "#ffffff",
           axisX: {
             title: "Czas trwania (s)",
             titleFontSize: 14,
             labelFontSize: 16,
-            titleFontColor: theme === 'dark' ? '#ffffff' : '#000000',
-            labelFontColor: theme === 'dark' ? '#cccccc' : '#666666',
-            lineColor: theme === 'dark' ? '#444444' : '#cccccc',
-            tickColor: theme === 'dark' ? '#444444' : '#cccccc',
+            titleFontColor: theme === "dark" ? "#ffffff" : "#000000",
+            labelFontColor: theme === "dark" ? "#cccccc" : "#666666",
+            lineColor: theme === "dark" ? "#444444" : "#cccccc",
+            tickColor: theme === "dark" ? "#444444" : "#cccccc",
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             labelFormatter: function (e: any) {
               const seconds = e.value;
@@ -377,11 +408,11 @@ export default function Chart({
           axisY: {
             title: "Wartość",
             titleFontSize: 11,
-            titleFontColor: theme === 'dark' ? '#ffffff' : '#000000',
-            labelFontColor: theme === 'dark' ? '#cccccc' : '#666666',
-            lineColor: theme === 'dark' ? '#444444' : '#cccccc',
-            tickColor: theme === 'dark' ? '#444444' : '#cccccc',
-            gridColor: theme === 'dark' ? '#333333' : '#e0e0e0',
+            titleFontColor: theme === "dark" ? "#ffffff" : "#000000",
+            labelFontColor: theme === "dark" ? "#cccccc" : "#666666",
+            lineColor: theme === "dark" ? "#444444" : "#cccccc",
+            tickColor: theme === "dark" ? "#444444" : "#cccccc",
+            gridColor: theme === "dark" ? "#333333" : "#e0e0e0",
             //labelFontSize: 10,
             crosshair: {
               enabled: true,
@@ -399,22 +430,22 @@ export default function Chart({
       ],
       navigator: {
         height: 40,
-        backgroundColor: theme === 'dark' ? '#1a1a1a' : '#ffffff',
+        backgroundColor: theme === "dark" ? "#1a1a1a" : "#ffffff",
         data: [
           {
             dataPoints: navigatorDataPoints,
-            color: theme === 'dark' ? '#8884d8' : '#4a5568',
+            color: theme === "dark" ? "#8884d8" : "#4a5568",
           },
         ],
         slider: {
           minimum: sliderMin,
           maximum: sliderMax,
-          handleColor: theme === 'dark' ? '#4a5568' : '#cbd5e0',
-          handleBorderColor: theme === 'dark' ? '#718096' : '#a0aec0',
+          handleColor: theme === "dark" ? "#4a5568" : "#cbd5e0",
+          handleBorderColor: theme === "dark" ? "#718096" : "#a0aec0",
         },
         axisX: {
-          labelFontColor: theme === 'dark' ? '#cccccc' : '#666666',
-          lineColor: theme === 'dark' ? '#444444' : '#cccccc',
+          labelFontColor: theme === "dark" ? "#cccccc" : "#666666",
+          lineColor: theme === "dark" ? "#444444" : "#cccccc",
         },
       },
       rangeSelector: {
@@ -422,8 +453,9 @@ export default function Chart({
       },
       rangeChanged: handleRangeChanged,
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    processedData,
+    processedDataJson, // Use JSON string instead of object reference for stable comparison
     effectiveConfig.recordMetadata,
     effectiveMode,
     handleRangeChanged,
@@ -443,7 +475,7 @@ export default function Chart({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold">
-              {config.title || 'Timeline Chart'}
+              {config.title || "Timeline Chart"}
             </h2>
           </div>
         </div>
@@ -476,7 +508,9 @@ export default function Chart({
                 if (!isNaN(min) && !isNaN(max) && min < max) {
                   setYAxisRange(min, max);
                 } else {
-                  alert("Proszę wprowadzić prawidłowe wartości min/max (min < max)");
+                  alert(
+                    "Proszę wprowadzić prawidłowe wartości min/max (min < max)"
+                  );
                 }
               }}
               className="h-8"
@@ -529,7 +563,14 @@ export default function Chart({
       <div className="flex-1 p-4" ref={containerRef}>
         {!chartOptions || !CanvasJSStockChart ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
-            {!CanvasJSStockChart ? "Ładowanie wykresu..." : "Brak danych do wyświetlenia"}
+            {!CanvasJSStockChart
+              ? "Ładowanie wykresu..."
+              : "Brak danych do wyświetlenia"}
+          </div>
+        ) : isProcessing ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+            <p>Przetwarzanie danych...</p>
           </div>
         ) : (
           <CanvasJSStockChart

@@ -71,6 +71,11 @@ export default function RecordCard({
 
   const handleAddTag = () => {
     if (!tagInput.trim()) return;
+    // Prevent adding duplicate tags
+    if (metadata.tags.includes(tagInput.trim())) {
+      setTagInput("");
+      return;
+    }
     const newTags = [...metadata.tags, tagInput.trim()];
     onUpdateMetadata(id, { tags: newTags });
     setTagInput("");
@@ -78,25 +83,25 @@ export default function RecordCard({
 
   const handleRemoveTag = (tag: string) => {
     const newTags = metadata.tags.filter((t) => t !== tag);
-    console.log(tag, newTags);
     onUpdateMetadata(id, { tags: newTags });
   };
 
   const handleMove = (direction: "up" | "down" | "left" | "right") => {
-    const step = 1000; // 1 second or 1 unit
+    const horizontalStep = 200; // 200 ms or 1 unit
+    const verticalStep = 1; // 1 unit
 
     switch (direction) {
       case "up":
-        onUpdateMetadata(id, { yMove: metadata.yMove + step });
+        onUpdateMetadata(id, { yMove: metadata.yMove + verticalStep });
         break;
       case "down":
-        onUpdateMetadata(id, { yMove: metadata.yMove - step });
+        onUpdateMetadata(id, { yMove: metadata.yMove - verticalStep });
         break;
       case "left":
-        onUpdateMetadata(id, { xMove: metadata.xMove - step });
+        onUpdateMetadata(id, { xMove: metadata.xMove - horizontalStep });
         break;
       case "right":
-        onUpdateMetadata(id, { xMove: metadata.xMove + step });
+        onUpdateMetadata(id, { xMove: metadata.xMove + horizontalStep });
         break;
     }
   };
@@ -133,7 +138,7 @@ export default function RecordCard({
       {/* Tags */}
       {metadata.tags.length > 0 && !isEditing && (
         <div className="flex flex-wrap gap-1 mb-2">
-          {metadata.tags.map((tag) => (
+          {Array.from(new Set(metadata.tags)).map((tag) => (
             <Badge key={tag} variant="secondary" className="text-xs">
               {tag}
             </Badge>
@@ -178,7 +183,7 @@ export default function RecordCard({
               </Button>
             </div>
             <div className="flex flex-wrap gap-1 mt-2">
-              {metadata.tags.map((tag) => (
+              {Array.from(new Set(metadata.tags)).map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}
                   <div onClick={() => handleRemoveTag(tag)}>
@@ -217,7 +222,7 @@ export default function RecordCard({
                 <ArrowLeft className="h-3 w-3" />
               </Button>
               <div className="text-center text-xs py-1">
-                {metadata.xMove !== 0 && <div>X: {metadata.xMove}</div>}
+                {metadata.xMove !== 0 && <div>X: {metadata.xMove} ms</div>}
                 {metadata.yMove !== 0 && <div>Y: {metadata.yMove}</div>}
               </div>
               <Button
@@ -259,6 +264,7 @@ export default function RecordCard({
                     <span>
                       {op.type === "normalize" && "Normalizacja"}
                       {op.type === "quantize" && "Przybliżenie"}
+                      {op.type === "movingAverage" && "Średnia Ruchoma"}
                       {op.type === "custom" && "Custom"}
                       {op.type === "normalize" &&
                         op.params.minRange !== undefined && (
@@ -270,6 +276,13 @@ export default function RecordCard({
                         op.params.step !== undefined && (
                           <span className="text-muted-foreground ml-1">
                             (krok: {op.params.step})
+                          </span>
+                        )}
+                      {op.type === "movingAverage" &&
+                        op.params.windowSize !== undefined && (
+                          <span className="text-muted-foreground ml-1">
+                            ({op.params.algorithm || "SMA"}, okno:{" "}
+                            {op.params.windowSize})
                           </span>
                         )}
                     </span>

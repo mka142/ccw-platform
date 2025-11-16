@@ -132,7 +132,7 @@ export default function SettingsTab() {
   };
 
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="flex-1 w-full">
       <div className="p-4 space-y-4">
         {/* Dark Mode Toggle */}
         <div>
@@ -227,7 +227,7 @@ export default function SettingsTab() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
                     <Database className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span className="text-sm font-medium truncate">
+                    <span className="text-sm font-medium">
                       {dataFile.name}
                     </span>
                   </div>
@@ -286,7 +286,7 @@ export default function SettingsTab() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0">
                     <Music className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span className="text-sm font-medium truncate">
+                    <span className="text-sm font-medium">
                       {audioFile.name}
                     </span>
                   </div>

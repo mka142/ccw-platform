@@ -155,6 +155,12 @@ export function applyOperation(
         data,
         typeof operation.params.step === 'number' ? operation.params.step : 1
       );
+    case 'movingAverage':
+      return calculateMovingAverage(
+        data,
+        typeof operation.params.windowSize === 'number' ? operation.params.windowSize : 3,
+        (operation.params.algorithm as 'SMA' | 'WMA' | 'RMA') || 'SMA'
+      );
     default:
       return data;
   }
@@ -273,22 +279,92 @@ export function quantizeData(
 }
 
 /**
- * Calculate moving average
+ * Calculate moving average with different algorithms
+ * @param data - Input data array
+ * @param windowSize - Number of points to include in the moving average
+ * @param algorithm - Algorithm type: 'SMA' (Simple), 'WMA' (Weighted), 'RMA' (Running/Smoothed)
+ * @returns Data array starting from the point where calculation is possible
  */
 export function calculateMovingAverage(
   data: Array<{ timestamp: number; value: number }>,
-  windowSize: number
+  windowSize: number,
+  algorithm: 'SMA' | 'WMA' | 'RMA' = 'SMA'
 ): Array<{ timestamp: number; value: number }> {
-  if (data.length === 0 || windowSize <= 0) return data;
-
-  return data.map((point, index) => {
-    const start = Math.max(0, index - Math.floor(windowSize / 2));
-    const end = Math.min(data.length, start + windowSize);
-    const window = data.slice(start, end);
-    const avg = window.reduce((sum, d) => sum + d.value, 0) / window.length;
-
-    return { timestamp: point.timestamp, value: avg };
-  });
+  if (data.length === 0 || windowSize <= 0) return [];
+  if (windowSize === 1) return data;
+  
+  // If window size is larger than data length, return empty array or the data as-is
+  if (windowSize > data.length) {
+    console.warn(`Moving average window size (${windowSize}) is larger than data length (${data.length}). Returning original data.`);
+    return data;
+  }
+  
+  const result: Array<{ timestamp: number; value: number }> = [];
+  
+  switch (algorithm) {
+    case 'SMA': {
+      // Simple Moving Average - arithmetic mean of last N values
+      for (let i = windowSize - 1; i < data.length; i++) {
+        let sum = 0;
+        for (let j = i - windowSize + 1; j <= i; j++) {
+          sum += data[j].value;
+        }
+        result.push({
+          timestamp: data[i].timestamp,
+          value: sum / windowSize
+        });
+      }
+      break;
+    }
+    
+    case 'WMA': {
+      // Weighted Moving Average - more recent values have higher weight
+      const weights = Array.from({ length: windowSize }, (_, i) => i + 1);
+      const weightSum = weights.reduce((sum, w) => sum + w, 0);
+      
+      for (let i = windowSize - 1; i < data.length; i++) {
+        let weightedSum = 0;
+        for (let j = 0; j < windowSize; j++) {
+          weightedSum += data[i - windowSize + 1 + j].value * weights[j];
+        }
+        result.push({
+          timestamp: data[i].timestamp,
+          value: weightedSum / weightSum
+        });
+      }
+      break;
+    }
+    
+    case 'RMA': {
+      // Running Moving Average (Smoothed Moving Average)
+      // Formula: RMA[i] = (RMA[i-1] * (N-1) + value[i]) / N
+      // First value is SMA of first N values
+      let rma = 0;
+      
+      // Calculate initial SMA for first window
+      for (let i = 0; i < windowSize; i++) {
+        rma += data[i].value;
+      }
+      rma = rma / windowSize;
+      
+      result.push({
+        timestamp: data[windowSize - 1].timestamp,
+        value: rma
+      });
+      
+      // Apply RMA formula for remaining values
+      for (let i = windowSize; i < data.length; i++) {
+        rma = (rma * (windowSize - 1) + data[i].value) / windowSize;
+        result.push({
+          timestamp: data[i].timestamp,
+          value: rma
+        });
+      }
+      break;
+    }
+  }
+  
+  return result;
 }
 
 /**
@@ -327,9 +403,10 @@ export function applyGlobalOperation(
       const windowSize = typeof operation.params.windowSize === 'number' 
         ? operation.params.windowSize 
         : 5;
+      const algorithm = (operation.params.algorithm as 'SMA' | 'WMA' | 'RMA') || 'SMA';
       return datasets.map(dataset => ({
         id: dataset.id,
-        data: calculateMovingAverage(dataset.data, windowSize)
+        data: calculateMovingAverage(dataset.data, windowSize, algorithm)
       }));
     }
     default:
