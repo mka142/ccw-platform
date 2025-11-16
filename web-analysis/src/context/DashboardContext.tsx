@@ -192,6 +192,11 @@ export function DashboardProvider({
   const setsStr = JSON.stringify(config.sets);
 
   useEffect(() => {
+    if (currentSet) {
+      // If editing a set, skip processing all sets to avoid duplication
+      return;
+    }
+
     const processSets = async () => {
       const allSetsData: ProcessedRecord[] = [];
       for (const set of config.sets) {
@@ -236,18 +241,7 @@ export function DashboardProvider({
       filterByTags: [],
       idPrefix: currentSetData.name,
     })
-      .then((e) => {
-        setCurrentSetProcessedData(e);
-        // replace set in setsProcessedData
-
-        const allSetsData = setsProcessedData.filter((r) => {
-          const parsed = parseRecordId(r.id);
-          return parsed.setName !== currentSetData.name;
-        });
-        allSetsData.push(...e);
-        setSetsProcessedData(allSetsData);
-      })
-
+      .then(setCurrentSetProcessedData)
       .catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSet, setsStr]);
@@ -666,7 +660,7 @@ export function DashboardProvider({
         },
         globalOperations: [],
         visible: true,
-        filterByIds: [], // Start with no records selected
+        filterByIds: recordIds, // Initialize with all records in the set
       };
 
       return {
