@@ -217,7 +217,7 @@ export function DashboardProvider({
     };
     processSets().catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setsStr]);
+  }, [config.sets, currentSet]);
 
   // Process current set data in Web Worker
   useEffect(() => {
