@@ -80,7 +80,7 @@ const FEELING_ITEMS = [
   "zrelaksowany/a",
 ];
 
-const FEELING_OPTIONS = ["wcale", "nie", "trochę", "tak", "bardzo"];
+const FEELING_OPTIONS = ["nie", "trochę", "tak", "bardzo"];
 
 const CONCENTRATION_OPTIONS = [
   "bardzo wysoko",

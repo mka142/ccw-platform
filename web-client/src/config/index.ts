@@ -67,7 +67,7 @@ export const EVENT_TYPES = [
   "FEEDBACK_FORM",
   "END_OF_CONCERT",
 ] as const;
-export const DEVICE_TYPES = ["Web", "M5Dial"] as const;
+export const DEVICE_TYPES = ["Web", "M5Stack"] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
 export type DeviceType = (typeof DEVICE_TYPES)[number];

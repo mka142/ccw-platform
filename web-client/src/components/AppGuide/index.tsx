@@ -39,7 +39,7 @@ export default function AppGuide({ footer }: { footer?: React.ReactNode }) {
             napięcia muzycznego.
           </p>
           <p>
-            Celem tego badania jest zbadanie, w jaki sposób publiczność podczas
+            Celem tego badania jest sprawdzenie, w jaki sposób publiczność podczas
             koncertu postrzega napięcie w muzyce. Zebrane dane posłużą do
             analizy wpływu elementów dzieła na odczuwane napięcie oraz ich
             zgodności z założeniami kompozytora.
