@@ -84,20 +84,27 @@ services:
       - ccw-network
     labels:
       # Enable Traefik
+      - "traefik.enable=true"
       
       # HTTP/HTTPS + WebSocket support - HTTP Router
-      - "traefik.enable=true"
       - "traefik.http.routers.device-manager.rule=Host(`${DEVICE_MANAGER_HOST}`)"
-      - "traefik.http.routers.device-manager-web.entrypoints=web,websecure"
+      - "traefik.http.routers.device-manager.entrypoints=web,websecure"
       - "traefik.http.routers.device-manager.tls.certresolver=letsencrypt"
       - "traefik.http.routers.device-manager.service=device-manager"
       - "traefik.http.services.device-manager.loadbalancer.server.port=3001"
       
-      # MQTT TCP passthrough
+      # MQTT TCP passthrough on port 1883
       - "traefik.tcp.routers.mqtt.rule=HostSNI(`*`)"
       - "traefik.tcp.routers.mqtt.entrypoints=mqtt"
       - "traefik.tcp.routers.mqtt.service=device-manager-mqtt"
       - "traefik.tcp.services.device-manager-mqtt.loadbalancer.server.port=1883"
+      
+      # MQTT TCP over port 443 (for when port 1883 is blocked)
+      - "traefik.tcp.routers.mqtt-alt.rule=HostSNI(`${MQTT_HOST}`)"
+      - "traefik.tcp.routers.mqtt-alt.entrypoints=websecure"
+      - "traefik.tcp.routers.mqtt-alt.tls.passthrough=true"
+      - "traefik.tcp.routers.mqtt-alt.service=device-manager-mqtt-alt"
+      - "traefik.tcp.services.device-manager-mqtt-alt.loadbalancer.server.port=1883"
 
   # MongoDB Database
   mongo:
