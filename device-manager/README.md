@@ -30,3 +30,22 @@ Start MongoDB and run integration tests: (this requires Docker)
 ```bash
 bun run test
 ```
+
+## Add Users
+
+You can add multiple users to a concert using the `addUsers.ts` script. Run the following command:
+
+```bash
+bun run addUsers.ts <count> <deviceType>
+```
+
+- `<count>`: The number of users to add.
+- `<deviceType>`: The type of device (`Web` or `M5Stack`).
+
+Example:
+
+```bash
+bun run addUsers.ts 10 Web
+```
+
+This will add 10 users of the `Web` device type.
