@@ -1,3 +1,5 @@
+import { parseId } from "@/lib/db/utils";
+
 import { EventOperations } from "../db";
 
 import type { Event } from "../types";
@@ -46,5 +48,51 @@ export class EventService {
     await Promise.all([update1, update2]);
 
     return { success: true, data: true };
+  }
+
+  static async exportEvents(concertId: string | ObjectId): Promise<OperationResult<Omit<Event, '_id' | 'createdAt' | 'updatedAt'>[]>> {
+    try {
+      const events = await EventOperations.findByConcert(concertId);
+      const exportData = events.map(event => ({
+        concertId: event.concertId,
+        eventType: event.eventType,
+        label: event.label,
+        payload: event.payload,
+        position: event.position
+      }));
+      return { success: true, data: exportData };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to export events"
+      };
+    }
+  }
+
+  static async importEvents(concertId: string | ObjectId, events: Omit<Event, '_id' | 'createdAt' | 'updatedAt'>[]): Promise<OperationResult<number>> {
+    try {
+      const existingEvents = await EventOperations.findByConcert(concertId);
+      const maxPosition = existingEvents.length > 0 ? Math.max(...existingEvents.map(e => e.position)) : -1;
+
+      let importedCount = 0;
+      for (const eventData of events) {
+        const newEvent: Event = {
+          ...eventData,
+          concertId: parseId(concertId),
+          position: maxPosition + 1 + importedCount
+        };
+        const result = await EventOperations.create(newEvent);
+        if (result.success) {
+          importedCount++;
+        }
+      }
+
+      return { success: true, data: importedCount };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to import events"
+      };
+    }
   }
 }

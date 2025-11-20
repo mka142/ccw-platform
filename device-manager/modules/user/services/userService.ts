@@ -42,6 +42,21 @@ export class UserService {
     return users.filter((user) => user.isActive);
   }
 
+  static async validateConcertUserStatus(concertId: string | ObjectId): Promise<void> {
+    const users = await UserOperations.findByConcert(concertId);
+    const now = Date.now();
+    const TIMEOUT_MS = 10000; // 10 seconds
+
+    for (const user of users) {
+      if (user.deviceType === "M5Stack" && user.lastPing) {
+        const timeDiff = now - user.lastPing;
+        if (timeDiff > TIMEOUT_MS && user.isActive) {
+          await UserOperations.updateById(user._id.toString(), { isActive: false });
+        }
+      }
+    }
+  }
+
   static async updateUserStatus(userId: string, isActive: boolean): Promise<OperationResult<User | null>> {
     return UserOperations.updateById(userId, {
       isActive,

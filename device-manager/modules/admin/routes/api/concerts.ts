@@ -1,8 +1,12 @@
 import { Router } from "express";
 
+import { UserService } from "@/modules/user/services/userService";
+
 import { ConcertService, EventService } from "../../services";
 
+
 import type { Request, Response } from "express";
+
 
 const router = Router();
 
@@ -32,6 +36,17 @@ router.get("/currentEvent", async (req: Request, res: Response) => {
       error: "Active event not found",
     });
     return;
+  }
+
+  // check for clientId query param
+  try {
+    const clientId = req.query.clientId as string | undefined;
+    if (clientId) {
+      // get user by clientId and update lastPintg and set isActive to true
+      await UserService.updateDeviceStatus(clientId, true);
+    }
+  } catch (error) {
+    console.error("Failed to update user status:", error);
   }
 
   res.json({

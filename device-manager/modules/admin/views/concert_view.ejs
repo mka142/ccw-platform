@@ -37,7 +37,32 @@
 
             <div class="ui clearing segment">
               <h3 class="ui left floated header">Komunikaty</h3>
-              <a href="<%= url.admin %>/events/new/<%= concert._id %>" class="ui right floated basic blue button"><i class="plus icon"></i>Dodaj komunikat</a>
+              <div class="ui right floated buttons">
+                <a href="<%= url.admin %>/concerts/<%= concert._id %>/export-events" class="ui basic green button" download>
+                  <i class="download icon"></i>Eksportuj wydarzenia
+                </a>
+                <button class="ui basic blue button" onclick="toggleImportForm()">
+                  <i class="upload icon"></i>Importuj wydarzenia
+                </button>
+                <a href="<%= url.admin %>/events/new/<%= concert._id %>" class="ui basic blue button">
+                  <i class="plus icon"></i>Dodaj komunikat
+                </a>
+              </div>
+            </div>
+
+            <!-- Import Events Form (hidden by default) -->
+            <div id="import-events-form" class="ui segment" style="display: none; margin-top: 1em;">
+              <h4 class="ui header">Importuj wydarzenia z JSON</h4>
+              <form method="POST" action="<%= url.admin %>/concerts/<%= concert._id %>/import-events" class="ui form">
+                <div class="field">
+                  <label>Wklej JSON z wydarzeniami</label>
+                  <textarea name="eventsJson" id="eventsJson" rows="10" placeholder='[{"eventType": "...", "label": "...", "payload": {...}, "position": 0}]' required></textarea>
+                </div>
+                <button type="submit" class="ui blue button" onclick="return parseAndSubmitEvents()">
+                  <i class="upload icon"></i>Importuj
+                </button>
+                <button type="button" class="ui button" onclick="toggleImportForm()">Anuluj</button>
+              </form>
             </div>
 
             <div class="ui divided items" style="margin-top: 1em">
@@ -139,6 +164,41 @@
         } else {
           payloadDiv.style.display = 'none';
           button.innerHTML = '<i class="eye icon"></i> Pokaż payload';
+        }
+      }
+
+      // Toggle import form visibility
+      function toggleImportForm() {
+        const form = document.getElementById('import-events-form');
+        if (form.style.display === 'none') {
+          form.style.display = 'block';
+        } else {
+          form.style.display = 'none';
+        }
+      }
+
+      // Parse JSON and submit
+      function parseAndSubmitEvents() {
+        const textarea = document.getElementById('eventsJson');
+        try {
+          const events = JSON.parse(textarea.value);
+          if (!Array.isArray(events)) {
+            alert('JSON musi być tablicą wydarzeń');
+            return false;
+          }
+          
+          // Create a hidden input field with the parsed events
+          const form = textarea.closest('form');
+          const hiddenInput = document.createElement('input');
+          hiddenInput.type = 'hidden';
+          hiddenInput.name = 'events';
+          hiddenInput.value = JSON.stringify(events);
+          form.appendChild(hiddenInput);
+          
+          return true;
+        } catch (e) {
+          alert('Nieprawidłowy JSON: ' + e.message);
+          return false;
         }
       }
 

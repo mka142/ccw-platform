@@ -1,6 +1,7 @@
 import express from "express";
 
 import { config } from "./config";
+import { jobScheduler } from "./jobs";
 import adminApiRoutes from "./modules/admin/routes/api";
 import adminViews from "./modules/admin/routes/views";
 import { createMqttBroker, shutdownMqttBroker } from "./modules/connections/broker";
@@ -67,6 +68,9 @@ async function initializeServices() {
     mqttPublisher.connect(config.mqtt.brokerUrl);
   }, 1000);
 
+  // 5. Start job scheduler for periodic background tasks
+  jobScheduler.start();
+
   return { server, mqttCleanup };
 }
 
@@ -81,11 +85,13 @@ function gracefulShutdown(signal: string) {
   console.log(`\n${signal} received, shutting down gracefully...`);
 
   // Shutdown order:
-  // 1. Disconnect MQTT publisher (stop publishing)
-  // 2. Cleanup MQTT broker (close connections, clear intervals)
-  // 3. Close HTTP server
-  // 4. Disconnect database
+  // 1. Stop job scheduler (stop background tasks)
+  // 2. Disconnect MQTT publisher (stop publishing)
+  // 3. Cleanup MQTT broker (close connections, clear intervals)
+  // 4. Close HTTP server
+  // 5. Disconnect database
 
+  jobScheduler.stop();
   mqttPublisher.disconnect();
   mqttCleanup();
   shutdownMqttBroker();

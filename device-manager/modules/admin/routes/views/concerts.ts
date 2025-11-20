@@ -155,4 +155,76 @@ router.post("/:id/deactivate", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /concerts/:id/export-events - Export events as JSON
+ */
+router.get("/:id/export-events", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      res.status(400).json({ error: "Invalid concert ID" });
+      return;
+    }
+
+    const result = await EventService.exportEvents(id);
+
+    if (result.success) {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="concert-${id}-events.json"`);
+      res.json(result.data);
+    } else {
+      res.status(500).json({ error: result.error || "Failed to export events" });
+    }
+  } catch (error) {
+    console.error("Failed to export events:", error);
+    res.status(500).json({ error: "Failed to export events" });
+  }
+});
+
+/**
+ * POST /concerts/:id/import-events - Import events from JSON
+ */
+router.post("/:id/import-events", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { events } = req.body;
+
+    if (!id) {
+      res.status(400).render("error", {
+        message: "Nieprawidłowy identyfikator koncertu",
+        title: "Błąd",
+      });
+      return;
+    }
+
+    const parsedEvents = typeof events === "string" ? JSON.parse(events) : events;
+    
+    if (!events || !Array.isArray(parsedEvents)) {
+      res.status(400).render("error", {
+        message: "Nieprawidłowe dane wydarzeń",
+        title: "Błąd",
+      });
+      return;
+    }
+
+    const result = await EventService.importEvents(id, parsedEvents);
+
+    if (result.success) {
+      res.redirect(`${config.url.admin}/concerts/${id}`);
+    } else {
+      res.status(400).render("error", {
+        message: result.error || "Nie udało się zaimportować wydarzeń",
+        title: "Błąd",
+      });
+    }
+  } catch (error) {
+    console.error("Failed to import events:", error);
+    res.status(500).render("error", {
+      message: "Nie udało się zaimportować wydarzeń",
+      title: "Błąd",
+    });
+  }
+});
+
 export default router;
