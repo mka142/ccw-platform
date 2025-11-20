@@ -1,6 +1,5 @@
-import { ObjectId } from "mongodb";
-
 import { config } from "./config";
+import { ConcertService } from "./modules/admin/services/concertService";
 import { initializeDb } from "./modules/db";
 import { UserService } from "./modules/user/services/userService";
 
@@ -16,7 +15,15 @@ async function addUsers(count: number, deviceType: string) {
     return;
   }
 
-  const concertId = new ObjectId(); // Replace with actual concert ID if needed
+  // Get active concert
+  const activeConcert = await ConcertService.findActiveConcert();
+  if (!activeConcert) {
+    console.error("Error: No active concert found.");
+    process.exit(1);
+  }
+
+  console.log(`Adding users to concert: ${activeConcert.name} (${activeConcert._id})`);
+
   const users = Array.from({ length: count }, () => ({
     deviceType: deviceType as DeviceType,
     isActive: true,
@@ -28,7 +35,7 @@ async function addUsers(count: number, deviceType: string) {
   for (const user of users) {
     const result = await UserService.createUser({
       ...user,
-      concertId,
+      concertId: activeConcert._id,
     });
     if (result.success) {
       userIds.push(result.data._id.toString());
