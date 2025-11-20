@@ -57,6 +57,25 @@ export class UserService {
     }
   }
 
+  static async validateUser(userId: string | ObjectId): Promise<boolean> {
+    try {
+      const user = await UserOperations.findById(userId);
+      if (!user) {
+        return false;
+      }
+
+      const activeConcert = await ConcertService.findActiveConcert();
+      if (!activeConcert) {
+        return false;
+      }
+
+      return user.concertId.equals(activeConcert._id);
+    } catch (error) {
+      console.error("Failed to validate user:", error);
+      return false;
+    }
+  }
+
   static async updateUserStatus(userId: string, isActive: boolean): Promise<OperationResult<User | null>> {
     return UserOperations.updateById(userId, {
       isActive,

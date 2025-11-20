@@ -112,6 +112,33 @@ router.get("/acquireUserId", async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/users/validate/:userId - Validate if user belongs to active concert
+ */
+router.get("/validate/:userId", async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      res.status(400).json({
+        success: false,
+      });
+      return;
+    }
+
+    const isValid = await UserService.validateUser(userId);
+
+    res.json({
+      success: isValid,
+    });
+  } catch (error) {
+    console.error("Failed to validate user:", error);
+    res.status(500).json({
+      success: false,
+    });
+  }
+});
+
+/**
  * GET /api/users/concert/:concertId - Get users for a specific concert
  */
 const getUsersByConcert: RequestHandler = async (req: Request, res: Response) => {
