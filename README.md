@@ -69,6 +69,18 @@ bun install
 bun dev
 ```
 
+**Payloady stron:**
+
+- `AppGuidePage` - Brak payloadu
+- `BeforeConcertPage` - Brak payloadu  
+- `ConcertStartPage` - Brak payloadu
+- `SliderDemoPage` - Brak payloadu
+- `PieceAnnouncementPage` - `{ pieceTitle, pieceDescription, ...PieceData }`
+- `TensionMeasurementPage` - `{ pieceId }`
+- `OvationPage` - `{ message }`
+- `EndOfConcertPage` - Brak payloadu
+- `FeedbackFormPage` - Brak payloadu
+
 ## 🔗 Architektura Systemu
 
 ```
