@@ -21,6 +21,8 @@ import { LoadingWithBackgroundTransition } from "./components/Loading";
 import { useAppState } from "./hooks/useAppState";
 import { EventType } from "./config";
 import config from "./config";
+import SponsorsPage from "./pages/SponsorsPage";
+import PieceListeningPage from "./pages/PieceListeningPage";
 
 function getColor(color: string | { [key: string]: string } | undefined) {
   if (typeof color === "string") {
@@ -110,6 +112,14 @@ export function App() {
       <StateNavigationPage<EventType>
         pageState="END_OF_CONCERT"
         component={EndOfConcertPage}
+      />
+      <StateNavigationPage<EventType>
+        pageState="SPONSORS"
+        component={SponsorsPage}
+      />
+      <StateNavigationPage<EventType>
+        pageState="PIECE_LISTENING"
+        component={PieceListeningPage}
       />
     </WithStateNavigation>
   );
