@@ -74,7 +74,7 @@ export default function AppGuidePage({
               </div>
               <div>
                 <strong>Android:</strong> Ustawienia › Dźwięki i wibracje ›
-                wycisz
+                Wycisz
               </div>
             </div>
           </motion.div>
@@ -93,7 +93,7 @@ export default function AppGuidePage({
               </p>
             </div>
             <div className="text-xs text-white/80 space-y-1">
-              wchodzenie i wychodzenie z aplikacji może powodować zakłócenia w
+              Wchodzenie i wychodzenie z aplikacji może powodować zakłócenia w
               jej działaniu oraz wpływać na jakość zbieranych danych.
             </div>
           </motion.div>

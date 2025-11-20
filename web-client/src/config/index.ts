@@ -66,6 +66,8 @@ export const EVENT_TYPES = [
   "OVATION",
   "FEEDBACK_FORM",
   "END_OF_CONCERT",
+  "SPONSORS",
+  "PIECE_LISTENING",
 ] as const;
 export const DEVICE_TYPES = ["Web", "M5Stack"] as const;
 
@@ -93,6 +95,8 @@ export const PAGES_BACKGROUND_COLOR: Record<
     color: "#000000",
     gradient: "linear-gradient(to bottom, #000,#000,#000, var(--glow),#000)",
   },
+  SPONSORS: "var(--glow)",
+  PIECE_LISTENING: "#000000",
 };
 
 // ============================================================================
