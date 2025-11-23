@@ -67,18 +67,7 @@ function GoodbyePage() {
 
           <div className="space-y-6 text-md text-white/90 leading-relaxed">
             <p>
-              Dziękujemy za udział w koncercie badawczym i za podzielenie się
-              swoimi odczuciami.
-            </p>
-
-            <p>
-              Wasza obecność i zaangażowanie były dla nas niezwykle cenne.
-              Zebrane dane pomogą nam lepiej zrozumieć, jak muzyka wpływa na
-              emocje i doświadczenia słuchaczy.
-            </p>
-
-            <p className="text-2xl font-bold text-orange-300 mt-8">
-              Do zobaczenia wkrótce!
+              Proszę czekać na dalszą część koncertu
             </p>
           </div>
         </div>
