@@ -1,5 +1,10 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
-import type { RecordMetadata, GlobalOperation, ResamplingConfig, ProcessedRecord } from '@/lib/types';
+import { useEffect, useRef, useCallback, useState } from "react";
+import type {
+  RecordMetadata,
+  GlobalOperation,
+  ResamplingConfig,
+  ProcessedRecord,
+} from "@/lib/types";
 
 interface ProcessDataParams {
   rawData: Array<{ id: string; timestamp: number; value: number }>;
@@ -16,77 +21,103 @@ interface UseDataProcessorReturn {
   isProcessing: boolean;
 }
 
+interface PendingRequest {
+  resolve: (result: ProcessedRecord[]) => void;
+  reject: (error: Error) => void;
+}
+
 export function useDataProcessor(): UseDataProcessorReturn {
   const workerRef = useRef<Worker | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const pendingResolveRef = useRef<((result: ProcessedRecord[]) => void) | null>(null);
-  const pendingRejectRef = useRef<((error: Error) => void) | null>(null);
+  const pendingRequestsRef = useRef<Map<string, PendingRequest>>(new Map());
+  const requestIdCounterRef = useRef<number>(0);
 
   useEffect(() => {
     // Create worker
     workerRef.current = new Worker(
-      new URL('../workers/dataProcessor.worker.ts', import.meta.url),
-      { type: 'module' }
+      new URL("../workers/dataProcessor.worker.ts", import.meta.url),
+      { type: "module" }
     );
 
-    // Handle messages from worker
-    workerRef.current.onmessage = (e: MessageEvent) => {
-      const { type, payload } = e.data;
+    const worker = workerRef.current;
+    const pendingRequests = pendingRequestsRef.current;
 
-      if (type === 'RESULT') {
-        setIsProcessing(false);
-        if (pendingResolveRef.current) {
-          pendingResolveRef.current(payload);
-          pendingResolveRef.current = null;
-          pendingRejectRef.current = null;
+    // Handle messages from worker
+    worker.onmessage = (e: MessageEvent) => {
+      const { type, payload, requestId } = e.data;
+
+      if (type === "RESULT") {
+        const pendingRequest = pendingRequests.get(requestId);
+        if (pendingRequest) {
+          pendingRequest.resolve(payload);
+          pendingRequests.delete(requestId);
+          
+          // Update isProcessing if no more pending requests
+          if (pendingRequests.size === 0) {
+            setIsProcessing(false);
+          }
         }
-      } else if (type === 'ERROR') {
-        setIsProcessing(false);
-        if (pendingRejectRef.current) {
-          pendingRejectRef.current(new Error(payload));
-          pendingResolveRef.current = null;
-          pendingRejectRef.current = null;
+      } else if (type === "ERROR") {
+        const pendingRequest = pendingRequests.get(requestId);
+        if (pendingRequest) {
+          pendingRequest.reject(new Error(payload));
+          pendingRequests.delete(requestId);
+          
+          // Update isProcessing if no more pending requests
+          if (pendingRequests.size === 0) {
+            setIsProcessing(false);
+          }
         }
       }
     };
 
     // Handle worker errors
-    workerRef.current.onerror = (error) => {
-      console.error('Worker error:', error);
+    worker.onerror = (error) => {
+      console.error("Worker error:", error);
+      
+      // Reject all pending requests
+      pendingRequests.forEach((request) => {
+        request.reject(new Error("Worker error"));
+      });
+      pendingRequests.clear();
       setIsProcessing(false);
-      if (pendingRejectRef.current) {
-        pendingRejectRef.current(new Error('Worker error'));
-        pendingResolveRef.current = null;
-        pendingRejectRef.current = null;
-      }
     };
 
     // Cleanup
     return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
+      worker.terminate();
+      workerRef.current = null;
+      
+      // Clear all pending requests
+      pendingRequests.clear();
     };
   }, []);
 
-  const processData = useCallback((params: ProcessDataParams): Promise<ProcessedRecord[]> => {
-    return new Promise((resolve, reject) => {
-      if (!workerRef.current) {
-        reject(new Error('Worker not initialized'));
-        return;
-      }
+  const processData = useCallback(
+    (params: ProcessDataParams): Promise<ProcessedRecord[]> => {
+      return new Promise((resolve, reject) => {
+        if (!workerRef.current) {
+          reject(new Error("Worker not initialized"));
+          return;
+        }
 
-      setIsProcessing(true);
-      pendingResolveRef.current = resolve;
-      pendingRejectRef.current = reject;
+        // Generate unique request ID
+        const requestId = `req_${++requestIdCounterRef.current}_${Date.now()}`;
+        
+        // Store the promise handlers
+        pendingRequestsRef.current.set(requestId, { resolve, reject });
+        setIsProcessing(true);
 
-      workerRef.current.postMessage({
-        type: 'PROCESS_DATA',
-        payload: params,
+        // Send message to worker with request ID
+        workerRef.current.postMessage({
+          type: "PROCESS_DATA",
+          requestId,
+          payload: params,
+        });
       });
-    });
-  }, []);
+    },
+    []
+  );
 
   return { processData, isProcessing };
 }

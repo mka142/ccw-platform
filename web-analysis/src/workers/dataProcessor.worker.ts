@@ -3,6 +3,7 @@ import type { RecordMetadata, GlobalOperation, ResamplingConfig, ProcessedRecord
 
 interface ProcessDataMessage {
   type: 'PROCESS_DATA';
+  requestId: string;
   payload: {
     rawData: Array<{ id: string; timestamp: number; value: number }>;
     recordMetadata: Record<string, RecordMetadata>;
@@ -17,15 +18,16 @@ interface ProcessDataMessage {
 type WorkerMessage = ProcessDataMessage;
 
 self.onmessage = (e: MessageEvent<WorkerMessage>) => {
-  const { type, payload } = e.data;
+  const { type, requestId, payload } = e.data;
 
   if (type === 'PROCESS_DATA') {
     try {
       const result = processData(payload);
-      self.postMessage({ type: 'RESULT', payload: result });
+      self.postMessage({ type: 'RESULT', requestId, payload: result });
     } catch (error) {
       self.postMessage({ 
-        type: 'ERROR', 
+        type: 'ERROR',
+        requestId,
         payload: error instanceof Error ? error.message : 'Unknown error' 
       });
     }
