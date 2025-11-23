@@ -81,7 +81,7 @@ export function DashboardProvider({
   initialData,
   initialConfig,
 }: DashboardProviderProps) {
-  const [rawData] = useState<DataRecord[]>(initialData);
+  const [rawData, setRawData] = useState<DataRecord[]>(initialData);
   const [config, setConfig] = useState<Config>(initialConfig);
   const [mode, setMode] = useState<OperationMode>("global");
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
@@ -91,6 +91,16 @@ export function DashboardProvider({
   const [chartVisualizationMode, setChartVisualizationMode] =
     useState<ChartVisualizationMode>("linear");
   const [currentSet, setCurrentSetState] = useState<string | null>(null);
+
+  // Sync rawData with initialData when it changes (e.g., on project import)
+  useEffect(() => {
+    setRawData(initialData);
+  }, [initialData]);
+
+  // Sync config with initialConfig when it changes (e.g., on project import)
+  useEffect(() => {
+    setConfig(initialConfig);
+  }, [initialConfig]);
 
   // Web Worker for background processing
   const { processData: processDataWorker, isProcessing } = useDataProcessor();
@@ -181,6 +191,7 @@ export function DashboardProvider({
       .catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    rawData,
     recordMetadataStr,
     resamplingStr,
     globalOperationsStr,
@@ -207,7 +218,7 @@ export function DashboardProvider({
             resampling: set.resampling,
             globalOperations: set.globalOperations,
             filterByIds: set.filterByIds,
-            filterByTags: [],
+            filterByTags: set.filterByTags || [], // Fallback for existing sets without filterByTags
             idPrefix: set.name,
           });
           allSetsData.push(...setData);
@@ -217,7 +228,7 @@ export function DashboardProvider({
     };
     processSets().catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.sets, currentSet]);
+  }, [config.sets, currentSet, rawData]);
 
   // Process current set data in Web Worker
   useEffect(() => {
@@ -238,13 +249,13 @@ export function DashboardProvider({
       resampling: currentSetData.resampling,
       globalOperations: currentSetData.globalOperations,
       filterByIds: currentSetData.filterByIds,
-      filterByTags: [],
+      filterByTags: currentSetData.filterByTags || [], // Fallback for existing sets without filterByTags
       idPrefix: currentSetData.name,
     })
       .then(setCurrentSetProcessedData)
       .catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSet, setsStr]);
+  }, [currentSet, rawData, setsStr]);
 
   // Combine processed data based on current context
   const processedData = useMemo(() => {
@@ -660,7 +671,8 @@ export function DashboardProvider({
         },
         globalOperations: [],
         visible: true,
-        filterByIds: recordIds, // Initialize with all records in the set
+        filterByIds: [], // Initialize with empty array to show all records (no active filter)
+        filterByTags: [], // Initialize with empty array to show all records (no active filter)
       };
 
       return {

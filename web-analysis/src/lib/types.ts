@@ -53,6 +53,7 @@ export interface DataSet {
   globalOperations: GlobalOperation[];
   visible: boolean; // Whether to show this set's data on the chart
   filterByIds: string[]; // Active filter for selected IDs within this set
+  filterByTags?: string[]; // Active filter for selected tags within this set (optional for backward compatibility)
   lineStyle?: LineStyle; // Optional: Custom line styling for this set
 }
 
