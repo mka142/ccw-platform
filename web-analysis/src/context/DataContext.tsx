@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DataRecord } from '@/lib/types';
+import { useProject } from './ProjectContext';
 
 interface DataContextValue {
   dataFile: File | null;
@@ -28,6 +29,15 @@ interface DataProviderProps {
 export function DataProvider({ children }: DataProviderProps) {
   const [dataFile, setDataFile] = useState<File | null>(null);
   const [customData, setCustomData] = useState<DataRecord[] | null>(null);
+  const { registerContextSetters } = useProject();
+
+  // Register setters with ProjectContext on mount
+  useEffect(() => {
+    registerContextSetters({
+      setCustomData,
+      setDataFile,
+    });
+  }, [registerContextSetters]);
 
   const clearData = () => {
     setDataFile(null);

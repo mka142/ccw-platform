@@ -32,8 +32,8 @@ export default function ProjectManager({ onClose }: ProjectManagerProps) {
     importFromFile,
   } = useProject();
 
-  const { customData, dataFile, setCustomData, setDataFile, clearData } = useData();
-  const { audioFile, setAudioFile, clearAudio } = useAudio();
+  const { customData, dataFile, clearData } = useData();
+  const { audioFile, clearAudio } = useAudio();
   const { config } = useDashboard();
 
   const [projectName, setProjectName] = useState('');
@@ -86,38 +86,8 @@ export default function ProjectManager({ onClose }: ProjectManagerProps) {
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const importedProject = await importFromFile(file);
-      
-      // Load data into DataProvider
-      if (importedProject?.data) {
-        setCustomData(importedProject.data);
-        
-        // Create a File object for the data if we have a filename
-        if (importedProject.dataFilename) {
-          const dataJson = JSON.stringify(importedProject.data, null, 2);
-          const dataBlob = new Blob([dataJson], { type: 'application/json' });
-          const dataFile = new File([dataBlob], importedProject.dataFilename, { type: 'application/json' });
-          setDataFile(dataFile);
-        }
-      }
-      
-      // Load audio if exists
-      if (importedProject?.audio) {
-        try {
-          const response = await fetch(importedProject.audio.url);
-          const blob = await response.blob();
-          const loadedAudioFile = new File([blob], importedProject.audio.filename, { type: blob.type });
-          setAudioFile(loadedAudioFile);
-          console.log('Audio file loaded:', loadedAudioFile.name);
-        } catch (error) {
-          console.error('Failed to load audio:', error);
-          alert('Nie udało się załadować pliku audio, ale dane projektu zostały zaimportowane.');
-        }
-      }
-      
-      if (onClose) {
-        onClose();
-      }
+      // ProjectContext will handle the sequential application of data, audio, and config
+      await importFromFile(file, onClose);
     }
     // Reset input
     if (fileInputRef.current) {

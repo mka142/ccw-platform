@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useProject } from './ProjectContext';
 
 interface AudioContextValue {
   audioFile: File | null;
@@ -27,16 +28,18 @@ interface AudioProviderProps {
 export function AudioProvider({ children }: AudioProviderProps) {
   const [audioFile, setAudioFileState] = useState<File | null>(null);
   const [audioUrl, setAudioUrlState] = useState<string | null>(null);
+  const { registerContextSetters } = useProject();
 
-  console.log("AUDIO FILE:", audioFile);
 
-  const setAudioFile = (file: File | null) => {
+  const setAudioFile = useCallback((file: File | null) => {
     console.log("Setting audio file:", file);
     // Clean up old URL if exists
-    if (audioUrl) {
-      URL.revokeObjectURL(audioUrl);
-      setAudioUrlState(null);
-    }
+    setAudioUrlState(prevUrl => {
+      if (prevUrl) {
+        URL.revokeObjectURL(prevUrl);
+      }
+      return null;
+    });
 
     setAudioFileState(file);
 
@@ -45,7 +48,14 @@ export function AudioProvider({ children }: AudioProviderProps) {
       const url = URL.createObjectURL(file);
       setAudioUrlState(url);
     }
-  };
+  }, []);
+
+  // Register setters with ProjectContext on mount
+  useEffect(() => {
+    registerContextSetters({
+      setAudioFile,
+    });
+  }, [registerContextSetters, setAudioFile]);
 
   const setAudioUrl = (url: string | null) => {
     setAudioUrlState(url);

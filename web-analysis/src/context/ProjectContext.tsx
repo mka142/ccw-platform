@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Config } from '@/lib/types';
 
 export interface ProjectData {
@@ -17,6 +17,23 @@ export interface ProjectData {
   };
 }
 
+type ApplyStep = 'data' | 'audio' | 'config';
+
+interface PendingImportData {
+  data?: ProjectData['data'];
+  dataFilename?: string;
+  audioUrl?: string;
+  audioFilename?: string;
+  config?: Config;
+}
+
+interface ApplyProcess {
+  startApply: boolean;
+  toApply: ApplyStep[];
+  pendingData?: PendingImportData;
+  onComplete?: () => void;
+}
+
 interface ProjectContextValue {
   currentProject: ProjectData | null;
   
@@ -27,13 +44,131 @@ interface ProjectContextValue {
   
   // Export/Import
   exportToFile: () => void;
-  importFromFile: (file: File) => Promise<ProjectData | null>;
+  importFromFile: (file: File, onComplete?: () => void) => Promise<ProjectData | null>;
+  
+  // Apply process - for external context consumers
+  applyProcess: ApplyProcess;
+  
+  // Register context setters from other contexts
+  registerContextSetters: (setters: {
+    setCustomData?: (data: ProjectData['data']) => void;
+    setDataFile?: (file: File | null) => void;
+    setAudioFile?: (file: File | null) => void;
+  }) => void;
 }
 
 const ProjectContext = createContext<ProjectContextValue | undefined>(undefined);
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [currentProject, setCurrentProject] = useState<ProjectData | null>(null);
+  
+  // State-driven apply process
+  const [applyProcess, setApplyProcess] = useState<ApplyProcess>({
+    startApply: false,
+    toApply: [],
+  });
+
+  // Refs to hold the context setters that will be called during apply process
+  const [contextSetters, setContextSetters] = useState<{
+    setCustomData?: (data: ProjectData['data']) => void;
+    setDataFile?: (file: File | null) => void;
+    setAudioFile?: (file: File | null) => void;
+  }>({});
+
+  const registerContextSetters = useCallback((setters: {
+    setCustomData?: (data: ProjectData['data']) => void;
+    setDataFile?: (file: File | null) => void;
+    setAudioFile?: (file: File | null) => void;
+  }) => {
+    setContextSetters(prev => ({ ...prev, ...setters }));
+  }, []);
+
+  // useEffect to handle sequential application of data, audio, and config
+  useEffect(() => {
+    if (!applyProcess.startApply || applyProcess.toApply.length === 0) {
+      return;
+    }
+
+    const currentStep = applyProcess.toApply[0];
+    const remainingSteps = applyProcess.toApply.slice(1);
+
+    console.log(`[ProjectContext] Applying step: ${currentStep}`);
+
+    const processNextStep = () => {
+      if (remainingSteps.length === 0) {
+        // All steps complete
+        console.log('[ProjectContext] All import steps completed');
+        const onComplete = applyProcess.onComplete;
+        setApplyProcess({
+          startApply: false,
+          toApply: [],
+        });
+        
+        if (onComplete) {
+          onComplete();
+        }
+      } else {
+        // Move to next step
+        setApplyProcess(prev => ({
+          ...prev,
+          toApply: remainingSteps,
+        }));
+      }
+    };
+
+    if (currentStep === 'data' && applyProcess.pendingData?.data) {
+      // Apply data
+      if (contextSetters.setCustomData) {
+        contextSetters.setCustomData(applyProcess.pendingData.data);
+        console.log('[ProjectContext] Data applied with', applyProcess.pendingData.data.length, 'records');
+        
+        // Create a File object for the data if we have a filename
+        if (applyProcess.pendingData.dataFilename && contextSetters.setDataFile) {
+          const dataJson = JSON.stringify(applyProcess.pendingData.data, null, 2);
+          const dataBlob = new Blob([dataJson], { type: 'application/json' });
+          const newDataFile = new File([dataBlob], applyProcess.pendingData.dataFilename, { type: 'application/json' });
+          contextSetters.setDataFile(newDataFile);
+        }
+      }
+
+      processNextStep();
+    } else if (currentStep === 'audio' && applyProcess.pendingData?.audioUrl) {
+      // Apply audio
+      const loadAudio = async () => {
+        try {
+          const response = await fetch(applyProcess.pendingData!.audioUrl!);
+          const blob = await response.blob();
+          const loadedAudioFile = new File(
+            [blob], 
+            applyProcess.pendingData!.audioFilename || 'audio.mp3', 
+            { type: blob.type }
+          );
+          
+          if (contextSetters.setAudioFile) {
+            contextSetters.setAudioFile(loadedAudioFile);
+          }
+          console.log('[ProjectContext] Audio file loaded:', loadedAudioFile.name);
+
+          processNextStep();
+        } catch (error) {
+          console.error('[ProjectContext] Failed to load audio:', error);
+          alert('Nie udało się załadować pliku audio, ale dane projektu zostały zaimportowane.');
+          
+          processNextStep();
+        }
+      };
+
+      loadAudio();
+    } else if (currentStep === 'config' && applyProcess.pendingData?.config) {
+      // Apply config (if needed in the future)
+      console.log('[ProjectContext] Config would be applied here:', applyProcess.pendingData.config);
+      
+      processNextStep();
+    } else {
+      // Skip this step if no data
+      processNextStep();
+    }
+  }, [applyProcess, contextSetters]);
 
   const createProject = useCallback((name: string, description?: string, data?: ProjectData['data'], dataFilename?: string, audio?: ProjectData['audio'], config?: Config) => {
     const newProject: ProjectData = {
@@ -90,7 +225,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     URL.revokeObjectURL(url);
   }, [currentProject]);
 
-  const importFromFile = useCallback(async (file: File): Promise<ProjectData | null> => {
+  const importFromFile = useCallback(async (file: File, onComplete?: () => void): Promise<ProjectData | null> => {
     try {
       const text = await file.text();
       const importedProject: ProjectData = JSON.parse(text);
@@ -101,6 +236,41 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }
 
       setCurrentProject(importedProject);
+      
+      // Prepare the apply sequence: data -> audio -> config
+      const toApply: ApplyStep[] = [];
+      const pendingData: PendingImportData = {};
+
+      if (importedProject.data) {
+        toApply.push('data');
+        pendingData.data = importedProject.data;
+        pendingData.dataFilename = importedProject.dataFilename;
+      }
+
+      if (importedProject.audio) {
+        toApply.push('audio');
+        pendingData.audioUrl = importedProject.audio.url;
+        pendingData.audioFilename = importedProject.audio.filename;
+      }
+
+      if (importedProject.config) {
+        toApply.push('config');
+        pendingData.config = importedProject.config;
+      }
+
+      // Start the state-driven apply process
+      if (toApply.length > 0) {
+        console.log('[ProjectContext] Starting import process with steps:', toApply);
+        setApplyProcess({
+          startApply: true,
+          toApply,
+          pendingData,
+          onComplete,
+        });
+      } else if (onComplete) {
+        onComplete();
+      }
+      
       alert(`Projekt "${importedProject.name}" zaimportowany pomyślnie!`);
       return importedProject;
     } catch (error) {
@@ -117,6 +287,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     clearProject,
     exportToFile,
     importFromFile,
+    applyProcess,
+    registerContextSetters,
   };
 
   return (
