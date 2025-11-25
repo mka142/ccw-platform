@@ -1,4 +1,4 @@
-import { applyOperation, applyGlobalOperation, resampleData } from '../lib/dataOperations';
+import { applyOperation, applyGlobalOperation, resampleData, calculateCommonTimeRange } from '../lib/dataOperations';
 import type { RecordMetadata, GlobalOperation, ResamplingConfig, ProcessedRecord } from '../lib/types';
 
 interface ProcessDataMessage {
@@ -112,12 +112,50 @@ function processData(params: ProcessDataMessage['payload']): ProcessedRecord[] {
 
   // Step 3: Apply resampling if enabled
   if (resampling.applied) {
+    // Determine start/end times based on strategy
+    let startTime: number | undefined;
+    let endTime: number | undefined;
+
+    if (resampling.strategy === 'shortest') {
+      // Strategy 1: Cut to shortest record series start and end
+      const commonRange = calculateCommonTimeRange(
+        filtered.map((r) => ({ id: r.id, data: r.data }))
+      );
+      if (commonRange) {
+        startTime = commonRange.startTime;
+        endTime = commonRange.endTime;
+      }
+    } else if (resampling.strategy === 'audio') {
+      // Strategy 2: Use audio start/end (with extrapolation if needed)
+      startTime = resampling.startTime;
+      
+      // Calculate end time: use explicit endTime if provided, otherwise find max timestamp
+      if (resampling.endTime !== undefined) {
+        endTime = resampling.endTime;
+      } else {
+        // Find the maximum timestamp across all filtered records
+        let maxTimestamp = -Infinity;
+        filtered.forEach(record => {
+          if (record.data.length > 0) {
+            const recordMax = Math.max(...record.data.map(d => d.timestamp));
+            if (recordMax > maxTimestamp) {
+              maxTimestamp = recordMax;
+            }
+          }
+        });
+        endTime = maxTimestamp !== -Infinity ? maxTimestamp : undefined;
+      }
+    }
+    // If no strategy or no times, use default behavior (each record's own range)
+
     filtered = filtered.map((record) => ({
       ...record,
       data: resampleData(
         record.data,
         resampling.windowMs,
-        resampling.interpolationMethod
+        resampling.interpolationMethod,
+        startTime,
+        endTime
       ),
     }));
   }

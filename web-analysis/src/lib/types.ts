@@ -37,10 +37,13 @@ export interface ResamplingConfig {
   applied: boolean;
   windowMs: number;
   interpolationMethod: InterpolationMethod;
+  strategy?: 'shortest' | 'audio'; // Strategy for handling different data lengths
+  startTime?: number; // Optional explicit start time (for 'audio' strategy)
+  endTime?: number; // Optional explicit end time (for 'audio' strategy)
 }
 
 export interface GlobalOperation {
-  type: 'mean' | 'standardDeviation' | 'changes' | 'movingAverage' | 'quantize' | 'custom';
+  type: 'mean' | 'standardDeviation' | 'changes' | 'movingAverage' | 'quantize' | 'spearmanCorrelation' | 'rollingSpearman' | 'custom';
   params: Record<string, number | string | boolean>;
   label?: string; // Optional label for the operation result
 }
@@ -123,7 +126,13 @@ export interface DashboardContextValue extends DashboardState {
   importConfig: (configJson: string) => void;
   applyOperationToRecord: (id: string, operation: RecordOperation) => void;
   removeOperationFromRecord: (id: string, operationIndex: number) => void;
-  setResampling: (windowMs: number, interpolationMethod: InterpolationMethod) => void;
+  setResampling: (
+    windowMs: number, 
+    interpolationMethod: InterpolationMethod,
+    strategy?: 'shortest' | 'audio',
+    startTime?: number,
+    endTime?: number
+  ) => void;
   clearResampling: () => void;
   setChartVisualizationMode: (mode: ChartVisualizationMode) => void;
   setRecordingStartTimestamp: (timestamp: number | undefined) => void;

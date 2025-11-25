@@ -47,11 +47,19 @@ function stepInterpolate(y0: number): number {
 
 /**
  * Resample data to fixed time windows with interpolation
+ * @param data - Input data points
+ * @param windowMs - Resampling window in milliseconds
+ * @param interpolationMethod - 'linear' or 'step'
+ * @param startTime - Optional start time for resampling range
+ * @param endTime - Optional end time for resampling range
+ * @returns Resampled data
  */
 export function resampleData(
   data: Array<{ timestamp: number; value: number }>,
   windowMs: number,
-  interpolationMethod: InterpolationMethod
+  interpolationMethod: InterpolationMethod,
+  startTime?: number,
+  endTime?: number
 ): Array<{ timestamp: number; value: number }> {
   if (data.length === 0 || windowMs <= 0) return data;
 
@@ -60,9 +68,13 @@ export function resampleData(
   
   if (sortedData.length === 1) return sortedData;
 
-  // Find min and max timestamps
-  const minTime = sortedData[0].timestamp;
-  const maxTime = sortedData[sortedData.length - 1].timestamp;
+  // Find data's actual min and max timestamps
+  const dataMinTime = sortedData[0].timestamp;
+  const dataMaxTime = sortedData[sortedData.length - 1].timestamp;
+
+  // Determine resampling range
+  const minTime = startTime !== undefined ? startTime : dataMinTime;
+  const maxTime = endTime !== undefined ? endTime : dataMaxTime;
 
   // Generate resampled timestamps
   const result: Array<{ timestamp: number; value: number }> = [];
@@ -70,6 +82,9 @@ export function resampleData(
   const endBucket = Math.ceil(maxTime / windowMs) * windowMs;
 
   for (let timestamp = startBucket; timestamp <= endBucket; timestamp += windowMs) {
+    // Skip if outside requested range
+    if (timestamp < minTime || timestamp > maxTime) continue;
+
     // Find points with smaller/equal and larger/equal timestamp
     let lowerPoint = null;
     let upperPoint = null;
@@ -87,11 +102,49 @@ export function resampleData(
     let value: number;
 
     if (!lowerPoint && upperPoint) {
-      // Before first point - use first value
-      value = upperPoint.value;
+      // Before first data point - extrapolate backwards
+      if (sortedData.length >= 2) {
+        // Use first two points to extrapolate backwards
+        const p1 = sortedData[0];
+        const p2 = sortedData[1];
+        if (interpolationMethod === 'linear') {
+          value = linearInterpolate(
+            timestamp,
+            p1.timestamp,
+            p1.value,
+            p2.timestamp,
+            p2.value
+          );
+        } else {
+          // step interpolation - use first value
+          value = p1.value;
+        }
+      } else {
+        // Only one point - use its value
+        value = upperPoint.value;
+      }
     } else if (lowerPoint && !upperPoint) {
-      // After last point - use last value
-      value = lowerPoint.value;
+      // After last data point - extrapolate forwards
+      if (sortedData.length >= 2) {
+        // Use last two points to extrapolate forwards
+        const p1 = sortedData[sortedData.length - 2];
+        const p2 = sortedData[sortedData.length - 1];
+        if (interpolationMethod === 'linear') {
+          value = linearInterpolate(
+            timestamp,
+            p1.timestamp,
+            p1.value,
+            p2.timestamp,
+            p2.value
+          );
+        } else {
+          // step interpolation - use last value
+          value = p2.value;
+        }
+      } else {
+        // Only one point - use its value
+        value = lowerPoint.value;
+      }
     } else if (lowerPoint && upperPoint) {
       // Between points - interpolate
       if (lowerPoint.timestamp === timestamp) {
@@ -120,6 +173,35 @@ export function resampleData(
   }
 
   return result;
+}
+
+/**
+ * Calculate common time range for multiple datasets
+ * Strategy 1: Cut to shortest record series start and end
+ */
+export function calculateCommonTimeRange(
+  datasets: Array<{ id: string; data: Array<{ timestamp: number; value: number }> }>
+): { startTime: number; endTime: number } | null {
+  if (datasets.length === 0) return null;
+
+  let maxStart = -Infinity;
+  let minEnd = Infinity;
+
+  datasets.forEach(ds => {
+    if (ds.data.length === 0) return;
+    const sortedData = [...ds.data].sort((a, b) => a.timestamp - b.timestamp);
+    const start = sortedData[0].timestamp;
+    const end = sortedData[sortedData.length - 1].timestamp;
+    
+    if (start > maxStart) maxStart = start;
+    if (end < minEnd) minEnd = end;
+  });
+
+  if (maxStart === -Infinity || minEnd === Infinity || maxStart > minEnd) {
+    return null;
+  }
+
+  return { startTime: maxStart, endTime: minEnd };
 }
 
 /**
@@ -368,6 +450,208 @@ export function calculateMovingAverage(
 }
 
 /**
+ * Calculate Spearman's rank correlation coefficient between two datasets
+ */
+function calculateSpearmanCorrelation(
+  data1: Array<{ timestamp: number; value: number }>,
+  data2: Array<{ timestamp: number; value: number }>
+): number {
+  if (data1.length === 0 || data2.length === 0 || data1.length !== data2.length) {
+    return 0;
+  }
+
+  const n = data1.length;
+
+  // Assign ranks to data1
+  const ranks1 = assignRanks(data1.map(d => d.value));
+  // Assign ranks to data2
+  const ranks2 = assignRanks(data2.map(d => d.value));
+
+  // Calculate sum of squared differences
+  let sumSquaredDiff = 0;
+  for (let i = 0; i < n; i++) {
+    const diff = ranks1[i] - ranks2[i];
+    sumSquaredDiff += diff * diff;
+  }
+
+  // Spearman's rank correlation coefficient formula
+  const rho = 1 - (6 * sumSquaredDiff) / (n * (n * n - 1));
+
+  return rho;
+}
+
+/**
+ * Assign ranks to values (handling ties with average ranks)
+ */
+function assignRanks(values: number[]): number[] {
+  const n = values.length;
+  
+  // Create array of indices sorted by values
+  const indices = values.map((_, i) => i).sort((a, b) => values[a] - values[b]);
+  
+  const ranks = new Array(n);
+  
+  let i = 0;
+  while (i < n) {
+    let j = i;
+    // Find all tied values
+    while (j < n && values[indices[j]] === values[indices[i]]) {
+      j++;
+    }
+    
+    // Assign average rank to all tied values
+    const avgRank = (i + j + 1) / 2; // Ranks are 1-based
+    for (let k = i; k < j; k++) {
+      ranks[indices[k]] = avgRank;
+    }
+    
+    i = j;
+  }
+  
+  return ranks;
+}
+
+/**
+ * Calculate Spearman correlation matrix for multiple datasets within a time range
+ * Returns upper triangle of correlation matrix as constant-value lines
+ */
+function calculateSpearmanCorrelationMatrix(
+  datasets: Array<{ id: string; data: Array<{ timestamp: number; value: number }> }>,
+  startTime: number,
+  endTime: number,
+  resamplingWindowMs: number
+): Array<{ id: string; data: Array<{ timestamp: number; value: number }> }> {
+  if (datasets.length < 2) {
+    console.warn('Spearman correlation requires at least 2 datasets');
+    return [];
+  }
+
+  // Filter datasets to time range
+  const filteredDatasets = datasets.map(ds => ({
+    id: ds.id,
+    data: ds.data.filter(d => d.timestamp >= startTime && d.timestamp <= endTime)
+  })).filter(ds => ds.data.length > 0);
+
+  if (filteredDatasets.length < 2) {
+    console.warn('Not enough data in specified time range');
+    return [];
+  }
+
+  // Calculate correlations for upper triangle of matrix
+  const correlationResults: Array<{ id: string; data: Array<{ timestamp: number; value: number }> }> = [];
+  
+  for (let i = 0; i < filteredDatasets.length; i++) {
+    for (let j = i + 1; j < filteredDatasets.length; j++) {
+      const correlation = calculateSpearmanCorrelation(
+        filteredDatasets[i].data,
+        filteredDatasets[j].data
+      );
+
+      // Create constant-value line for this correlation
+      const correlationData: Array<{ timestamp: number; value: number }> = [];
+      
+      // Generate timestamps across the range with resampling window spacing
+      for (let t = startTime; t <= endTime; t += resamplingWindowMs) {
+        correlationData.push({
+          timestamp: t,
+          value: correlation
+        });
+      }
+      
+      // Ensure we include the end time
+      if (correlationData.length === 0 || correlationData[correlationData.length - 1].timestamp < endTime) {
+        correlationData.push({
+          timestamp: endTime,
+          value: correlation
+        });
+      }
+
+      const label = `ρ(${filteredDatasets[i].id}, ${filteredDatasets[j].id})`;
+      correlationResults.push({
+        id: label,
+        data: correlationData
+      });
+    }
+  }
+
+  return correlationResults;
+}
+
+/**
+ * Calculate rolling Spearman correlation for multiple datasets
+ * Returns time series where each point represents correlation within a sliding window
+ */
+function calculateRollingSpearmanCorrelation(
+  datasets: Array<{ id: string; data: Array<{ timestamp: number; value: number }> }>,
+  windowSize: number
+): Array<{ id: string; data: Array<{ timestamp: number; value: number }> }> {
+
+
+  
+  if (datasets.length < 2) {
+    console.warn('Rolling Spearman correlation requires at least 2 datasets');
+    return [];
+  }
+
+  if (windowSize < 2) {
+    console.warn('Window size must be at least 2');
+    return [];
+  }
+
+  // All datasets should have same length and timestamps after resampling
+  const dataLength = datasets[0].data.length;
+  
+  // Verify all datasets have the same length
+  if (!datasets.every(ds => ds.data.length === dataLength)) {
+    console.warn('All datasets must have the same length for rolling correlation');
+    console.log(datasets.map(ds => ({ id: ds.id, length: ds.data.length })));
+    return [];
+  }
+
+  if (dataLength < windowSize) {
+    console.warn('Data length is smaller than window size');
+    return [];
+  }
+
+  const correlationResults: Array<{ id: string; data: Array<{ timestamp: number; value: number }> }> = [];
+  
+  // Calculate rolling correlations for each pair (upper triangle)
+  for (let i = 0; i < datasets.length; i++) {
+    for (let j = i + 1; j < datasets.length; j++) {
+      const rollingCorrelationData: Array<{ timestamp: number; value: number }> = [];
+      
+      // Calculate correlation for each window position
+      for (let windowStart = 0; windowStart <= dataLength - windowSize; windowStart++) {
+        const windowEnd = windowStart + windowSize;
+        
+        // Extract window data for both datasets
+        const window1 = datasets[i].data.slice(windowStart, windowEnd);
+        const window2 = datasets[j].data.slice(windowStart, windowEnd);
+        
+        // Calculate correlation for this window
+        const correlation = calculateSpearmanCorrelation(window1, window2);
+        
+        // Use the timestamp of the last point in the window
+        const timestamp = datasets[i].data[windowEnd - 1].timestamp;
+        
+        rollingCorrelationData.push({
+          timestamp,
+          value: correlation
+        });
+      }
+      
+      const label = `Rolling ρ(${datasets[i].id}, ${datasets[j].id}) [w=${windowSize}]`;
+      correlationResults.push({
+        id: label,
+        data: rollingCorrelationData
+      });
+    }
+  }
+
+  return correlationResults;
+}
+
+/**
  * Apply global operation across datasets
  */
 export function applyGlobalOperation(
@@ -408,6 +692,34 @@ export function applyGlobalOperation(
         id: dataset.id,
         data: calculateMovingAverage(dataset.data, windowSize, algorithm)
       }));
+    }
+    case 'spearmanCorrelation': {
+      const startTime = typeof operation.params.startTime === 'number' 
+        ? operation.params.startTime 
+        : 0;
+      const endTime = typeof operation.params.endTime === 'number' 
+        ? operation.params.endTime 
+        : Number.MAX_SAFE_INTEGER;
+      const resamplingWindowMs = typeof operation.params.resamplingWindowMs === 'number' 
+        ? operation.params.resamplingWindowMs 
+        : 1000;
+      
+      return calculateSpearmanCorrelationMatrix(
+        datasets,
+        startTime,
+        endTime,
+        resamplingWindowMs
+      );
+    }
+    case 'rollingSpearman': {
+      const windowSize = typeof operation.params.windowSize === 'number' 
+        ? operation.params.windowSize 
+        : 10;
+      
+      return calculateRollingSpearmanCorrelation(
+        datasets,
+        windowSize
+      );
     }
     default:
       return datasets;

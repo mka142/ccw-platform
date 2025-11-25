@@ -25,6 +25,8 @@ export default function OperationsTab() {
     removeOperationFromRecord,
     setResampling,
     clearResampling,
+    config: { recordingStartTimestamp },
+    processedData,
   } = useDashboard();
 
   const [resampleWindowMs, setResampleWindowMs] = useState(
@@ -41,13 +43,32 @@ export default function OperationsTab() {
   const [movingAverageAlgorithm, setMovingAverageAlgorithm] = useState<
     "SMA" | "WMA" | "RMA"
   >("SMA");
+  const [spearmanStartTime, setSpearmanStartTime] = useState("00:00");
+  const [spearmanEndTime, setSpearmanEndTime] = useState("01:00");
+  const [rollingSpearmanWindow, setRollingSpearmanWindow] = useState("10");
+  const [resamplingStrategy, setResamplingStrategy] = useState<'shortest' | 'audio' | 'none'>('none');
 
   const isIndividualMode = mode === "individual" && selectedRecordId;
 
   const handleApplyResampling = () => {
     const ms = parseInt(resampleWindowMs, 10);
     if (isNaN(ms) || ms <= 0) return;
-    setResampling(ms, interpolationMethod);
+    
+    let strategy: 'shortest' | 'audio' | undefined;
+    let startTime: number | undefined;
+    let endTime: number | undefined;
+
+    if (resamplingStrategy === 'shortest') {
+      strategy = 'shortest';
+    } else if (resamplingStrategy === 'audio' && recordingStartTimestamp !== undefined) {
+      strategy = 'audio';
+      startTime = recordingStartTimestamp;
+      // Calculate endTime based on audio duration if available
+      // For now, we'll let it be undefined and handle in the worker
+      endTime = undefined;
+    }
+
+    setResampling(ms, interpolationMethod, strategy, startTime, endTime);
   };
 
   const handleClearResampling = () => {
@@ -260,6 +281,73 @@ export default function OperationsTab() {
           removeOperationFromRecord(id, i);
         }
       }
+    });
+  };
+
+  // Helper function to parse mm:ss time format to milliseconds
+  const parseTimeToMs = (timeStr: string): number => {
+    const parts = timeStr.split(":");
+    if (parts.length !== 2) return 0;
+    const minutes = parseInt(parts[0], 10);
+    const seconds = parseInt(parts[1], 10);
+    if (isNaN(minutes) || isNaN(seconds)) return 0;
+    return (minutes * 60 + seconds) * 1000;
+  };
+
+  // Spearman Correlation handler
+  const handleApplySpearmanCorrelation = () => {
+    if (!effectiveConfig.resampling.applied) {
+      alert(
+        "Resampling musi być zastosowany przed użyciem operacji statystycznych"
+      );
+      return;
+    }
+    if (!recordingStartTimestamp) {
+      alert(
+        "Proszę ustawić znacznik czasu rozpoczęcia nagrania w konfiguracji projektu"
+      );
+    }
+
+    const startTime =
+      parseTimeToMs(spearmanStartTime) + (recordingStartTimestamp || 0);
+    const endTime =
+      parseTimeToMs(spearmanEndTime) + (recordingStartTimestamp || 0);
+
+    if (startTime >= endTime) {
+      alert("Czas początkowy musi być mniejszy niż czas końcowy");
+      return;
+    }
+
+    addGlobalOperation({
+      type: "spearmanCorrelation",
+      params: {
+        startTime,
+        endTime,
+        resamplingWindowMs: effectiveConfig.resampling.windowMs,
+      },
+    });
+  };
+
+  // Rolling Spearman Correlation handler
+  const handleApplyRollingSpearman = () => {
+    if (!effectiveConfig.resampling.applied) {
+      alert(
+        "Resampling musi być zastosowany przed użyciem operacji statystycznych"
+      );
+      return;
+    }
+
+    const windowSize = parseInt(rollingSpearmanWindow, 10);
+    if (isNaN(windowSize) || windowSize < 2) {
+      alert("Proszę wprowadzić prawidłowy rozmiar okna (liczba >= 2)");
+      return;
+    }
+
+    addGlobalOperation({
+      type: "rollingSpearman",
+      params: {
+        windowSize,
+      },
     });
   };
 
@@ -735,6 +823,37 @@ export default function OperationsTab() {
                       </li>
                       <li>Ułatwia synchronizację danych czasowych</li>
                     </ul>
+
+                    <p className="font-semibold mt-3">Strategie Wyrównania Długości:</p>
+                    
+                    <div className="mt-2">
+                      <p className="font-semibold">Brak (zachowaj oryginalne)</p>
+                      <p>
+                        Każdy rekord zachowuje swoją oryginalną długość czasową.
+                        Może prowadzić do błędów w operacjach wymagających
+                        jednakowej długości (np. korelacja ruchoma).
+                      </p>
+                    </div>
+
+                    <div className="mt-2">
+                      <p className="font-semibold">Przytnij do najkrótszego</p>
+                      <p>
+                        Wszystkie rekordy są przycinane do wspólnego zakresu
+                        czasowego (od najpóźniejszego startu do najwcześniejszego
+                        końca). Zapewnia, że wszystkie rekordy mają te same
+                        znaczniki czasowe.
+                      </p>
+                    </div>
+
+                    <div className="mt-2">
+                      <p className="font-semibold">Dopasuj do audio</p>
+                      <p>
+                        Rozszerza wszystkie rekordy do pełnej długości nagrania
+                        audio. Brakujące dane na początku są ekstrapolowane
+                        wstecz, na końcu do przodu, używając wybranej metody
+                        interpolacji.
+                      </p>
+                    </div>
                   </InfoModal>
                 </div>
                 <div className="space-y-3 mt-2">
@@ -775,6 +894,27 @@ export default function OperationsTab() {
                       </TabsList>
                     </Tabs>
                   </div>
+                  <div>
+                    <Label className="text-xs">Strategia Wyrównania Długości</Label>
+                    <select
+                      value={resamplingStrategy}
+                      onChange={(e) => setResamplingStrategy(e.target.value as 'shortest' | 'audio' | 'none')}
+                      className="w-full p-2 text-sm border rounded mt-1 bg-background"
+                      disabled={effectiveConfig.resampling.applied}
+                    >
+                      <option value="none">Brak (zachowaj długości oryginalne)</option>
+                      <option value="shortest">Przytnij do najkrótszego rekordu</option>
+                      <option value="audio">Dopasuj do audio (z ekstrapolacją)</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {resamplingStrategy === 'none' && 
+                        "Każdy rekord zachowuje swoją oryginalną długość"}
+                      {resamplingStrategy === 'shortest' && 
+                        "Wszystkie rekordy przycięte do wspólnego zakresu czasowego"}
+                      {resamplingStrategy === 'audio' && 
+                        "Rekordy rozszerzone do długości audio (z interpolacją)"}
+                    </p>
+                  </div>
                   {!effectiveConfig.resampling.applied ? (
                     <Button className="w-full" onClick={handleApplyResampling}>
                       Zastosuj Resampling
@@ -792,6 +932,65 @@ export default function OperationsTab() {
                     Resampling wymagany dla operacji statystycznych
                   </p>
                 </div>
+
+                {/* Dataset Length Info - Show after resampling is applied */}
+                {effectiveConfig.resampling.applied && processedData.length > 0 && (
+                  <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-2">
+                    <Label className="text-xs font-medium">
+                      Długości Danych Po Resamplingu
+                    </Label>
+                    {(() => {
+                      // Calculate unique lengths
+                      const lengthMap = new Map<number, string[]>();
+                      processedData.forEach(record => {
+                        const length = record.data.length;
+                        if (!lengthMap.has(length)) {
+                          lengthMap.set(length, []);
+                        }
+                        // Extract label or use ID
+                        const displayName = record.label || record.id.split(':').pop() || record.id;
+                        lengthMap.get(length)!.push(displayName);
+                      });
+
+                      const allSameLength = lengthMap.size === 1;
+                      
+                      return (
+                        <>
+                          {allSameLength ? (
+                            <div className="flex items-center gap-2 text-xs text-green-600">
+                              <span className="font-semibold">✓</span>
+                              <span>
+                                Wszystkie rekordy mają tę samą długość: {Array.from(lengthMap.keys())[0]} punktów
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2 text-xs text-amber-600 font-semibold">
+                                <span>⚠</span>
+                                <span>Niezgodne długości - operacje korelacyjne mogą nie działać!</span>
+                              </div>
+                              <div className="space-y-1 text-xs">
+                                {Array.from(lengthMap.entries())
+                                  .sort((a, b) => b[0] - a[0]) // Sort by length descending
+                                  .map(([length, ids]) => (
+                                    <div key={length} className="pl-4">
+                                      <span className="font-semibold">{length} punktów:</span>
+                                      <div className="pl-2 text-muted-foreground">
+                                        {ids.join(', ')}
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                              <p className="text-xs text-amber-600 mt-2">
+                                💡 Użyj strategii &quot;Przytnij do najkrótszego&quot; lub &quot;Dopasuj do audio&quot;
+                              </p>
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
 
               <Separator />
@@ -1068,6 +1267,257 @@ export default function OperationsTab() {
                       punktów zostanie usuniętych z każdego rekordu
                     </p>
                   </div>
+
+                  {/* Spearman's Rank Correlation Coefficient */}
+                  <div className="space-y-2 pt-2 border-t">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs font-medium">
+                        Korelacja Spearmana
+                      </Label>
+                      <InfoModal title="Korelacja Spearmana">
+                        <p className="font-semibold">Co to jest?</p>
+                        <p>
+                          Współczynnik korelacji rang Spearmana mierzy
+                          monotoniczny związek między parami zbiorów danych. W
+                          przeciwieństwie do korelacji Pearsona, nie zakłada
+                          liniowości.
+                        </p>
+
+                        <p className="font-semibold mt-3">Jak działa?</p>
+                        <p>
+                          Algorytm konwertuje wartości na rangi i oblicza
+                          korelację między rangami:
+                        </p>
+                        <code className="block bg-muted p-2 rounded mt-1">
+                          ρ = 1 - (6 * Σd²) / (n * (n² - 1))
+                        </code>
+                        <p className="mt-1">
+                          gdzie <code>d</code> to różnice między rangami, a{" "}
+                          <code>n</code> to liczba obserwacji.
+                        </p>
+
+                        <p className="font-semibold mt-3">
+                          Interpretacja wyników:
+                        </p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>
+                            ρ = 1: Perfekcyjna korelacja dodatnia (monotoniczny
+                            wzrost)
+                          </li>
+                          <li>ρ = 0: Brak korelacji monotoniczne</li>
+                          <li>
+                            ρ = -1: Perfekcyjna korelacja ujemna (monotoniczny
+                            spadek)
+                          </li>
+                        </ul>
+
+                        <p className="font-semibold mt-3">Kiedy używać?</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>
+                            Gdy chcesz zmierzyć związek między wieloma seriami
+                            danych
+                          </li>
+                          <li>
+                            Gdy dane nie muszą być liniowo skorelowane, ale
+                            pokazują trend monotoniczny
+                          </li>
+                          <li>
+                            Gdy chcesz porównać współzależność w określonym
+                            przedziale czasowym nagrania
+                          </li>
+                        </ul>
+
+                        <p className="font-semibold mt-3">Zakres czasowy:</p>
+                        <p>
+                          Wprowadź czas w formacie mm:ss licząc od początku
+                          nagrania (np. 00:30 do 02:15 oznacza przedział od 30
+                          sekundy do 2 minut i 15 sekund od startu nagrania).
+                        </p>
+
+                        <p className="font-semibold mt-3">Rezultat:</p>
+                        <p>
+                          Utworzone zostaną rekordy dla każdej pary danych
+                          (górny trójkąt macierzy korelacji), z nazwą w formacie
+                          &quot;Correlation: RecordA vs RecordB&quot; i stałą
+                          wartością równą współczynnikowi korelacji.
+                        </p>
+                      </InfoModal>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">
+                        Zakres czasu od początku nagrania (mm:ss)
+                      </Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1">
+                          <Label className="text-[10px] text-muted-foreground">
+                            Od
+                          </Label>
+                          <Input
+                            type="text"
+                            value={spearmanStartTime}
+                            onChange={(e) =>
+                              setSpearmanStartTime(e.target.value)
+                            }
+                            placeholder="00:00"
+                            className="text-sm"
+                            disabled={!effectiveConfig.resampling.applied}
+                          />
+                        </div>
+                        <span className="flex items-center mt-5">-</span>
+                        <div className="flex-1">
+                          <Label className="text-[10px] text-muted-foreground">
+                            Do
+                          </Label>
+                          <Input
+                            type="text"
+                            value={spearmanEndTime}
+                            onChange={(e) => setSpearmanEndTime(e.target.value)}
+                            placeholder="01:00"
+                            className="text-sm"
+                            disabled={!effectiveConfig.resampling.applied}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Analizuj dane w przedziale: {spearmanStartTime} -{" "}
+                        {spearmanEndTime}
+                      </p>
+                    </div>
+                    <div>
+                      <Button
+                        variant="outline"
+                        onClick={handleApplySpearmanCorrelation}
+                        disabled={!effectiveConfig.resampling.applied}
+                        className="w-full"
+                      >
+                        Zastosuj
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Oblicz współczynnik korelacji rang Spearmana dla
+                      wszystkich par widocznych danych w wybranym przedziale
+                      czasowym
+                    </p>
+                    <p className="text-xs text-amber-600">
+                      Uwaga: Wymaga co najmniej dwóch widocznych rekordów danych
+                    </p>
+                  </div>
+
+                  {/* Rolling Spearman Correlation */}
+                  <div className="space-y-2 pt-2 border-t">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-xs font-medium">
+                        Korelacja Spearmana Ruchoma
+                      </Label>
+                      <InfoModal title="Korelacja Spearmana Ruchoma">
+                        <p className="font-semibold">Co to jest?</p>
+                        <p>
+                          Ruchoma korelacja Spearmana oblicza współczynnik
+                          korelacji w przesuwającym się oknie czasowym, pokazując
+                          jak związek między danymi zmienia się w czasie.
+                        </p>
+
+                        <p className="font-semibold mt-3">Jak działa?</p>
+                        <p>
+                          Dla każdego okna rozmiaru N punktów, obliczana jest
+                          korelacja Spearmana między parami danych. Okno przesuwa
+                          się o jeden punkt, tworząc szereg czasowy wartości
+                          korelacji.
+                        </p>
+
+                        <p className="font-semibold mt-3">
+                          Interpretacja wyników:
+                        </p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>
+                            Wartości bliskie 1: Silna dodatnia korelacja w danym
+                            oknie
+                          </li>
+                          <li>
+                            Wartości bliskie 0: Brak korelacji w danym oknie
+                          </li>
+                          <li>
+                            Wartości bliskie -1: Silna ujemna korelacja w danym
+                            oknie
+                          </li>
+                          <li>
+                            Zmiany wartości: Pokazują jak stabilny jest związek
+                            między danymi
+                          </li>
+                        </ul>
+
+                        <p className="font-semibold mt-3">Rozmiar okna:</p>
+                        <p>
+                          Rozmiar okna określa liczbę próbek użytych do obliczenia
+                          każdej korelacji. Większe okno = stabilniejsze wyniki
+                          ale mniejsza czułość na zmiany. Mniejsze okno = większa
+                          czułość ale więcej szumu.
+                        </p>
+
+                        <p className="font-semibold mt-3">Kiedy używać?</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>
+                            Gdy chcesz zobaczyć jak korelacja zmienia się w czasie
+                          </li>
+                          <li>
+                            Do wykrywania okresów silnej lub słabej zależności
+                          </li>
+                          <li>
+                            Do analizy stabilności związku między zmiennymi
+                          </li>
+                        </ul>
+
+                        <p className="font-semibold mt-3">Rezultat:</p>
+                        <p>
+                          Utworzone zostaną rekordy dla każdej pary danych (górny
+                          trójkąt macierzy korelacji), pokazujące jak korelacja
+                          zmienia się w czasie.
+                        </p>
+
+                        <p className="font-semibold mt-3">Uwaga:</p>
+                        <p>
+                          Pierwsze N-1 punktów zostanie usuniętych, ponieważ nie
+                          można obliczyć dla nich pełnego okna.
+                        </p>
+                      </InfoModal>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">
+                        Rozmiar okna (liczba próbek)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={rollingSpearmanWindow}
+                        onChange={(e) => setRollingSpearmanWindow(e.target.value)}
+                        placeholder="np. 10, 20, 50"
+                        className="text-sm mt-1"
+                        min="2"
+                        step="1"
+                        disabled={!effectiveConfig.resampling.applied}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Oblicz korelację w oknie {rollingSpearmanWindow} punktów
+                      </p>
+                    </div>
+                    <div>
+                      <Button
+                        variant="outline"
+                        onClick={handleApplyRollingSpearman}
+                        disabled={!effectiveConfig.resampling.applied}
+                        className="w-full"
+                      >
+                        Zastosuj
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Oblicz ruchomy współczynnik korelacji rang Spearmana dla
+                      wszystkich par widocznych danych
+                    </p>
+                    <p className="text-xs text-amber-600">
+                      Uwaga: Pierwsze {parseInt(rollingSpearmanWindow) - 1 || 0}{" "}
+                      punktów zostanie usuniętych z każdego rekordu korelacji
+                    </p>
+                  </div>
                 </div>
                 {!effectiveConfig.resampling.applied && (
                   <p className="text-xs text-muted-foreground mt-2">
@@ -1104,12 +1554,38 @@ export default function OperationsTab() {
                         `Średnia Ruchoma ${
                           op.params.algorithm || "SMA"
                         } (okno: ${op.params.windowSize})`}
+                      {op.type === "spearmanCorrelation" &&
+                        (() => {
+                          const startTime =
+                            typeof op.params.startTime === "number"
+                              ? op.params.startTime
+                              : 0;
+                          const endTime =
+                            typeof op.params.endTime === "number"
+                              ? op.params.endTime
+                              : 0;
+                          const startMin = Math.floor(startTime / 60000);
+                          const startSec = Math.floor(
+                            (startTime % 60000) / 1000
+                          );
+                          const endMin = Math.floor(endTime / 60000);
+                          const endSec = Math.floor((endTime % 60000) / 1000);
+                          return `Korelacja Spearmana (${startMin}:${String(
+                            startSec
+                          ).padStart(2, "0")} - ${endMin}:${String(
+                            endSec
+                          ).padStart(2, "0")})`;
+                        })()}
+                      {op.type === "rollingSpearman" &&
+                        `Korelacja Spearmana Ruchoma (okno: ${op.params.windowSize})`}
                       {![
                         "mean",
                         "standardDeviation",
                         "changes",
                         "quantize",
                         "movingAverage",
+                        "spearmanCorrelation",
+                        "rollingSpearman",
                       ].includes(op.type) && op.type}
                     </span>
                     <Button

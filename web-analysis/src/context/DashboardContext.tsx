@@ -559,7 +559,10 @@ export function DashboardProvider({
   // Set resampling configuration (applies to current set or global)
   const setResampling = (
     windowMs: number,
-    interpolationMethod: InterpolationMethod
+    interpolationMethod: InterpolationMethod,
+    strategy?: 'shortest' | 'audio',
+    startTime?: number,
+    endTime?: number
   ) => {
     setConfig((prev) => {
       if (currentSet) {
@@ -574,6 +577,9 @@ export function DashboardProvider({
                     applied: true,
                     windowMs,
                     interpolationMethod,
+                    strategy,
+                    startTime,
+                    endTime,
                   },
                 }
               : s
@@ -587,6 +593,9 @@ export function DashboardProvider({
           applied: true,
           windowMs,
           interpolationMethod,
+          strategy,
+          startTime,
+          endTime,
         },
       };
     });
