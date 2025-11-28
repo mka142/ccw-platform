@@ -138,6 +138,12 @@ export const config = {
       getUserFormResponse: (userId: string, formId: string) =>
         `${API_BASE_URL}/api/examination-forms/user/${userId}/form/${formId}`,
     },
+    reRecordForm: {
+      heartbeat: (token: string) =>
+        `${API_BASE_URL}/api/re-record-forms/responses/${token}/heartbeat`,
+      submitBatch: (token: string) =>
+        `${API_BASE_URL}/api/re-record-forms/responses/${token}/batch`,
+    },
   },
 
   /**

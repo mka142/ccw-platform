@@ -14,9 +14,34 @@ import { EventSchema } from "./lib/mqtt";
 import { EventType } from "./config";
 import NoZoomWrapper from "./components/NoZoomWrapper";
 import IosOnlySafari from "./lib/IosOnlySafari";
+import ReRecordPage from "./pages/ReRecordPage";
+
+/**
+ * Check if the current URL is a re-record form URL
+ * Pattern: /re-record-forms/:token
+ */
+function getReRecordToken(): string | null {
+  const path = window.location.pathname;
+  const match = path.match(/^\/re-record-forms\/([a-zA-Z0-9-]+)$/);
+  return match ? match[1] : null;
+}
 
 const elem = document.getElementById("root")!;
-const app = (
+
+// Check if this is a re-record form URL
+const reRecordToken = getReRecordToken();
+
+const app = reRecordToken ? (
+  // Re-record form mode: render simplified TensionRecorder with heartbeat
+  <StrictMode>
+    <IosOnlySafari>
+      <NoZoomWrapper includeDoubleTap={true} includePinch={true}>
+        <ReRecordPage token={reRecordToken} />
+      </NoZoomWrapper>
+    </IosOnlySafari>
+  </StrictMode>
+) : (
+  // Normal mode: render full App with all providers
   <StrictMode>
     <IosOnlySafari>
       <UserProvider>
