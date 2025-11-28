@@ -17,13 +17,13 @@ import IosOnlySafari from "./lib/IosOnlySafari";
 import ReRecordPage from "./pages/ReRecordPage";
 
 /**
- * Check if the current URL is a re-record form URL
- * Pattern: /re-record-forms/:token
+ * Check if the current URL has a re-record token query parameter
+ * Pattern: ?rerecord=TOKEN
  */
 function getReRecordToken(): string | null {
-  const path = window.location.pathname;
-  const match = path.match(/^\/re-record-forms\/([a-zA-Z0-9-]+)$/);
-  return match ? match[1] : null;
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("rerecord");
+  return token && token.length > 0 ? token : null;
 }
 
 const elem = document.getElementById("root")!;

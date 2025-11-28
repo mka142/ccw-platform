@@ -433,7 +433,7 @@ router.get("/responses/:responseId", async (req: Request, res: Response) => {
       });
     }
 
-    const measurementUrl = ReRecordFormService.getMeasurementUrl(form, responseId);
+    const measurementUrl = ReRecordFormService.getMeasurementUrl(form, response.accessToken);
 
     res.render("response_detail", {
       title: response.name,

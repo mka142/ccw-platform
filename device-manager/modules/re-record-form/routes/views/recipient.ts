@@ -47,7 +47,7 @@ router.get("/recipient/:accessToken", async (req: Request, res: Response) => {
       });
     }
 
-    const measurementUrl = ReRecordFormService.getMeasurementUrl(form, response._id.toString());
+    const measurementUrl = ReRecordFormService.getMeasurementUrl(form, response.accessToken);
 
     res.render("recipient_page", {
       title: `Nagrywanie - ${form.name}`,

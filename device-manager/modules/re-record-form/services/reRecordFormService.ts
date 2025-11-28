@@ -59,10 +59,11 @@ export class ReRecordFormService {
   }
 
   /**
-   * Get the measurement URL with response ID placeholder replaced
+   * Get the measurement URL with access token placeholder replaced
+   * The placeholder {RESPONSE_ID} is replaced with the access token for API authentication
    */
-  static getMeasurementUrl(form: ReRecordFormWithId, responseId: string): string {
-    return form.measurementAppUrl.replace("{RESPONSE_ID}", responseId);
+  static getMeasurementUrl(form: ReRecordFormWithId, accessToken: string): string {
+    return form.measurementAppUrl.replace("{RESPONSE_ID}", accessToken);
   }
 }
 
