@@ -11,6 +11,7 @@ import { examinationFormRoutes } from "./modules/examination-form";
 import examinationFormViews from "./modules/examination-form/routes/views/examination-form";
 import { formRoutes } from "./modules/form";
 import { mqttHandlers } from "./modules/mqttHandlers";
+import { adminRoutes as reRecordFormAdminRoutes, publicRoutes as reRecordFormPublicRoutes, apiRoutes as reRecordFormApiRoutes } from "./modules/re-record-form/routes";
 import { createServer, shutdownServer } from "./modules/server";
 import { userRoutes } from "./modules/user";
 import { setupMiddleware, setupErrorHandlers, basicAuth, setupTemplateLocals } from "./shared/middleware";
@@ -19,7 +20,7 @@ const app = express();
 
 // Configure Express
 app.set("view engine", "ejs");
-app.set("views", [config.paths.views.admin, config.paths.views.examinationForm]);
+app.set("views", [config.paths.views.admin, config.paths.views.examinationForm, config.paths.views.reRecordForm]);
 
 // Setup middleware
 setupMiddleware(app);
@@ -32,6 +33,10 @@ app.use(setupTemplateLocals);
 app.use(config.url.admin, basicAuth, adminViews);
 // Examination form view routes at /examination-forms/*
 app.use(config.url.examinationForm, examinationFormViews);
+// Re-record form public routes (recipient pages, no auth)
+app.use(config.url.reRecordForm, reRecordFormPublicRoutes);
+// Re-record form admin routes at /re-record-forms/* (requires auth)
+app.use(config.url.reRecordForm, basicAuth, reRecordFormAdminRoutes);
 // User routes: /api/users/*
 app.use(config.url.apiConcert, adminApiRoutes);
 app.use(config.url.apiUser, userRoutes);
@@ -39,6 +44,8 @@ app.use(config.url.apiUser, userRoutes);
 app.use(config.url.apiForm, formRoutes);
 // Examination form routes: /api/examination-forms/*
 app.use(config.url.apiExaminationForm, examinationFormRoutes);
+// Re-record form API routes: /api/re-record-forms/*
+app.use(config.url.apiReRecordForm, reRecordFormApiRoutes);
 
 // Setup error handlers (must be last)
 setupErrorHandlers(app);

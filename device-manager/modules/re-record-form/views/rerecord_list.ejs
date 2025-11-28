@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pl">
+<%- include('_head') %>
+<body>
+  <div class="ui container" style="padding: 2em 0;">
+    <div class="ui segment">
+      <div class="ui grid">
+        <div class="twelve wide column">
+          <h1 class="ui header">
+            <i class="file audio outline icon"></i>
+            <div class="content">
+              Re-Record Forms
+              <div class="sub header">Zarządzanie formularzami nagrań</div>
+            </div>
+          </h1>
+        </div>
+        <div class="four wide column right aligned">
+          <a href="<%= baseUrl %>/new" class="ui primary button">
+            <i class="plus icon"></i>
+            Nowy formularz
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <% if (forms.length === 0) { %>
+      <div class="ui placeholder segment">
+        <div class="ui icon header">
+          <i class="file audio outline icon"></i>
+          Brak formularzy
+        </div>
+        <a href="<%= baseUrl %>/new" class="ui primary button">Utwórz pierwszy formularz</a>
+      </div>
+    <% } else { %>
+      <div class="ui cards">
+        <% forms.forEach(function(form) { %>
+          <div class="card">
+            <div class="content">
+              <div class="header"><%= form.name %></div>
+              <div class="meta">
+                <span class="category">Piece ID: <%= form.pieceId %></span>
+              </div>
+              <div class="description">
+                <%= form.description.substring(0, 100) %><%= form.description.length > 100 ? '...' : '' %>
+              </div>
+            </div>
+            <div class="extra content">
+              <span class="right floated">
+                <i class="file audio icon"></i>
+                <%= form.audioFileName || 'Brak pliku' %>
+              </span>
+            </div>
+            <div class="ui two bottom attached buttons">
+              <a href="<%= baseUrl %>/<%= form._id %>" class="ui button">
+                <i class="eye icon"></i>
+                Szczegóły
+              </a>
+              <a href="<%= baseUrl %>/<%= form._id %>/edit" class="ui button">
+                <i class="edit icon"></i>
+                Edytuj
+              </a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="ui divider"></div>
+    <a href="<%= adminUrl %>" class="ui button">
+      <i class="arrow left icon"></i>
+      Powrót do panelu admina
+    </a>
+  </div>
+</body>
+</html>
+

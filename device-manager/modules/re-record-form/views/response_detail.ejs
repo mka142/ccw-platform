@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pl">
+<%- include('_head') %>
+<body>
+  <div class="ui container" style="padding: 2em 0;">
+    <div class="ui segment">
+      <div class="ui grid">
+        <div class="ten wide column">
+          <h1 class="ui header">
+            <i class="clipboard outline icon"></i>
+            <div class="content">
+              <%= response.name %>
+              <div class="sub header">Odpowiedź dla: <%= form.name %></div>
+            </div>
+          </h1>
+        </div>
+        <div class="six wide column right aligned">
+          <a href="<%= baseUrl %>/recipient/<%= response.accessToken %>" class="ui teal button" target="_blank">
+            <i class="external alternate icon"></i>
+            Strona nagrywania
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Response Info -->
+    <div class="ui segment">
+      <h3 class="ui header">Informacje o odpowiedzi</h3>
+      <div class="ui grid">
+        <div class="eight wide column">
+          <div class="ui list">
+            <div class="item">
+              <i class="tag icon"></i>
+              <div class="content">
+                <div class="header">Status</div>
+                <div class="description">
+                  <% if (response.recordingFinished) { %>
+                    <span class="ui green label">Zakończone</span>
+                  <% } else if (response.isActive) { %>
+                    <span class="ui blue label">Aktywne</span>
+                  <% } else { %>
+                    <span class="ui grey label">Oczekuje</span>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+            <div class="item">
+              <i class="clock icon"></i>
+              <div class="content">
+                <div class="header">Rozpoczęcie nagrywania</div>
+                <div class="description">
+                  <% if (response.recordingTimestampStart) { %>
+                    <%= new Date(response.recordingTimestampStart).toLocaleString('pl-PL') %>
+                  <% } else { %>
+                    Nie rozpoczęto
+                  <% } %>
+                </div>
+              </div>
+            </div>
+            <div class="item">
+              <i class="hourglass half icon"></i>
+              <div class="content">
+                <div class="header">Opóźnienie</div>
+                <div class="description"><%= response.recordingDelay %> ms</div>
+              </div>
+            </div>
+            <div class="item">
+              <i class="database icon"></i>
+              <div class="content">
+                <div class="header">Punkty danych</div>
+                <div class="description"><%= response.data.length %></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="eight wide column">
+          <!-- Edit Name Form -->
+          <form class="ui form" method="POST" action="<%= baseUrl %>/responses/<%= response._id %>/name">
+            <div class="field">
+              <label>Edytuj nazwę</label>
+              <div class="ui action input">
+                <input type="text" name="name" value="<%= response.name %>" required>
+                <button type="submit" class="ui button">
+                  <i class="save icon"></i>
+                  Zapisz
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Code and Measurement URL -->
+    <div class="ui segment">
+      <h3 class="ui header">
+        <i class="qrcode icon"></i>
+        Link do aplikacji pomiarowej
+      </h3>
+      <div class="ui grid">
+        <div class="eight wide column">
+          <div class="ui message">
+            <p><strong>URL:</strong></p>
+            <a href="<%= measurementUrl %>" target="_blank"><%= measurementUrl %></a>
+          </div>
+          <a href="<%= measurementUrl %>" target="_blank" class="ui primary button">
+            <i class="external alternate icon"></i>
+            Otwórz aplikację pomiarową
+          </a>
+        </div>
+        <div class="eight wide column center aligned">
+          <div id="qrcode" style="display: inline-block;"></div>
+          <script>
+            new QRCode(document.getElementById('qrcode'), {
+              text: '<%= measurementUrl %>',
+              width: 200,
+              height: 200,
+              colorDark: '#000000',
+              colorLight: '#ffffff',
+              correctLevel: QRCode.CorrectLevel.M
+            });
+          </script>
+        </div>
+      </div>
+    </div>
+
+    <!-- Download Options -->
+    <div class="ui segment">
+      <h3 class="ui header">
+        <i class="download icon"></i>
+        Pobierz dane
+      </h3>
+      <div class="ui buttons">
+        <a href="<%= apiBaseUrl %>/responses/<%= response._id %>/download?format=csv" class="ui button">
+          <i class="file excel icon"></i>
+          Pobierz CSV
+        </a>
+        <a href="<%= apiBaseUrl %>/responses/<%= response._id %>/download?format=json" class="ui button">
+          <i class="file code icon"></i>
+          Pobierz JSON
+        </a>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="ui segment">
+      <h3 class="ui header">
+        <i class="table icon"></i>
+        Dane (<%= response.data.length %> punktów)
+      </h3>
+      
+      <% if (response.data.length === 0) { %>
+        <div class="ui message">
+          <p>Brak danych. Nagrywanie nie zostało jeszcze rozpoczęte lub dane nie zostały przesłane.</p>
+        </div>
+      <% } else { %>
+        <div class="data-table-container">
+          <table class="ui celled compact table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Timestamp</th>
+                <th>Czas (względny)</th>
+                <th>Wartość</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% 
+                const startTime = response.data[0] ? response.data[0].t : 0;
+                response.data.forEach(function(point, index) { 
+              %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= point.t %></td>
+                  <td><%= ((point.t - startTime) / 1000).toFixed(3) %> s</td>
+                  <td><%= point.v %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Delete Response -->
+    <div class="ui red segment">
+      <h3 class="ui header">Strefa zagrożenia</h3>
+      <form method="POST" action="<%= baseUrl %>/responses/<%= response._id %>/delete" onsubmit="return confirm('Czy na pewno chcesz usunąć tę odpowiedź? Wszystkie dane zostaną utracone.');">
+        <button type="submit" class="ui red button">
+          <i class="trash icon"></i>
+          Usuń odpowiedź
+        </button>
+      </form>
+    </div>
+
+    <div class="ui divider"></div>
+    <a href="<%= baseUrl %>/<%= form._id %>" class="ui button">
+      <i class="arrow left icon"></i>
+      Powrót do formularza
+    </a>
+  </div>
+
+</body>
+</html>
+

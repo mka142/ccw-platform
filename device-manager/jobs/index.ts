@@ -1,4 +1,5 @@
 import { validateUserStatusJob } from "./validateUserStatus";
+import { validateReRecordStatusJob } from "./validateReRecordStatus";
 
 /**
  * Job Scheduler
@@ -15,6 +16,9 @@ export class JobScheduler {
 
     // Start user status validation job (runs every 10 seconds)
     this.scheduleJob("validateUserStatus", validateUserStatusJob, 10000);
+
+    // Start re-record status validation job (runs every 5 seconds)
+    this.scheduleJob("validateReRecordStatus", validateReRecordStatusJob, 5000);
 
     console.log("✅ Job scheduler started");
   }

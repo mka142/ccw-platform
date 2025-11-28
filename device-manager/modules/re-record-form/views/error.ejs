@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pl">
+<%- include('_head') %>
+<body>
+  <div class="ui container" style="padding: 2em 0;">
+    <div class="ui negative message">
+      <div class="header">
+        <i class="exclamation triangle icon"></i>
+        <%= typeof title !== 'undefined' ? title : 'Błąd' %>
+      </div>
+      <p><%= typeof message !== 'undefined' ? message : 'Wystąpił nieoczekiwany błąd.' %></p>
+    </div>
+    <a href="<%= typeof baseUrl !== 'undefined' ? baseUrl : '/re-record-forms' %>" class="ui button">
+      <i class="arrow left icon"></i>
+      Powrót
+    </a>
+  </div>
+</body>
+</html>
+

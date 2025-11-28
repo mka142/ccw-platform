@@ -104,6 +104,8 @@ export const config = {
       events: env("DATABASE_COLLECTION_EVENTS", "events"),
       forms: env("DATABASE_COLLECTION_FORMS", "forms"),
       examinationForms: env("DATABASE_COLLECTION_EXAMINATION_FORMS", "examination_forms"),
+      reRecordForms: env("DATABASE_COLLECTION_RERECORD_FORMS", "re_record_forms"),
+      responses: env("DATABASE_COLLECTION_RESPONSES", "responses"),
     },
   },
 
@@ -125,8 +127,10 @@ export const config = {
     views: {
       admin: path.join(currentDirname, "../modules/admin/views"),
       examinationForm: path.join(currentDirname, "../modules/examination-form/views"),
+      reRecordForm: path.join(currentDirname, "../modules/re-record-form/views"),
     },
     public: path.join(currentDirname, "../public"),
+    uploads: path.join(currentDirname, "../uploads"),
     logs: path.join(currentDirname, "../logs"),
   },
   url: {
@@ -136,6 +140,8 @@ export const config = {
     apiForm: "/api/forms",
     examinationForm: '/examination-forms',
     apiExaminationForm: "/api/examination-forms",
+    reRecordForm: "/re-record-forms",
+    apiReRecordForm: "/api/re-record-forms",
   },
   api: {
     userIdHeader: env("API_USER_ID_HEADER", "x-user-id"),

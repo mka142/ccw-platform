@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pl">
+<%- include('_head') %>
+<body>
+  <div class="ui container" style="padding: 2em 0;">
+    <div class="ui segment">
+      <h1 class="ui header">
+        <i class="plus icon"></i>
+        <div class="content">
+          Nowy formularz Re-Record
+          <div class="sub header">Utwórz nowy formularz nagrań</div>
+        </div>
+      </h1>
+    </div>
+
+    <div class="ui segment">
+      <form class="ui form" method="POST" action="<%= baseUrl %>" enctype="multipart/form-data">
+        <div class="required field">
+          <label>Nazwa</label>
+          <input type="text" name="name" placeholder="Nazwa formularza" required>
+        </div>
+
+        <div class="required field">
+          <label>Piece ID</label>
+          <input type="text" name="pieceId" placeholder="Identyfikator utworu" required>
+        </div>
+
+        <div class="required field">
+          <label>Opis</label>
+          <textarea name="description" rows="3" placeholder="Opis formularza" required></textarea>
+        </div>
+
+        <div class="required field">
+          <label>Plik audio</label>
+          <input type="file" name="audioFile" accept="audio/*" required>
+          <div class="ui small message">
+            <p>Obsługiwane formaty: MP3, WAV, OGG, M4A</p>
+          </div>
+        </div>
+
+        <div class="required field">
+          <label>URL aplikacji pomiarowej</label>
+          <input type="text" name="measurementAppUrl" placeholder="http://example.com/measure/{RESPONSE_ID}" required>
+          <div class="ui small message">
+            <p>Użyj <code>{RESPONSE_ID}</code> jako placeholder dla ID odpowiedzi</p>
+          </div>
+        </div>
+
+        <div class="ui divider"></div>
+
+        <button type="submit" class="ui primary button">
+          <i class="save icon"></i>
+          Utwórz formularz
+        </button>
+        <a href="<%= baseUrl %>" class="ui button">
+          <i class="cancel icon"></i>
+          Anuluj
+        </a>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
+

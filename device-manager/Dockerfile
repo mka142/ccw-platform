@@ -26,6 +26,9 @@ FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /app .
 
+# Create uploads directory for audio files
+RUN mkdir -p /app/uploads && chown -R bun:bun /app/uploads
+
 # Expose ports
 EXPOSE 3001 1883
 

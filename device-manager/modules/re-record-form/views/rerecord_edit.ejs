@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pl">
+<%- include('_head') %>
+<body>
+  <div class="ui container" style="padding: 2em 0;">
+    <div class="ui segment">
+      <h1 class="ui header">
+        <i class="edit icon"></i>
+        <div class="content">
+          Edytuj formularz
+          <div class="sub header"><%= form.name %></div>
+        </div>
+      </h1>
+    </div>
+
+    <div class="ui segment">
+      <form class="ui form" method="POST" action="<%= baseUrl %>/<%= form._id %>/edit" enctype="multipart/form-data">
+        <div class="required field">
+          <label>Nazwa</label>
+          <input type="text" name="name" value="<%= form.name %>" placeholder="Nazwa formularza" required>
+        </div>
+
+        <div class="required field">
+          <label>Piece ID</label>
+          <input type="text" name="pieceId" value="<%= form.pieceId %>" placeholder="Identyfikator utworu" required>
+        </div>
+
+        <div class="required field">
+          <label>Opis</label>
+          <textarea name="description" rows="3" placeholder="Opis formularza" required><%= form.description %></textarea>
+        </div>
+
+        <div class="field">
+          <label>Plik audio</label>
+          <div class="ui message">
+            <p><strong>Aktualny plik:</strong> <%= form.audioFileName || 'Brak' %></p>
+          </div>
+          <input type="file" name="audioFile" accept="audio/*">
+          <div class="ui small message">
+            <p>Pozostaw puste, aby zachować aktualny plik. Obsługiwane formaty: MP3, WAV, OGG, M4A</p>
+          </div>
+        </div>
+
+        <div class="required field">
+          <label>URL aplikacji pomiarowej</label>
+          <input type="text" name="measurementAppUrl" value="<%= form.measurementAppUrl %>" placeholder="http://example.com/measure/{RESPONSE_ID}" required>
+          <div class="ui small message">
+            <p>Użyj <code>{RESPONSE_ID}</code> jako placeholder dla ID odpowiedzi</p>
+          </div>
+        </div>
+
+        <div class="ui divider"></div>
+
+        <button type="submit" class="ui primary button">
+          <i class="save icon"></i>
+          Zapisz zmiany
+        </button>
+        <a href="<%= baseUrl %>/<%= form._id %>" class="ui button">
+          <i class="cancel icon"></i>
+          Anuluj
+        </a>
+      </form>
+    </div>
+
+    <div class="ui red segment">
+      <h3 class="ui header">Strefa zagrożenia</h3>
+      <form method="POST" action="<%= baseUrl %>/<%= form._id %>/delete" onsubmit="return confirm('Czy na pewno chcesz usunąć ten formularz? Wszystkie odpowiedzi również zostaną usunięte.');">
+        <button type="submit" class="ui red button">
+          <i class="trash icon"></i>
+          Usuń formularz
+        </button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
+

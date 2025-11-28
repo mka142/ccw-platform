@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pl">
+<%- include('_head') %>
+<body>
+  <div class="ui container" style="padding: 2em 0;">
+    <div class="ui segment">
+      <div class="ui grid">
+        <div class="twelve wide column">
+          <h1 class="ui header">
+            <i class="file audio outline icon"></i>
+            <div class="content">
+              <%= form.name %>
+              <div class="sub header">Piece ID: <%= form.pieceId %></div>
+            </div>
+          </h1>
+        </div>
+        <div class="four wide column right aligned">
+          <a href="<%= baseUrl %>/<%= form._id %>/edit" class="ui button">
+            <i class="edit icon"></i>
+            Edytuj
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Details -->
+    <div class="ui segment">
+      <h3 class="ui header">Szczegóły formularza</h3>
+      <div class="ui list">
+        <div class="item">
+          <i class="file icon"></i>
+          <div class="content">
+            <div class="header">Opis</div>
+            <div class="description"><%= form.description %></div>
+          </div>
+        </div>
+        <div class="item">
+          <i class="music icon"></i>
+          <div class="content">
+            <div class="header">Plik audio</div>
+            <div class="description">
+              <%= form.audioFileName || 'Brak pliku' %>
+              <% if (form.audioFilePath) { %>
+                <a href="<%= apiBaseUrl %>/audio/<%= form._id %>" target="_blank" class="ui mini button">
+                  <i class="play icon"></i>
+                  Odtwórz
+                </a>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <i class="linkify icon"></i>
+          <div class="content">
+            <div class="header">URL aplikacji pomiarowej</div>
+            <div class="description"><code><%= form.measurementAppUrl %></code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create New Response -->
+    <div class="ui segment">
+      <h3 class="ui header">
+        <i class="plus icon"></i>
+        Nowa odpowiedź
+      </h3>
+      <form class="ui form" method="POST" action="<%= baseUrl %>/<%= form._id %>/responses">
+        <div class="fields">
+          <div class="twelve wide field">
+            <input type="text" name="name" placeholder="Nazwa odpowiedzi (np. Uczestnik 1)" required>
+          </div>
+          <div class="four wide field">
+            <button type="submit" class="ui primary fluid button">
+              <i class="plus icon"></i>
+              Utwórz
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Responses List -->
+    <div class="ui segment">
+      <h3 class="ui header">
+        <i class="list icon"></i>
+        Odpowiedzi (<%= responses.length %>)
+      </h3>
+      
+      <% if (responses.length === 0) { %>
+        <div class="ui message">
+          <p>Brak odpowiedzi. Utwórz pierwszą odpowiedź powyżej.</p>
+        </div>
+      <% } else { %>
+        <table class="ui celled table">
+          <thead>
+            <tr>
+              <th>Nazwa</th>
+              <th>Status</th>
+              <th>Rozpoczęcie</th>
+              <th>Punkty danych</th>
+              <th>Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% responses.forEach(function(response) { %>
+              <tr>
+                <td><strong><%= response.name %></strong></td>
+                <td>
+                  <% if (response.recordingFinished) { %>
+                    <span class="ui green label">Zakończone</span>
+                  <% } else if (response.isActive) { %>
+                    <span class="ui blue label">Aktywne</span>
+                  <% } else { %>
+                    <span class="ui grey label">Oczekuje</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (response.recordingTimestampStart) { %>
+                    <%= new Date(response.recordingTimestampStart).toLocaleString('pl-PL') %>
+                  <% } else { %>
+                    -
+                  <% } %>
+                </td>
+                <td><%= response.data.length %></td>
+                <td>
+                  <a href="<%= baseUrl %>/responses/<%= response._id %>" class="ui mini button">
+                    <i class="eye icon"></i>
+                    Szczegóły
+                  </a>
+                  <a href="<%= baseUrl %>/recipient/<%= response.accessToken %>" class="ui mini teal button" target="_blank">
+                    <i class="external alternate icon"></i>
+                    Strona nagrywania
+                  </a>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+
+    <div class="ui divider"></div>
+    <a href="<%= baseUrl %>" class="ui button">
+      <i class="arrow left icon"></i>
+      Powrót do listy
+    </a>
+  </div>
+</body>
+</html>
+

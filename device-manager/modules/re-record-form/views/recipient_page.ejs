@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <title>Nagrywanie - <%= form.name %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.css" />
+  <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.js"></script>
+  <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      background: #1a1a2e;
+      min-height: 100vh;
+      color: #eee;
+    }
+    .main-container {
+      padding: 2em 0;
+    }
+    .ui.segment {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      color: #eee;
+    }
+    .ui.header {
+      color: #eee;
+    }
+    .ui.header .sub.header {
+      color: #aaa;
+    }
+    .audio-player-container {
+      background: #0f3460;
+      padding: 2em;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .audio-player {
+      width: 100%;
+      margin: 1em 0;
+      filter: invert(1) hue-rotate(180deg);
+    }
+    .status-message {
+      padding: 1em;
+      border-radius: 8px;
+      margin: 1em 0;
+    }
+    .status-loading {
+      background: #3d3d00;
+      color: #ffc107;
+    }
+    .status-ready {
+      background: #1e4620;
+      color: #4caf50;
+    }
+    .status-recording {
+      background: #0d3d5c;
+      color: #2196f3;
+      animation: pulse 2s infinite;
+    }
+    .status-finished {
+      background: #0d4d4d;
+      color: #00bcd4;
+    }
+    .status-error {
+      background: #4d1a1a;
+      color: #f44336;
+    }
+    .status-waiting {
+      background: #3d2d00;
+      color: #ff9800;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .qr-container {
+      text-align: center;
+      padding: 2em;
+      background: #0f3460;
+      border-radius: 8px;
+    }
+    .qr-container #qrcode {
+      background: white;
+      padding: 10px;
+      display: inline-block;
+      border-radius: 8px;
+    }
+    .delay-input {
+      max-width: 200px;
+      margin: 0 auto;
+    }
+    .big-button {
+      font-size: 1.5em !important;
+      padding: 1em 2em !important;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .progress-container {
+      margin: 1em 0;
+    }
+    .download-info {
+      font-size: 0.9em;
+      color: #aaa;
+      margin-top: 0.5em;
+    }
+    .audio-locked {
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    .audio-locked-overlay {
+      position: relative;
+    }
+    .audio-locked-overlay::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: transparent;
+      cursor: not-allowed;
+    }
+    .ui.form .field > label {
+      color: #ccc;
+    }
+    .ui.input input, .ui.form input[type="number"] {
+      background: #0f3460;
+      color: #eee;
+      border: 1px solid #1e5f9f;
+    }
+    .ui.message {
+      background: #0f3460;
+      color: #ccc;
+      border: 1px solid #1e5f9f;
+    }
+    .ui.warning.message {
+      background: #3d3d00;
+      color: #ffc107;
+      border: 1px solid #665500;
+    }
+    .ui.negative.message {
+      background: #4d1a1a;
+      color: #f44336;
+      border: 1px solid #6d2a2a;
+    }
+    .ui.info.message {
+      background: #0d3d5c;
+      color: #2196f3;
+      border: 1px solid #1e5f9f;
+    }
+    .ui.ordered.list .item {
+      color: #ccc;
+    }
+    .ui.small.text {
+      color: #aaa;
+    }
+    /* Connection Status Indicator */
+    .connection-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 1em;
+      border-radius: 8px;
+      margin-bottom: 1em;
+    }
+    .connection-indicator.connected {
+      background: #1e4620;
+      border: 1px solid #2e7d32;
+    }
+    .connection-indicator.disconnected {
+      background: #4d1a1a;
+      border: 1px solid #c62828;
+    }
+    .connection-indicator.waiting {
+      background: #3d2d00;
+      border: 1px solid #f57c00;
+    }
+    .connection-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      animation: blink 1.5s infinite;
+    }
+    .connection-dot.connected {
+      background: #4caf50;
+    }
+    .connection-dot.disconnected {
+      background: #f44336;
+    }
+    .connection-dot.waiting {
+      background: #ff9800;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .disconnect-warning {
+      background: #4d1a1a;
+      border: 1px solid #c62828;
+      color: #f44336;
+      padding: 1em;
+      border-radius: 8px;
+      margin: 1em 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="ui container main-container">
+    <div class="ui segment">
+      <h1 class="ui header center aligned">
+        <i class="microphone icon"></i>
+        <div class="content">
+          <%= form.name %>
+          <div class="sub header">Sesja nagrywania: <%= response.name %></div>
+        </div>
+      </h1>
+    </div>
+
+    <!-- Connection Status Indicator -->
+    <div id="connection-indicator" class="connection-indicator waiting">
+      <div id="connection-dot" class="connection-dot waiting"></div>
+      <span id="connection-text">Oczekiwanie na połączenie z aplikacją pomiarową...</span>
+    </div>
+
+    <!-- Disconnect Warning (shown during recording when disconnected) -->
+    <div id="disconnect-warning" class="disconnect-warning hidden">
+      <i class="exclamation triangle icon"></i>
+      <strong>Uwaga!</strong> Aplikacja pomiarowa utraciła połączenie. Dane mogą być niekompletne.
+    </div>
+
+    <!-- Status Messages -->
+    <div id="status-loading" class="status-message status-loading">
+      <i class="spinner loading icon"></i>
+      <span id="loading-text">Pobieranie pliku audio... Proszę czekać.</span>
+      <div class="progress-container">
+        <div class="ui indicating progress" id="download-progress">
+          <div class="bar" style="width: 0%;">
+            <div class="progress">0%</div>
+          </div>
+        </div>
+        <div class="download-info" id="download-info"></div>
+      </div>
+    </div>
+    <div id="status-waiting" class="status-message status-waiting hidden">
+      <i class="hourglass half icon"></i>
+      Audio gotowe. Oczekiwanie na połączenie z aplikacją pomiarową...
+    </div>
+    <div id="status-ready" class="status-message status-ready hidden">
+      <i class="check circle icon"></i>
+      Audio pobrane i aplikacja pomiarowa połączona. Możesz rozpocząć nagrywanie.
+    </div>
+    <div id="status-recording" class="status-message status-recording hidden">
+      <i class="circle icon"></i>
+      Nagrywanie w toku...
+    </div>
+    <div id="status-finished" class="status-message status-finished hidden">
+      <i class="check icon"></i>
+      Nagrywanie zakończone. Dziękujemy!
+    </div>
+    <div id="status-error" class="status-message status-error hidden">
+      <i class="exclamation triangle icon"></i>
+      <span id="error-text">Wystąpił błąd.</span>
+    </div>
+
+    <!-- Audio Player Section -->
+    <div class="ui segment audio-player-container">
+      <h3 class="ui header">
+        <i class="music icon"></i>
+        Odtwarzacz audio
+      </h3>
+      <audio 
+        id="audio-player" 
+        class="audio-player" 
+        controls
+      >
+        Twoja przeglądarka nie obsługuje elementu audio.
+      </audio>
+      <p class="ui small text">
+        <strong>Plik:</strong> <%= form.audioFileName %>
+      </p>
+      <div class="ui warning message" id="audio-test-message">
+        <div class="header">
+          <i class="volume up icon"></i>
+          Przetestuj dźwięk przed rozpoczęciem!
+        </div>
+        <p>Po kliknięciu "Rozpocznij nagrywanie" <strong>nie będzie możliwości</strong> zatrzymania, przewijania ani zmiany głośności audio. Upewnij się, że głośność jest odpowiednia.</p>
+      </div>
+      <div class="ui negative message hidden" id="audio-locked-message">
+        <div class="header">
+          <i class="lock icon"></i>
+          Odtwarzacz zablokowany
+        </div>
+        <p>Trwa nagrywanie. Zatrzymanie, przewijanie i zmiana głośności są niemożliwe.</p>
+      </div>
+    </div>
+
+    <!-- Controls Section -->
+    <div class="ui segment" id="controls-section">
+      <div class="ui stackable two column grid">
+        <div class="column">
+          <h3 class="ui header">
+            <i class="clock icon"></i>
+            Ustawienia
+          </h3>
+          <div class="ui form">
+            <div class="field delay-input">
+              <label>Opóźnienie przed pomiarem (ms)</label>
+              <input type="number" id="delay-input" value="3000" min="0" max="30000" step="100">
+              <div class="ui small message">
+                <p>Czas oczekiwania po kliknięciu "Start" przed rozpoczęciem pomiaru.</p>
+              </div>
+            </div>
+          </div>
+          
+          <button id="start-button" class="ui primary big-button button disabled" disabled>
+            <i class="play icon"></i>
+            Rozpocznij nagrywanie
+          </button>
+          <p id="start-button-hint" class="ui small text" style="margin-top: 1em;">
+            <i class="info circle icon"></i>
+            Przycisk zostanie aktywowany po połączeniu aplikacji pomiarowej.
+          </p>
+        </div>
+
+        <div class="column">
+          <h3 class="ui header">
+            <i class="qrcode icon"></i>
+            Aplikacja pomiarowa
+          </h3>
+          <div class="qr-container">
+            <div id="qrcode"></div>
+            <p class="ui small text" style="margin-top: 1em;">
+              Zeskanuj kod QR telefonem lub kliknij przycisk poniżej
+            </p>
+            <a id="measurement-link" href="<%= measurementUrl %>" target="_blank" class="ui teal button">
+              <i class="external alternate icon"></i>
+              Otwórz aplikację pomiarową
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Countdown overlay -->
+    <div id="countdown-overlay" class="ui dimmer hidden">
+      <div class="content">
+        <h1 class="ui inverted icon header">
+          <i class="hourglass half icon"></i>
+          <div class="content">
+            Rozpoczęcie za: <span id="countdown-value">3</span>s
+          </div>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="ui segment">
+      <h4 class="ui header">Instrukcje</h4>
+      <div class="ui ordered list">
+        <div class="item">Poczekaj aż plik audio zostanie w pełni pobrany (pasek postępu)</div>
+        <div class="item"><strong>Przetestuj audio</strong> - odtwórz fragment, sprawdź głośność i upewnij się, że wszystko działa poprawnie</div>
+        <div class="item">Ustaw opóźnienie (domyślnie 3 sekundy)</div>
+        <div class="item">Otwórz aplikację pomiarową na telefonie (zeskanuj kod QR) - <strong>poczekaj aż połączy się z serwerem</strong></div>
+        <div class="item">Kliknij "Rozpocznij nagrywanie" (przycisk aktywuje się po połączeniu aplikacji)</div>
+        <div class="item">Po odliczeniu rozpocznij pomiar w aplikacji pomiarowej</div>
+      </div>
+      <div class="ui info message">
+        <i class="info circle icon"></i>
+        <strong>Uwaga:</strong> Po rozpoczęciu nagrywania nie będzie możliwości zatrzymania, przewijania ani zmiany głośności audio. Upewnij się, że wszystko jest gotowe przed kliknięciem "Rozpocznij nagrywanie".
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const audioPlayer = document.getElementById('audio-player');
+      const startButton = document.getElementById('start-button');
+      const startButtonHint = document.getElementById('start-button-hint');
+      const delayInput = document.getElementById('delay-input');
+      const statusLoading = document.getElementById('status-loading');
+      const statusWaiting = document.getElementById('status-waiting');
+      const statusReady = document.getElementById('status-ready');
+      const statusRecording = document.getElementById('status-recording');
+      const statusFinished = document.getElementById('status-finished');
+      const statusError = document.getElementById('status-error');
+      const errorText = document.getElementById('error-text');
+      const countdownOverlay = document.getElementById('countdown-overlay');
+      const countdownValue = document.getElementById('countdown-value');
+      const loadingText = document.getElementById('loading-text');
+      const downloadProgress = document.getElementById('download-progress');
+      const downloadInfo = document.getElementById('download-info');
+      const connectionIndicator = document.getElementById('connection-indicator');
+      const connectionDot = document.getElementById('connection-dot');
+      const connectionText = document.getElementById('connection-text');
+      const disconnectWarning = document.getElementById('disconnect-warning');
+      
+      const accessToken = '<%= response.accessToken %>';
+      const apiBaseUrl = '<%= apiBaseUrl %>';
+      const audioUrl = '<%= apiBaseUrl %>/audio/<%= form._id %>';
+      
+      let isAudioLoaded = false;
+      let isRecording = false;
+      let isMeasurementAppConnected = false;
+      let audioBlobUrl = null;
+      let savedVolume = 1;
+      let statusPollInterval = null;
+      
+      const audioTestMessage = document.getElementById('audio-test-message');
+      const audioLockedMessage = document.getElementById('audio-locked-message');
+
+      // Check if already recording or finished
+      <% if (response.recordingTimestampStart && !response.recordingFinished) { %>
+        isRecording = true;
+        showStatus('recording');
+        audioTestMessage.classList.add('hidden');
+        audioLockedMessage.classList.remove('hidden');
+        downloadAudioFile();
+        startStatusPolling();
+      <% } else if (response.recordingFinished) { %>
+        showStatus('finished');
+        audioTestMessage.classList.add('hidden');
+        updateConnectionStatus('disconnected', 'Nagrywanie zakończone');
+      <% } else { %>
+        downloadAudioFile();
+        startStatusPolling();
+      <% } %>
+
+      // Generate QR Code
+      new QRCode(document.getElementById('qrcode'), {
+        text: '<%= measurementUrl %>',
+        width: 180,
+        height: 180,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      // Poll status every 5 seconds
+      function startStatusPolling() {
+        pollStatus(); // Initial poll
+        statusPollInterval = setInterval(pollStatus, 5000);
+      }
+
+      async function pollStatus() {
+        try {
+          const response = await fetch(`${apiBaseUrl}/responses/${accessToken}/status`);
+          const result = await response.json();
+          
+          if (result.success) {
+            const wasConnected = isMeasurementAppConnected;
+            isMeasurementAppConnected = result.data.isActive;
+            
+            // Update connection indicator
+            if (isMeasurementAppConnected) {
+              updateConnectionStatus('connected', 'Aplikacja pomiarowa połączona');
+              
+              // Enable start button if audio is loaded and not recording
+              if (isAudioLoaded && !isRecording && !result.data.recordingFinished) {
+                enableStartButton();
+                showStatus('ready');
+              }
+            } else {
+              if (isRecording && wasConnected) {
+                // Show disconnect warning during recording
+                disconnectWarning.classList.remove('hidden');
+                updateConnectionStatus('disconnected', 'Aplikacja pomiarowa rozłączona!');
+              } else if (!isRecording && !result.data.recordingFinished) {
+                updateConnectionStatus('waiting', 'Oczekiwanie na połączenie z aplikacją pomiarową...');
+                disableStartButton();
+                if (isAudioLoaded) {
+                  showStatus('waiting');
+                }
+              }
+            }
+            
+            // Update recording finished status
+            if (result.data.recordingFinished && !<%= response.recordingFinished %>) {
+              showStatus('finished');
+              isRecording = false;
+              clearInterval(statusPollInterval);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to poll status:', error);
+        }
+      }
+
+      function updateConnectionStatus(status, text) {
+        connectionIndicator.className = 'connection-indicator ' + status;
+        connectionDot.className = 'connection-dot ' + status;
+        connectionText.textContent = text;
+      }
+
+      // Download audio file completely before enabling playback
+      async function downloadAudioFile() {
+        try {
+          loadingText.textContent = 'Pobieranie pliku audio... Proszę czekać.';
+          
+          const response = await fetch(audioUrl);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const contentLength = response.headers.get('content-length');
+          const totalSize = contentLength ? parseInt(contentLength, 10) : 0;
+          
+          const reader = response.body.getReader();
+          const chunks = [];
+          let receivedLength = 0;
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) break;
+            
+            chunks.push(value);
+            receivedLength += value.length;
+            
+            if (totalSize > 0) {
+              const percent = Math.round((receivedLength / totalSize) * 100);
+              updateProgress(percent, receivedLength, totalSize);
+            } else {
+              downloadInfo.textContent = `Pobrano: ${formatBytes(receivedLength)}`;
+            }
+          }
+          
+          const blob = new Blob(chunks, { type: response.headers.get('content-type') || 'audio/mpeg' });
+          audioBlobUrl = URL.createObjectURL(blob);
+          
+          audioPlayer.src = audioBlobUrl;
+          
+          audioPlayer.addEventListener('canplaythrough', onAudioReady, { once: true });
+          audioPlayer.addEventListener('error', onAudioError);
+          
+          loadingText.textContent = 'Przygotowywanie odtwarzacza...';
+          
+        } catch (error) {
+          console.error('Failed to download audio:', error);
+          showError('Błąd pobierania pliku audio. Odśwież stronę i spróbuj ponownie.');
+        }
+      }
+      
+      function updateProgress(percent, received, total) {
+        const progressBar = downloadProgress.querySelector('.bar');
+        const progressText = downloadProgress.querySelector('.progress');
+        
+        progressBar.style.width = percent + '%';
+        progressText.textContent = percent + '%';
+        
+        downloadInfo.textContent = `Pobrano: ${formatBytes(received)} / ${formatBytes(total)}`;
+      }
+      
+      function formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      }
+      
+      function onAudioReady() {
+        if (!isAudioLoaded) {
+          isAudioLoaded = true;
+          if (!isRecording && !<%= response.recordingFinished %>) {
+            if (isMeasurementAppConnected) {
+              enableStartButton();
+              showStatus('ready');
+            } else {
+              showStatus('waiting');
+            }
+          } else if (isRecording) {
+            lockAudioPlayer();
+          }
+        }
+      }
+      
+      function onAudioError(e) {
+        console.error('Audio error:', e);
+        showError('Błąd odtwarzania audio. Odśwież stronę i spróbuj ponownie.');
+      }
+
+      function enableStartButton() {
+        startButton.classList.remove('disabled');
+        startButton.disabled = false;
+        startButtonHint.classList.add('hidden');
+      }
+
+      function disableStartButton() {
+        startButton.classList.add('disabled');
+        startButton.disabled = true;
+        startButtonHint.classList.remove('hidden');
+      }
+
+      function showStatus(status) {
+        statusLoading.classList.add('hidden');
+        statusWaiting.classList.add('hidden');
+        statusReady.classList.add('hidden');
+        statusRecording.classList.add('hidden');
+        statusFinished.classList.add('hidden');
+        statusError.classList.add('hidden');
+        
+        switch(status) {
+          case 'loading':
+            statusLoading.classList.remove('hidden');
+            break;
+          case 'waiting':
+            statusWaiting.classList.remove('hidden');
+            break;
+          case 'ready':
+            statusReady.classList.remove('hidden');
+            break;
+          case 'recording':
+            statusRecording.classList.remove('hidden');
+            break;
+          case 'finished':
+            statusFinished.classList.remove('hidden');
+            break;
+          case 'error':
+            statusError.classList.remove('hidden');
+            break;
+        }
+      }
+      
+      function showError(message) {
+        errorText.textContent = message;
+        showStatus('error');
+      }
+      
+      function lockAudioPlayer() {
+        savedVolume = audioPlayer.volume;
+        
+        audioPlayer.classList.add('audio-locked');
+        audioPlayer.parentElement.classList.add('audio-locked-overlay');
+        
+        audioTestMessage.classList.add('hidden');
+        audioLockedMessage.classList.remove('hidden');
+        
+        audioPlayer.addEventListener('pause', preventPause);
+        audioPlayer.addEventListener('seeking', preventSeeking);
+        audioPlayer.addEventListener('volumechange', preventVolumeChange);
+      }
+      
+      function preventPause(e) {
+        if (isRecording && !audioPlayer.ended) {
+          e.preventDefault();
+          audioPlayer.play();
+        }
+      }
+      
+      function preventSeeking(e) {
+        if (isRecording) {
+          // Best-effort approach
+        }
+      }
+      
+      function preventVolumeChange(e) {
+        if (isRecording) {
+          audioPlayer.volume = savedVolume;
+        }
+      }
+
+      // Start recording button
+      startButton.addEventListener('click', async function() {
+        if (!isAudioLoaded || isRecording || !isMeasurementAppConnected) return;
+        
+        const delay = parseInt(delayInput.value) || 3000;
+        
+        disableStartButton();
+        
+        countdownOverlay.classList.remove('hidden');
+        let countdown = Math.ceil(delay / 1000);
+        countdownValue.textContent = countdown;
+        
+        const countdownInterval = setInterval(function() {
+          countdown--;
+          if (countdown > 0) {
+            countdownValue.textContent = countdown;
+          } else {
+            clearInterval(countdownInterval);
+            countdownOverlay.classList.add('hidden');
+          }
+        }, 1000);
+
+        try {
+          const response = await fetch(`${apiBaseUrl}/responses/${accessToken}/start`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ recordingDelay: delay })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            isRecording = true;
+            showStatus('recording');
+            
+            lockAudioPlayer();
+            
+            setTimeout(function() {
+              audioPlayer.play();
+            }, delay);
+          } else {
+            alert('Błąd: ' + (result.error || 'Nie udało się rozpocząć nagrywania'));
+            if (isMeasurementAppConnected) {
+              enableStartButton();
+            }
+            clearInterval(countdownInterval);
+            countdownOverlay.classList.add('hidden');
+          }
+        } catch (error) {
+          console.error('Error starting recording:', error);
+          alert('Błąd połączenia z serwerem');
+          if (isMeasurementAppConnected) {
+            enableStartButton();
+          }
+          clearInterval(countdownInterval);
+          countdownOverlay.classList.add('hidden');
+        }
+      });
+
+      // Audio ended event
+      audioPlayer.addEventListener('ended', function() {
+        if (isRecording) {
+          fetch(`${apiBaseUrl}/responses/${accessToken}/finish`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }).then(function() {
+            showStatus('finished');
+            isRecording = false;
+            disconnectWarning.classList.add('hidden');
+            clearInterval(statusPollInterval);
+          }).catch(console.error);
+        }
+      });
+      
+      // Cleanup blob URL when page unloads
+      window.addEventListener('beforeunload', function() {
+        if (audioBlobUrl) {
+          URL.revokeObjectURL(audioBlobUrl);
+        }
+        if (statusPollInterval) {
+          clearInterval(statusPollInterval);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

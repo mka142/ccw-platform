@@ -77,6 +77,8 @@ services:
       
       # Monitoring
       MONITORING_INTERVAL_MS: 60000
+    volumes:
+      - uploads-data:/app/uploads
     depends_on:
       - mongo
       - traefik
@@ -160,4 +162,6 @@ volumes:
   mongo-data:
     driver: local
   letsencrypt-data:
+    driver: local
+  uploads-data:
     driver: local
