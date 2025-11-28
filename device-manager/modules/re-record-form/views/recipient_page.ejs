@@ -699,6 +699,9 @@
             
             lockAudioPlayer();
             
+            // Reset audio to beginning before starting playback
+            audioPlayer.currentTime = 0;
+            
             setTimeout(function() {
               audioPlayer.play();
             }, delay);
@@ -738,13 +741,21 @@
         }
       });
       
-      // Cleanup blob URL when page unloads
-      window.addEventListener('beforeunload', function() {
+      // Prevent accidental page reload/close during recording
+      window.addEventListener('beforeunload', function(e) {
+        // Cleanup blob URL
         if (audioBlobUrl) {
           URL.revokeObjectURL(audioBlobUrl);
         }
         if (statusPollInterval) {
           clearInterval(statusPollInterval);
+        }
+        
+        // Show confirmation dialog if recording is in progress
+        if (isRecording) {
+          e.preventDefault();
+          e.returnValue = 'Nagrywanie jest w toku! Czy na pewno chcesz opuścić stronę?';
+          return e.returnValue;
         }
       });
     })();
