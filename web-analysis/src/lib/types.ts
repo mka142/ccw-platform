@@ -57,6 +57,7 @@ export interface DataSet {
   visible: boolean; // Whether to show this set's data on the chart
   filterByIds: string[]; // Active filter for selected IDs within this set
   filterByTags?: string[]; // Active filter for selected tags within this set (optional for backward compatibility)
+  excludeTags?: string[]; // Tags to exclude from filtering (records with these tags are hidden)
   lineStyle?: LineStyle; // Optional: Custom line styling for this set
 }
 
@@ -68,6 +69,7 @@ export interface Config {
   globalOperations: GlobalOperation[];
   filterByIds: string[]; // Active filter for selected IDs
   filterByTags: string[]; // Active filter for tags
+  excludeTags: string[]; // Tags to exclude from filtering (records with these tags are hidden)
   recordingStartTimestamp?: number; // Optional: Recording start timestamp for audio sync
   sets: DataSet[]; // User-defined sets
   visible: {
@@ -121,6 +123,7 @@ export interface DashboardContextValue extends DashboardState {
   setHighlightedRecordId: (id: string | null) => void;
   toggleIdFilter: (id: string) => void;
   toggleTagFilter: (tag: string) => void;
+  toggleExcludeTag: (tag: string) => void;
   exportConfig: () => string;
   downloadConfig: () => void;
   importConfig: (configJson: string) => void;

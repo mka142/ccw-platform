@@ -13,6 +13,7 @@ interface ProcessDataParams {
   globalOperations: GlobalOperation[];
   filterByIds: string[];
   filterByTags: string[];
+  excludeTags: string[];
   idPrefix: string;
 }
 

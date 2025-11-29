@@ -176,6 +176,7 @@ export function DashboardProvider({
   const globalOperationsStr = JSON.stringify(config.globalOperations);
   const filterByIdsStr = JSON.stringify(config.filterByIds);
   const filterByTagsStr = JSON.stringify(config.filterByTags);
+  const excludeTagsStr = JSON.stringify(config.excludeTags);
 
   useEffect(() => {
     processDataWorker({
@@ -185,6 +186,7 @@ export function DashboardProvider({
       globalOperations: config.globalOperations,
       filterByIds: config.filterByIds,
       filterByTags: config.filterByTags,
+      excludeTags: config.excludeTags,
       idPrefix: "global",
     })
       .then(setGlobalProcessedData)
@@ -197,6 +199,7 @@ export function DashboardProvider({
     globalOperationsStr,
     filterByIdsStr,
     filterByTagsStr,
+    excludeTagsStr,
   ]);
 
   // Process sets data in Web Worker
@@ -219,6 +222,7 @@ export function DashboardProvider({
             globalOperations: set.globalOperations,
             filterByIds: set.filterByIds,
             filterByTags: set.filterByTags || [], // Fallback for existing sets without filterByTags
+            excludeTags: set.excludeTags || [], // Fallback for existing sets without excludeTags
             idPrefix: set.name,
           });
           allSetsData.push(...setData);
@@ -250,6 +254,7 @@ export function DashboardProvider({
       globalOperations: currentSetData.globalOperations,
       filterByIds: currentSetData.filterByIds,
       filterByTags: currentSetData.filterByTags || [], // Fallback for existing sets without filterByTags
+      excludeTags: currentSetData.excludeTags || [], // Fallback for existing sets without excludeTags
       idPrefix: currentSetData.name,
     })
       .then(setCurrentSetProcessedData)
@@ -443,6 +448,23 @@ export function DashboardProvider({
     });
   };
 
+  // Toggle exclude tag filter
+  const toggleExcludeTag = (tag: string) => {
+    setConfig((prev) => {
+      const isExcluded = prev.excludeTags.includes(tag);
+      const filterByTags = isExcluded
+        ? prev.filterByTags
+        : prev.filterByTags.filter((t) => t !== tag);
+      return {
+        ...prev,
+        filterByTags,
+        excludeTags: isExcluded
+          ? prev.excludeTags.filter((t) => t !== tag)
+          : [...prev.excludeTags, tag],
+      };
+    });
+  };
+
   // Export config
   const exportConfig = () => {
     return JSON.stringify(config, null, 2);
@@ -560,7 +582,7 @@ export function DashboardProvider({
   const setResampling = (
     windowMs: number,
     interpolationMethod: InterpolationMethod,
-    strategy?: 'shortest' | 'audio',
+    strategy?: "shortest" | "audio",
     startTime?: number,
     endTime?: number
   ) => {
@@ -682,6 +704,7 @@ export function DashboardProvider({
         visible: true,
         filterByIds: [], // Initialize with empty array to show all records (no active filter)
         filterByTags: [], // Initialize with empty array to show all records (no active filter)
+        excludeTags: [], // Initialize with empty array (no tags excluded)
       };
 
       return {
@@ -848,6 +871,7 @@ export function DashboardProvider({
     setHighlightedRecordId,
     toggleIdFilter,
     toggleTagFilter,
+    toggleExcludeTag,
     exportConfig,
     downloadConfig,
     importConfig,

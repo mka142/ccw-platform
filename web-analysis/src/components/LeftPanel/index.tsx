@@ -36,6 +36,7 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
     updateRecordMetadata,
     toggleIdFilter,
     toggleTagFilter,
+    toggleExcludeTag,
     removeOperationFromRecord,
     toggleGlobalVisibility,
   } = useDashboard();
@@ -99,10 +100,14 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
                 <span
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleGlobalVisibility('records');
+                    toggleGlobalVisibility("records");
                   }}
                   className="ml-auto cursor-pointer"
-                  title={config.visible.records ? 'Ukryj rekordy z wykresu' : 'Pokaż rekordy na wykresie'}
+                  title={
+                    config.visible.records
+                      ? "Ukryj rekordy z wykresu"
+                      : "Pokaż rekordy na wykresie"
+                  }
                 >
                   {config.visible.records ? (
                     <Eye className="h-3 w-3" />
@@ -116,10 +121,14 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
                 <span
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleGlobalVisibility('sets');
+                    toggleGlobalVisibility("sets");
                   }}
                   className="ml-auto cursor-pointer"
-                  title={config.visible.sets ? 'Ukryj zestawy z wykresu' : 'Pokaż zestawy na wykresie'}
+                  title={
+                    config.visible.sets
+                      ? "Ukryj zestawy z wykresu"
+                      : "Pokaż zestawy na wykresie"
+                  }
                 >
                   {config.visible.sets ? (
                     <Eye className="h-3 w-3" />
@@ -160,23 +169,50 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Kliknij, aby filtrować. Kliknij drugi raz, aby
+                        wykluczyć.
+                      </p>
                       <div className="flex flex-wrap gap-2">
-                        {allTags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant={
-                              config.filterByTags.includes(tag)
-                                ? "default"
-                                : "outline"
-                            }
-                            className="cursor-pointer"
-                            onClick={() =>
-                              !isLeftPanelDisabled && toggleTagFilter(tag)
-                            }
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
+                        {allTags.map((tag) => {
+                          const isIncluded = config.filterByTags.includes(tag);
+                          const isExcluded = config?.excludeTags?.includes(tag);
+
+                          return (
+                            <Badge
+                              key={tag}
+                              variant={
+                                isIncluded
+                                  ? "default"
+                                  : isExcluded
+                                  ? "destructive"
+                                  : "outline"
+                              }
+                              className="cursor-pointer"
+                              onClick={() => {
+                                if (isLeftPanelDisabled) return;
+
+                                if (isIncluded) {
+                                  toggleExcludeTag(tag);
+                                } else if (isExcluded) {
+                                  toggleExcludeTag(tag);
+                                } else {
+                                  toggleTagFilter(tag);
+                                }
+                              }}
+                              title={
+                                isIncluded
+                                  ? "Filtr aktywny (pokaż tylko)"
+                                  : isExcluded
+                                  ? "Wykluczony (ukryj)"
+                                  : "Kliknij aby filtrować, prawy klik aby wykluczyć"
+                              }
+                            >
+                              {isExcluded && "🚫 "}
+                              {tag}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </AccordionContent>
                   </AccordionItem>

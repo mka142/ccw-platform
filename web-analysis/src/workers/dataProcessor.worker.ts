@@ -11,6 +11,7 @@ interface ProcessDataMessage {
     globalOperations: GlobalOperation[];
     filterByIds: string[];
     filterByTags: string[];
+    excludeTags: string[];
     idPrefix: string;
   };
 }
@@ -35,7 +36,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
 };
 
 function processData(params: ProcessDataMessage['payload']): ProcessedRecord[] {
-  const { rawData, recordMetadata, resampling, globalOperations, filterByIds, filterByTags, idPrefix } = params;
+  const { rawData, recordMetadata, resampling, globalOperations, filterByIds, filterByTags, excludeTags, idPrefix } = params;
 
   // Group raw data by ID
   const groupedData = new Map<string, typeof rawData>();
@@ -100,9 +101,16 @@ function processData(params: ProcessDataMessage['payload']): ProcessedRecord[] {
       return false;
     }
 
-    // Apply tag filter (AND logic)
+    // Apply tag filter (AND logic - must have all specified tags)
     if (filterByTags.length > 0) {
       if (!filterByTags.every((tag) => metadata.tags.includes(tag))) {
+        return false;
+      }
+    }
+
+    // Apply exclude tags filter (OR logic - if record has ANY excluded tag, filter it out)
+    if (excludeTags.length > 0) {
+      if (excludeTags.some((tag) => metadata.tags.includes(tag))) {
         return false;
       }
     }

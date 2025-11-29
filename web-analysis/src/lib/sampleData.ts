@@ -59,6 +59,7 @@ export function createEmptyConfig(recordIds: string[]) {
     globalOperations: [],
     filterByIds: [],
     filterByTags: [],
+    excludeTags: [],
     sets: [],
     visible: {
       records: true,
