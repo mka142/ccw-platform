@@ -666,6 +666,9 @@
         
         const delay = parseInt(delayInput.value) || 3000;
         
+        // Calculate exact timestamp when audio will start playing
+        const recordingTimestampStart = Date.now() + delay;
+        
         disableStartButton();
         
         countdownOverlay.classList.remove('hidden');
@@ -683,12 +686,13 @@
         }, 1000);
 
         try {
+          // Send the exact timestamp when recording will start (eliminates server latency issues)
           const response = await fetch(`${apiBaseUrl}/responses/${accessToken}/start`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ recordingDelay: delay })
+            body: JSON.stringify({ recordingTimestampStart })
           });
           
           const result = await response.json();

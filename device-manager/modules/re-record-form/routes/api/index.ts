@@ -141,6 +141,7 @@ router.get("/responses/:accessToken/status", async (req: Request, res: Response)
 
 /**
  * POST /api/re-record-forms/responses/:accessToken/start - Start recording
+ * Client must provide the exact timestamp when audio playback starts
  */
 router.post("/responses/:accessToken/start", async (req: Request, res: Response) => {
   try {
@@ -150,7 +151,12 @@ router.post("/responses/:accessToken/start", async (req: Request, res: Response)
       return;
     }
 
-    const { recordingDelay } = req.body as StartRecordingInput;
+    const { recordingTimestampStart } = req.body as StartRecordingInput;
+
+    if (!recordingTimestampStart || typeof recordingTimestampStart !== "number") {
+      res.status(400).json({ success: false, error: "recordingTimestampStart is required and must be a number" });
+      return;
+    }
 
     const response = await ResponseService.getResponseByToken(accessToken);
     
@@ -164,14 +170,13 @@ router.post("/responses/:accessToken/start", async (req: Request, res: Response)
       return;
     }
 
-    const result = await ResponseService.startRecording(accessToken, recordingDelay || 0);
+    const result = await ResponseService.startRecording(accessToken, recordingTimestampStart);
 
     if (result.success) {
       res.json({
         success: true,
         data: {
           recordingTimestampStart: result.data?.recordingTimestampStart,
-          recordingDelay: result.data?.recordingDelay,
         },
       });
     } else {
@@ -295,7 +300,6 @@ router.get("/responses/:responseId/data", async (req: Request, res: Response) =>
         responseId: response._id.toString(),
         name: response.name,
         recordingTimestampStart: response.recordingTimestampStart,
-        recordingDelay: response.recordingDelay,
         recordingFinished: response.recordingFinished,
         dataPointsCount: response.data.length,
         data: response.data,

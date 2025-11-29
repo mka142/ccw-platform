@@ -50,8 +50,7 @@ interface ResponseSchema {
   name: string;                          // Admin-set name
   accessToken: string;                   // Unique token for recipient access
   isActive: boolean;
-  recordingTimestampStart: number | null;
-  recordingDelay: number;                // milliseconds
+  recordingTimestampStart: number | null; // Exact timestamp when audio playback starts (client-provided)
   recordingFinished: boolean;
   data: DataPoint[];                     // timestamp, value pairs
   lastHeartbeat: number | null;          // Last heartbeat from measurement app
@@ -90,7 +89,7 @@ export interface ResponseInput {
  * API input for starting a recording
  */
 export interface StartRecordingInput {
-  recordingDelay: number;
+  recordingTimestampStart: number; // Client-provided timestamp when audio playback starts
 }
 
 /**

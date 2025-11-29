@@ -31,7 +31,6 @@ export class ResponseService {
       accessToken,
       isActive: false,  // Start as inactive until measurement app connects
       recordingTimestampStart: null,
-      recordingDelay: 0,
       recordingFinished: false,
       data: [],
       lastHeartbeat: null,
@@ -48,15 +47,16 @@ export class ResponseService {
     return ResponseOperations.updateById(id, { name });
   }
 
+  /**
+   * Start recording with client-provided timestamp
+   * The timestamp should be the exact moment when audio playback starts (Date.now() + delay on client)
+   */
   static async startRecording(
     accessToken: string,
-    recordingDelay: number
+    recordingTimestampStart: number
   ): Promise<OperationResult<ResponseWithId | null>> {
-    const recordingTimestampStart = Date.now();
-    
     return ResponseOperations.updateByToken(accessToken, {
       recordingTimestampStart,
-      recordingDelay,
       isActive: true,
       recordingFinished: false,
     });
@@ -104,7 +104,6 @@ export class ResponseService {
       responseId: response._id.toString(),
       name: response.name,
       recordingTimestampStart: response.recordingTimestampStart,
-      recordingDelay: response.recordingDelay,
       dataPointsCount: response.data.length,
       data: response.data,
     }, null, 2);
