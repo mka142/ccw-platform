@@ -202,6 +202,9 @@
       border-radius: 8px;
       margin: 1em 0;
     }
+    .recording-title-container {
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -209,7 +212,7 @@
     <div class="ui segment">
       <h1 class="ui header center aligned">
         <i class="microphone icon"></i>
-        <div class="content">
+        <div class="content recording-title-container">
           <%= form.name %>
           <div class="sub header">Sesja nagrywania: <%= response.name %></div>
         </div>
