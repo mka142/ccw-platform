@@ -17,13 +17,15 @@ import "../styles/globals.css";
 import "./index.css";
 
 /**
- * Extract token from URL path
+ * Extract token from URL query parameters
  * Pattern: /rerecord?token=...
+ * Since pathname only returns the path without query params, we extract from search params
  */
 function getTokenFromPath(): string | null {
-  const path = window.location.pathname;
-  const match = path.match(/^\/rerecord\?token=([a-zA-Z0-9-]+)$/);
-  return match ? match[1] : null;
+  // Extract token from query parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get("token");
+  return token;
 }
 
 const elem = document.getElementById("root")!;
