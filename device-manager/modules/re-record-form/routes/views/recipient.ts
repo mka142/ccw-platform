@@ -27,7 +27,7 @@ router.get("/recipient/:accessToken", async (req: Request, res: Response) => {
       });
     }
     
-    const response = await ResponseService.getResponseByToken(accessToken);
+    let response = await ResponseService.getResponseByToken(accessToken);
     
     if (!response) {
       return res.status(404).render("error", {
@@ -35,6 +35,20 @@ router.get("/recipient/:accessToken", async (req: Request, res: Response) => {
         message: "Nieprawidłowy lub wygasły link do nagrywania",
         baseUrl,
       });
+    }
+
+    // If recording is not finished, reset the recording status to allow fresh start
+    if (!response.recordingFinished) {
+      await ResponseService.resetRecordingStatus(accessToken);
+      // Fetch the updated response
+      response = await ResponseService.getResponseByToken(accessToken);
+      if (!response) {
+        return res.status(404).render("error", {
+          title: "Nie znaleziono",
+          message: "Nieprawidłowy lub wygasły link do nagrywania",
+          baseUrl,
+        });
+      }
     }
 
     const form = await ReRecordFormService.getFormById(response.reRecordFormId);

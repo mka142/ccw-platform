@@ -193,6 +193,21 @@ export class ResponseService {
   }
 
   /**
+   * Reset recording status to allow fresh start
+   * Clears recording start time, active status, error, and data
+   */
+  static async resetRecordingStatus(accessToken: string): Promise<OperationResult<ResponseWithId | null>> {
+    return ResponseOperations.updateByToken(accessToken, {
+      recordingTimestampStart: null,
+      isActive: false,
+      recordingFinished: false,
+      error: null,
+      data: [],
+      lastHeartbeat: null,
+    });
+  }
+
+  /**
    * Heartbeat timeout in milliseconds (15 seconds)
    */
   static readonly HEARTBEAT_TIMEOUT_MS = 15000;
