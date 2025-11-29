@@ -14,45 +14,17 @@ import { EventSchema } from "./lib/mqtt";
 import { EventType } from "./config";
 import NoZoomWrapper from "./components/NoZoomWrapper";
 import IosOnlySafari from "./lib/IosOnlySafari";
-import ReRecordPage from "./pages/ReRecordPage";
-
-/**
- * Check if the current URL has a re-record token query parameter
- * Pattern: ?rerecord=TOKEN
- */
-function getReRecordToken(): string | null {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("rerecord");
-  return token && token.length > 0 ? token : null;
-}
 
 const elem = document.getElementById("root")!;
 
-// Check if this is a re-record form URL
-const reRecordToken = getReRecordToken();
-
-const app = reRecordToken ? (
-  // Re-record form mode: render simplified TensionRecorder with heartbeat
-  <StrictMode>
-    <IosOnlySafari>
-      <NoZoomWrapper includeDoubleTap={true} includePinch={true}>
-        <ReRecordPage token={reRecordToken} />
-      </NoZoomWrapper>
-    </IosOnlySafari>
-  </StrictMode>
-) : (
-  // Normal mode: render full App with all providers
+const app = (
   <StrictMode>
     <IosOnlySafari>
       <UserProvider>
         <DeviceManagerProvider<EventSchema<EventType>> maxHistorySize={100}>
-          {/* <MobileContainer> */}
           <NoZoomWrapper includeDoubleTap={true} includePinch={true}>
-            {/* <div className="fixed w-full h-full touch-none select-none overflow-hidden"> */}
-              <App />
-            {/* </div> */}
+            <App />
           </NoZoomWrapper>
-          {/* </MobileContainer> */}
         </DeviceManagerProvider>
       </UserProvider>
     </IosOnlySafari>
