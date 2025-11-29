@@ -240,7 +240,8 @@ router.post("/responses/:accessToken/batch", async (req: Request, res: Response)
       return;
     }
 
-    if (!response.isActive && !response.recordingTimestampStart) {
+    // Reject data if recording hasn't started yet (no recordingTimestampStart)
+    if (!response.recordingTimestampStart) {
       res.status(400).json({ success: false, error: "Recording not started" });
       return;
     }
