@@ -263,7 +263,7 @@
     </div>
 
     <!-- Audio Player Section -->
-    <div class="ui segment audio-player-container">
+    <div class="ui segment audio-player-container hidden" id="audio-player-container">
       <h3 class="ui header">
         <i class="music icon"></i>
         Odtwarzacz audio
@@ -304,10 +304,9 @@
           </h3>
           <div class="ui form">
             <div class="field delay-input">
-              <label>Opóźnienie przed pomiarem (ms)</label>
-              <input type="number" id="delay-input" value="3000" min="0" max="30000" step="100">
+              <label>Opóźnienie przed pomiarem</label>
               <div class="ui small message">
-                <p>Czas oczekiwania po kliknięciu "Start" przed rozpoczęciem pomiaru.</p>
+                <p>Opóźnienie: <strong>10 sekund</strong> - czas oczekiwania po kliknięciu "Start" przed rozpoczęciem pomiaru.</p>
               </div>
             </div>
           </div>
@@ -359,7 +358,7 @@
       <div class="ui ordered list">
         <div class="item">Poczekaj aż plik audio zostanie w pełni pobrany (pasek postępu)</div>
         <div class="item"><strong>Przetestuj audio</strong> - odtwórz fragment, sprawdź głośność i upewnij się, że wszystko działa poprawnie</div>
-        <div class="item">Ustaw opóźnienie (domyślnie 3 sekundy)</div>
+        <div class="item">Opóźnienie jest ustawione na 10 sekund</div>
         <div class="item">Otwórz aplikację pomiarową na telefonie (zeskanuj kod QR) - <strong>poczekaj aż połączy się z serwerem</strong></div>
         <div class="item">Kliknij "Rozpocznij nagrywanie" (przycisk aktywuje się po połączeniu aplikacji)</div>
         <div class="item">Po odliczeniu rozpocznij pomiar w aplikacji pomiarowej</div>
@@ -376,7 +375,6 @@
       const audioPlayer = document.getElementById('audio-player');
       const startButton = document.getElementById('start-button');
       const startButtonHint = document.getElementById('start-button-hint');
-      const delayInput = document.getElementById('delay-input');
       const statusLoading = document.getElementById('status-loading');
       const statusWaiting = document.getElementById('status-waiting');
       const statusReady = document.getElementById('status-ready');
@@ -420,6 +418,11 @@
         showStatus('finished');
         audioTestMessage.classList.add('hidden');
         updateConnectionStatus('disconnected', 'Nagrywanie zakończone');
+        // Show audio player even if finished (for reference)
+        const audioPlayerContainer = document.getElementById('audio-player-container');
+        if (audioPlayerContainer) {
+          audioPlayerContainer.classList.remove('hidden');
+        }
       <% } else { %>
         downloadAudioFile();
         startStatusPolling();
@@ -562,6 +565,11 @@
       function onAudioReady() {
         if (!isAudioLoaded) {
           isAudioLoaded = true;
+          // Show audio player when audio is loaded
+          const audioPlayerContainer = document.getElementById('audio-player-container');
+          if (audioPlayerContainer) {
+            audioPlayerContainer.classList.remove('hidden');
+          }
           if (!isRecording && !<%= response.recordingFinished %>) {
             if (isMeasurementAppConnected) {
               enableStartButton();
@@ -571,6 +579,12 @@
             }
           } else if (isRecording) {
             lockAudioPlayer();
+          }
+        } else {
+          // If audio was already loaded, ensure player is visible
+          const audioPlayerContainer = document.getElementById('audio-player-container');
+          if (audioPlayerContainer) {
+            audioPlayerContainer.classList.remove('hidden');
           }
         }
       }
@@ -664,7 +678,14 @@
       startButton.addEventListener('click', async function() {
         if (!isAudioLoaded || isRecording || !isMeasurementAppConnected) return;
         
-        const delay = parseInt(delayInput.value) || 3000;
+        // Fixed delay of 10 seconds (10000 ms)
+        const delay = 10000;
+        
+        // Stop audio immediately if it's playing (user might have forgotten to stop it)
+        if (!audioPlayer.paused) {
+          audioPlayer.pause();
+          audioPlayer.currentTime = 0;
+        }
         
         // Calculate exact timestamp when audio will start playing
         const recordingTimestampStart = Date.now() + delay;
@@ -672,7 +693,7 @@
         disableStartButton();
         
         countdownOverlay.classList.remove('hidden');
-        let countdown = Math.ceil(delay / 1000);
+        let countdown = Math.ceil(delay / 1000); // 10 seconds
         countdownValue.textContent = countdown;
         
         const countdownInterval = setInterval(function() {
