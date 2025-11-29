@@ -18,11 +18,11 @@ import "./index.css";
 
 /**
  * Extract token from URL path
- * Pattern: /rerecord/:token
+ * Pattern: /rerecord?token=...
  */
 function getTokenFromPath(): string | null {
   const path = window.location.pathname;
-  const match = path.match(/^\/rerecord\/([a-zA-Z0-9-]+)$/);
+  const match = path.match(/^\/rerecord\?token=([a-zA-Z0-9-]+)$/);
   return match ? match[1] : null;
 }
 
