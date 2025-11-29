@@ -30,6 +30,7 @@ interface ReRecordFormSchema {
   audioFilePath: string;       // Stored path after upload
   audioFileName: string;       // Original filename
   measurementAppUrl: string;   // Contains {RESPONSE_ID} placeholder
+  pieceDuration: number | null; // Duration of the audio piece in milliseconds
 }
 
 /**
@@ -55,6 +56,8 @@ interface ResponseSchema {
   data: DataPoint[];                     // timestamp, value pairs
   lastHeartbeat: number | null;          // Last heartbeat from measurement app
   connectionLogs: ConnectionLog[];       // Connection history
+  pieceDuration: number | null;          // Duration of the audio piece in milliseconds
+  error: string | null;                  // Error message if recording was not finished properly
 }
 
 /**

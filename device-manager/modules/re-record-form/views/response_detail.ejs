@@ -36,6 +36,8 @@
                 <div class="description">
                   <% if (response.recordingFinished) { %>
                     <span class="ui green label">Zakończone</span>
+                  <% } else if (response.error) { %>
+                    <span class="ui red label">Błąd</span>
                   <% } else if (response.isActive) { %>
                     <span class="ui blue label">Aktywne</span>
                   <% } else { %>
@@ -44,6 +46,19 @@
                 </div>
               </div>
             </div>
+            <% if (response.error) { %>
+            <div class="item">
+              <i class="exclamation triangle icon"></i>
+              <div class="content">
+                <div class="header">Błąd</div>
+                <div class="description">
+                  <div class="ui red message">
+                    <%= response.error %>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <% } %>
             <div class="item">
               <i class="clock icon"></i>
               <div class="content">

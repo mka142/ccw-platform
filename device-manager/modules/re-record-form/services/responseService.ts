@@ -1,6 +1,8 @@
 import { parseId } from "@/lib/db/utils";
 
 import { ResponseOperations } from "../db";
+import { ReRecordFormService } from "./reRecordFormService";
+import { checkRecordingTimeout } from "../lib/timeoutUtils";
 
 import type { Response, ResponseWithId, ResponseInput, DataPoint } from "../types";
 import type { OperationResult, ObjectId } from "@/lib/types";
@@ -25,6 +27,10 @@ export class ResponseService {
   static async createResponse(input: ResponseInput): Promise<OperationResult<ResponseWithId>> {
     const accessToken = crypto.randomUUID();
     
+    // Get pieceDuration from the form
+    const form = await ReRecordFormService.getFormById(input.reRecordFormId);
+    const pieceDuration = form?.pieceDuration || null;
+    
     const response: Response = {
       reRecordFormId: parseId(input.reRecordFormId),
       name: input.name,
@@ -35,6 +41,8 @@ export class ResponseService {
       data: [],
       lastHeartbeat: null,
       connectionLogs: [],
+      pieceDuration,
+      error: null,
     };
 
     return ResponseOperations.create(response);
@@ -50,6 +58,7 @@ export class ResponseService {
   /**
    * Start recording with client-provided timestamp
    * The timestamp should be the exact moment when audio playback starts (Date.now() + delay on client)
+   * pieceDuration should already be set from the form when the response was created
    */
   static async startRecording(
     accessToken: string,
@@ -59,6 +68,7 @@ export class ResponseService {
       recordingTimestampStart,
       isActive: true,
       recordingFinished: false,
+      error: null, // Clear any previous error
     });
   }
 
@@ -129,6 +139,7 @@ export class ResponseService {
 
   /**
    * Get response status for polling
+   * Returns isActive as false if timeout condition is met (current time - start time > pieceDuration * 1.5 + 2 minutes)
    */
   static async getResponseStatus(accessToken: string): Promise<{
     isActive: boolean;
@@ -140,8 +151,15 @@ export class ResponseService {
     const response = await ResponseOperations.findByToken(accessToken);
     if (!response) return null;
     
+    let isActive = response.isActive;
+    
+    // Check if timeout condition is met using the utility function
+    if (checkRecordingTimeout(response)) {
+      isActive = false;
+    }
+    
     return {
-      isActive: response.isActive,
+      isActive,
       recordingTimestampStart: response.recordingTimestampStart,
       recordingFinished: response.recordingFinished,
       lastHeartbeat: response.lastHeartbeat,
@@ -161,6 +179,17 @@ export class ResponseService {
    */
   static async markDisconnected(accessToken: string): Promise<OperationResult<boolean>> {
     return ResponseOperations.markDisconnectedByToken(accessToken);
+  }
+
+  /**
+   * Mark response as timed out with error (for background job)
+   * Sets isActive to false and adds error message
+   */
+  static async markTimedOut(accessToken: string, errorMessage: string): Promise<OperationResult<ResponseWithId | null>> {
+    return ResponseOperations.updateByToken(accessToken, {
+      isActive: false,
+      error: errorMessage,
+    });
   }
 
   /**

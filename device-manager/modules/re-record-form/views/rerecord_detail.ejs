@@ -109,6 +109,11 @@
                 <td>
                   <% if (response.recordingFinished) { %>
                     <span class="ui green label">Zakończone</span>
+                  <% } else if (response.error) { %>
+                    <span class="ui red label">Błąd</span>
+                    <div class="ui red pointing left label" style="margin-top: 0.5em;">
+                      <%= response.error %>
+                    </div>
                   <% } else if (response.isActive) { %>
                     <span class="ui blue label">Aktywne</span>
                   <% } else { %>
