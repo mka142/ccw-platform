@@ -7,20 +7,24 @@ import { checkRecordingTimeout } from "@/modules/re-record-form/lib/timeoutUtils
  * Also checks if recording exceeded timeout (1.5 * pieceDuration + 2 minutes) and marks as inactive with error
  */
 export async function validateReRecordStatusJob() {
+  console.log("🔄 Validating re-record status...");
   try {
     // Get all active recordings (started but not finished)
     const activeRecordings = await ResponseService.getActiveRecordings();
     
     if (activeRecordings.length === 0) {
+      console.log("🔄 No active recordings found, skipping re-record status validation");
       return;
     }
+
+    console.log(`🔄 Found ${activeRecordings.length} active recordings, validating re-record status...`);
 
     const now = Date.now();
     const heartbeatTimeoutMs = ResponseService.HEARTBEAT_TIMEOUT_MS;
 
     for (const response of activeRecordings) {
       // Check if recording exceeded timeout using the utility function
-      if (response.isActive && checkRecordingTimeout(response, now)) {
+      if (response.recordingTimestampStart && checkRecordingTimeout(response, now)) {
         const elapsed = now - (response.recordingTimestampStart || 0);
         const timeoutThreshold = (response.pieceDuration || 0) * 1 + 2 * 60 * 1000;
         const errorMessage = "Status 'finished' was not called properly by user. Recording exceeded maximum allowed time.";

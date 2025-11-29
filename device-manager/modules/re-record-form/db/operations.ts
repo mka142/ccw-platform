@@ -306,8 +306,7 @@ export class ResponseOperations {
     try {
       const collection = await this.getCollection();
       const docs = await collection.find({
-        recordingTimestampStart: { $ne: null },
-        recordingFinished: false
+        isActive: true,
       }).toArray();
       return docs.map(this.mapFromDocument);
     } catch (error) {
