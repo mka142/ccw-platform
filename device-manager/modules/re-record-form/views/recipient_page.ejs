@@ -343,10 +343,10 @@
     <!-- Countdown overlay -->
     <div id="countdown-overlay" class="ui dimmer hidden">
       <div class="content">
-        <h1 class="ui inverted icon header">
+        <h1 class="ui inverted icon header" style="font-size: 4em; color: white;">
           <i class="hourglass half icon"></i>
-          <div class="content">
-            Rozpoczęcie za: <span id="countdown-value">3</span>s
+          <div class="content" style="margin-top: 0.5em;">
+            Rozpoczęcie za: <span id="countdown-value" style="font-size: 1.2em; font-weight: bold;">10</span>s
           </div>
         </h1>
       </div>
@@ -687,12 +687,17 @@
           audioPlayer.currentTime = 0;
         }
         
+        // Ensure playback speed is 1x (normal speed) in case user accidentally changed it
+        audioPlayer.playbackRate = 1.0;
+        
         // Calculate exact timestamp when audio will start playing
         const recordingTimestampStart = Date.now() + delay;
         
         disableStartButton();
         
+        // Show countdown overlay (Semantic UI dimmer needs 'active' class)
         countdownOverlay.classList.remove('hidden');
+        countdownOverlay.classList.add('active');
         let countdown = Math.ceil(delay / 1000); // 10 seconds
         countdownValue.textContent = countdown;
         
@@ -702,6 +707,7 @@
             countdownValue.textContent = countdown;
           } else {
             clearInterval(countdownInterval);
+            countdownOverlay.classList.remove('active');
             countdownOverlay.classList.add('hidden');
           }
         }, 1000);
@@ -736,6 +742,7 @@
               enableStartButton();
             }
             clearInterval(countdownInterval);
+            countdownOverlay.classList.remove('active');
             countdownOverlay.classList.add('hidden');
           }
         } catch (error) {
@@ -745,6 +752,7 @@
             enableStartButton();
           }
           clearInterval(countdownInterval);
+          countdownOverlay.classList.remove('active');
           countdownOverlay.classList.add('hidden');
         }
       });
