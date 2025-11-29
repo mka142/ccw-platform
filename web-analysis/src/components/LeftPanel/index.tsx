@@ -27,9 +27,11 @@ interface LeftPanelProps {
 export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
   const {
     config,
+    effectiveConfig,
     highlightedRecordId,
     isLeftPanelDisabled,
     currentSet,
+    filteredRecordIdsByTag,
     setMode,
     setSelectedRecordId,
     setCurrentSet,
@@ -51,7 +53,10 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
     }
   };
 
-  const recordIds = Object.keys(config.recordMetadata);
+  // Use filteredRecordIdsByTag from context (respects currentSet, filterByTags, and excludeTags, but ignores filterByIds)
+  // This allows showing all records that match tag filters, with checkboxes indicating ID filter state
+  const recordIds = filteredRecordIdsByTag;
+  
   const allTags = Array.from(
     new Set(Object.values(config.recordMetadata).flatMap((m) => m.tags))
   );
@@ -166,6 +171,11 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
                             {config.filterByTags.length}
                           </Badge>
                         )}
+                        {config.excludeTags && config.excludeTags.length > 0 && (
+                          <Badge variant="destructive" className="text-xs">
+                            {config.excludeTags.length}
+                          </Badge>
+                        )}
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
@@ -224,7 +234,8 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
               <div className="p-4 space-y-3">
                 {recordIds.map((id) => {
                   const metadata = config.recordMetadata[id];
-                  const isFiltered = config.filterByIds.includes(id);
+                  // Use effectiveConfig.filterByIds to respect currentSet context
+                  const isFiltered = effectiveConfig.filterByIds.includes(id);
                   const isHighlighted = highlightedRecordId === id;
 
                   return (

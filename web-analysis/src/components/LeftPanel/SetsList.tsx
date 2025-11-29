@@ -29,6 +29,7 @@ function isLightColor(hexColor: string): boolean {
 export default function SetsList() {
   const {
     config,
+    effectiveConfig,
     filteredRecordIds,
     createSet,
     updateSet,
@@ -92,10 +93,8 @@ export default function SetsList() {
       return;
     }
 
-    // Create from filtered records or all if none filtered
-    const fromFiltered =
-      config.filterByIds.length > 0 || config.filterByTags.length > 0;
-    createSet(newSetName.trim(), newSetDescription.trim(), fromFiltered);
+    // Create set (automatically uses filtered records if filters are active)
+    createSet(newSetName.trim(), newSetDescription.trim());
 
     setIsCreatingNew(false);
     setNewSetName("");
@@ -156,7 +155,7 @@ export default function SetsList() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              {config.filterByIds.length > 0 || config.filterByTags.length > 0
+              {filteredRecordIds.length < Object.keys(effectiveConfig.recordMetadata).length
                 ? `Utworzy zestaw z ${filteredRecordIds.length} wybranych rekordów`
                 : "Utworzy zestaw ze wszystkich rekordów"}
             </p>

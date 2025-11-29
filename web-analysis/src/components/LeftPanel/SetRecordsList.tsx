@@ -9,14 +9,15 @@ import { ArrowLeft } from 'lucide-react';
 import RecordCard from './RecordCard';
 
 export default function SetRecordsList() {
-  const { config, currentSet, setCurrentSet, updateRecordMetadata, removeOperationFromRecord, toggleIdFilter } = useDashboard();
+  const { config, currentSet, filteredRecordIdsByTag, setCurrentSet, updateRecordMetadata, removeOperationFromRecord, toggleIdFilter } = useDashboard();
 
   if (!currentSet) return null;
 
   const set = config.sets.find(s => s.name === currentSet);
   if (!set) return null;
 
-  const recordIds = Object.keys(set.recordMetadata);
+  // Use filteredRecordIds from context (respects set-specific filters: filterByIds, filterByTags, excludeTags)
+  const recordIds = filteredRecordIdsByTag;
 
   const handleGoBack = () => {
     setCurrentSet(null);

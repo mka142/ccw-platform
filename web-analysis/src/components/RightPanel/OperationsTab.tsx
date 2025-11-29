@@ -20,6 +20,7 @@ export default function OperationsTab() {
     selectedRecordId,
     effectiveConfig,
     currentSet,
+    filteredRecordIds,
     addGlobalOperation,
     removeGlobalOperation,
     applyOperationToRecord,
@@ -27,7 +28,7 @@ export default function OperationsTab() {
     setResampling,
     clearResampling,
     config: { recordingStartTimestamp },
-    processedData,
+    currentModeProcessData,
     addRecords,
   } = useDashboard();
 
@@ -156,13 +157,8 @@ export default function OperationsTab() {
       return;
     }
 
-    // Get filtered record IDs (or all if none filtered)
-    const targetIds =
-      effectiveConfig.filterByIds.length > 0
-        ? effectiveConfig.filterByIds
-        : Object.keys(effectiveConfig.recordMetadata);
-
-    targetIds.forEach((id) => {
+    // Use filteredRecordIds from context (respects currentSet, filters, and excludeTags)
+    filteredRecordIds.forEach((id) => {
       applyOperationToRecord(id, {
         type: "normalize",
         params: { minRange, maxRange },
@@ -171,14 +167,9 @@ export default function OperationsTab() {
   };
 
   const handleClearNormalize = () => {
-    // Get filtered record IDs (or all if none filtered)
-    const targetIds =
-      effectiveConfig.filterByIds.length > 0
-        ? effectiveConfig.filterByIds
-        : Object.keys(effectiveConfig.recordMetadata);
-
+    // Use filteredRecordIds from context (respects currentSet, filters, and excludeTags)
     // Remove all normalize operations from each record
-    targetIds.forEach((id) => {
+    filteredRecordIds.forEach((id) => {
       const metadata = effectiveConfig.recordMetadata[id];
       // Remove all normalize operations (iterate backwards to avoid index issues)
       for (let i = metadata.operations.length - 1; i >= 0; i--) {
@@ -197,13 +188,8 @@ export default function OperationsTab() {
       return;
     }
 
-    // Get filtered record IDs (or all if none filtered)
-    const targetIds =
-      effectiveConfig.filterByIds.length > 0
-        ? effectiveConfig.filterByIds
-        : Object.keys(effectiveConfig.recordMetadata);
-
-    targetIds.forEach((id) => {
+    // Use filteredRecordIds from context (respects currentSet, filters, and excludeTags)
+    filteredRecordIds.forEach((id) => {
       applyOperationToRecord(id, {
         type: "quantize",
         params: { step },
@@ -212,14 +198,9 @@ export default function OperationsTab() {
   };
 
   const handleClearIndividualQuantize = () => {
-    // Get filtered record IDs (or all if none filtered)
-    const targetIds =
-      effectiveConfig.filterByIds.length > 0
-        ? effectiveConfig.filterByIds
-        : Object.keys(effectiveConfig.recordMetadata);
-
+    // Use filteredRecordIds from context (respects currentSet, filters, and excludeTags)
     // Remove all quantize operations from each record
-    targetIds.forEach((id) => {
+    filteredRecordIds.forEach((id) => {
       const metadata = effectiveConfig.recordMetadata[id];
       // Remove all quantize operations (iterate backwards to avoid index issues)
       for (let i = metadata.operations.length - 1; i >= 0; i--) {
@@ -259,13 +240,8 @@ export default function OperationsTab() {
       return;
     }
 
-    // Get filtered record IDs (or all if none filtered)
-    const targetIds =
-      effectiveConfig.filterByIds.length > 0
-        ? effectiveConfig.filterByIds
-        : Object.keys(effectiveConfig.recordMetadata);
-
-    targetIds.forEach((id) => {
+    // Use filteredRecordIds from context (respects currentSet, filters, and excludeTags)
+    filteredRecordIds.forEach((id) => {
       applyOperationToRecord(id, {
         type: "movingAverage",
         params: { windowSize, algorithm: movingAverageAlgorithm },
@@ -274,14 +250,9 @@ export default function OperationsTab() {
   };
 
   const handleClearIndividualMovingAverage = () => {
-    // Get filtered record IDs (or all if none filtered)
-    const targetIds =
-      effectiveConfig.filterByIds.length > 0
-        ? effectiveConfig.filterByIds
-        : Object.keys(effectiveConfig.recordMetadata);
-
+    // Use filteredRecordIds from context (respects currentSet, filters, and excludeTags)
     // Remove all moving average operations from each record
-    targetIds.forEach((id) => {
+    filteredRecordIds.forEach((id) => {
       const metadata = effectiveConfig.recordMetadata[id];
       // Remove all moving average operations (iterate backwards to avoid index issues)
       for (let i = metadata.operations.length - 1; i >= 0; i--) {
@@ -421,8 +392,8 @@ export default function OperationsTab() {
                 <p className="text-xs text-muted-foreground mt-1">
                   {currentSet
                     ? `Stosuje się do rekordów w zestawie "${currentSet}"`
-                    : effectiveConfig.filterByIds.length > 0
-                    ? `Stosuje się do ${effectiveConfig.filterByIds.length} wybranych rekordów`
+                    : filteredRecordIds.length < Object.keys(effectiveConfig.recordMetadata).length
+                    ? `Stosuje się do ${filteredRecordIds.length} wybranych rekordów`
                     : "Stosuje się do wszystkich rekordów"}
                 </p>
 
@@ -508,17 +479,11 @@ export default function OperationsTab() {
                       className="w-full"
                       variant="destructive"
                       onClick={handleClearNormalize}
-                      disabled={(() => {
-                        const targetIds =
-                          effectiveConfig.filterByIds.length > 0
-                            ? effectiveConfig.filterByIds
-                            : Object.keys(effectiveConfig.recordMetadata);
-                        return !targetIds.some((id) =>
-                          effectiveConfig.recordMetadata[id]?.operations.some(
-                            (op) => op.type === "normalize"
-                          )
-                        );
-                      })()}
+                      disabled={!filteredRecordIds.some((id) =>
+                        effectiveConfig.recordMetadata[id]?.operations.some(
+                          (op) => op.type === "normalize"
+                        )
+                      )}
                     >
                       Wyczyść
                     </Button>
@@ -602,17 +567,11 @@ export default function OperationsTab() {
                       className="w-full"
                       variant="destructive"
                       onClick={handleClearIndividualQuantize}
-                      disabled={(() => {
-                        const targetIds =
-                          effectiveConfig.filterByIds.length > 0
-                            ? effectiveConfig.filterByIds
-                            : Object.keys(effectiveConfig.recordMetadata);
-                        return !targetIds.some((id) =>
-                          effectiveConfig.recordMetadata[id]?.operations.some(
-                            (op) => op.type === "quantize"
-                          )
-                        );
-                      })()}
+                      disabled={!filteredRecordIds.some((id) =>
+                        effectiveConfig.recordMetadata[id]?.operations.some(
+                          (op) => op.type === "quantize"
+                        )
+                      )}
                     >
                       Wyczyść
                     </Button>
@@ -749,17 +708,11 @@ export default function OperationsTab() {
                       className="w-full"
                       variant="destructive"
                       onClick={handleClearIndividualMovingAverage}
-                      disabled={(() => {
-                        const targetIds =
-                          effectiveConfig.filterByIds.length > 0
-                            ? effectiveConfig.filterByIds
-                            : Object.keys(effectiveConfig.recordMetadata);
-                        return !targetIds.some((id) =>
-                          effectiveConfig.recordMetadata[id]?.operations.some(
-                            (op) => op.type === "movingAverage"
-                          )
-                        );
-                      })()}
+                      disabled={!filteredRecordIds.some((id) =>
+                        effectiveConfig.recordMetadata[id]?.operations.some(
+                          (op) => op.type === "movingAverage"
+                        )
+                      )}
                     >
                       Wyczyść
                     </Button>
@@ -968,7 +921,7 @@ export default function OperationsTab() {
                 </div>
 
                 {/* Dataset Length Info - Show after resampling is applied */}
-                {effectiveConfig.resampling.applied && processedData.length > 0 && (
+                {effectiveConfig.resampling.applied && currentModeProcessData.length > 0 && (
                   <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-2">
                     <Label className="text-xs font-medium">
                       Długości Danych Po Resamplingu
@@ -976,7 +929,7 @@ export default function OperationsTab() {
                     {(() => {
                       // Calculate unique lengths
                       const lengthMap = new Map<number, string[]>();
-                      processedData.forEach(record => {
+                      currentModeProcessData.forEach(record => {
                         const length = record.data.length;
                         if (!lengthMap.has(length)) {
                           lengthMap.set(length, []);
