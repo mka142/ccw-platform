@@ -9,6 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { X, TrendingUp, BarChart3, Activity, RefreshCw, Plus } from "lucide-react";
 import { InterpolationMethod, DataRecord } from "@/lib/types";
 import { InfoModal } from "@/components/ui/info-modal";
@@ -384,18 +390,22 @@ export default function OperationsTab() {
               <Separator />
               
               {/* Data Transformations - Applied to filtered records (or set records) */}
-              <div>
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Transformacje Danych
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {currentSet
-                    ? `Stosuje się do rekordów w zestawie "${currentSet}"`
-                    : filteredRecordIds.length < Object.keys(effectiveConfig.recordMetadata).length
-                    ? `Stosuje się do ${filteredRecordIds.length} wybranych rekordów`
-                    : "Stosuje się do wszystkich rekordów"}
-                </p>
+              <Accordion type="single" collapsible defaultValue="transformations" className="w-full">
+                <AccordionItem value="transformations" className="border-0">
+                  <AccordionTrigger className="px-0 py-3 hover:no-underline">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      Transformacje Danych
+                    </Label>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-0 pb-0">
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {currentSet
+                        ? `Stosuje się do rekordów w zestawie "${currentSet}"`
+                        : filteredRecordIds.length < Object.keys(effectiveConfig.recordMetadata).length
+                        ? `Stosuje się do ${filteredRecordIds.length} wybranych rekordów`
+                        : "Stosuje się do wszystkich rekordów"}
+                    </p>
 
                 {/* Normalization */}
                 <div className="mt-3 space-y-2">
@@ -718,7 +728,9 @@ export default function OperationsTab() {
                     </Button>
                   </div>
                 </div>
-              </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
               <Separator />
             </>
@@ -987,12 +999,16 @@ export default function OperationsTab() {
           {/* Statistical Operations - Only in Global Mode with Resampling */}
           {!isIndividualMode && (
             <>
-              <div>
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Operacje Statystyczne
-                </Label>
-                <div className="space-y-2 mt-2">
+              <Accordion type="single" collapsible defaultValue="statistical" className="w-full">
+                <AccordionItem value="statistical" className="border-0">
+                  <AccordionTrigger className="px-0 py-3 hover:no-underline">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      Operacje Statystyczne
+                    </Label>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-0 pb-0">
+                    <div className="space-y-2 mt-2">
                   <div className="flex items-center gap-2">
                     <Button
                       className="flex-1 justify-start"
@@ -1511,7 +1527,9 @@ export default function OperationsTab() {
                     Zastosuj resampling aby włączyć operacje statystyczne
                   </p>
                 )}
-              </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
               <Separator />
             </>
