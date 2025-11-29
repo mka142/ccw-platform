@@ -130,29 +130,59 @@ export function DashboardProvider({
     currentSetConfig?.globalOperations || config.globalOperations;
   const effectiveFilterByIds =
     currentSetConfig?.filterByIds || config.filterByIds;
+  const effectiveFilterByTags =
+    currentSetConfig?.filterByTags || config.filterByTags;
+  const effectiveExcludeTags =
+    currentSetConfig?.excludeTags || config.excludeTags;
 
-  // Calculate filtered record IDs based on both filterByIds and filterByTags
-  const filteredRecordIds = useMemo(() => {
-    let ids = Object.keys(config.recordMetadata);
-
-    // Apply ID filter if any IDs are selected
-    if (config.filterByIds.length > 0) {
-      ids = ids.filter((id) => config.filterByIds.includes(id));
-    }
+  // Calculate filtered record IDs based on tag filters only (filterByTags and excludeTags)
+  // Respects currentSet (global vs set)
+  const filteredRecordIdsByTag = useMemo(() => {
+    let ids = Object.keys(effectiveRecordMetadata);
 
     // Apply tag filter if any tags are selected (AND logic - must have ALL selected tags)
-    if (config.filterByTags.length > 0) {
+    if (effectiveFilterByTags.length > 0) {
       ids = ids.filter((id) => {
-        const metadata = config.recordMetadata[id];
+        const metadata = effectiveRecordMetadata[id];
         return (
           metadata &&
-          config.filterByTags.every((tag) => metadata.tags.includes(tag))
+          effectiveFilterByTags.every((tag) => metadata.tags.includes(tag))
         );
       });
     }
 
+    // Apply exclude tags filter (OR logic - if record has ANY excluded tag, filter it out)
+    if (effectiveExcludeTags && effectiveExcludeTags.length > 0) {
+      ids = ids.filter((id) => {
+        const metadata = effectiveRecordMetadata[id];
+        if (!metadata) return false;
+        // Exclude if record has any excluded tag
+        return !effectiveExcludeTags.some((tag) => metadata.tags.includes(tag));
+      });
+    }
+
     return ids;
-  }, [config.recordMetadata, config.filterByIds, config.filterByTags]);
+  }, [
+    effectiveRecordMetadata,
+    effectiveFilterByTags,
+    effectiveExcludeTags,
+  ]);
+
+  // Calculate filtered record IDs based on filterByIds, filterByTags, and excludeTags
+  // Respects currentSet (global vs set)
+  const filteredRecordIds = useMemo(() => {
+    let ids = filteredRecordIdsByTag;
+
+    // Apply ID filter if any IDs are selected
+    if (effectiveFilterByIds.length > 0) {
+      ids = ids.filter((id) => effectiveFilterByIds.includes(id));
+    }
+
+    return ids;
+  }, [
+    filteredRecordIdsByTag,
+    effectiveFilterByIds,
+  ]);
 
   // Create a complete effective config object for easy consumption
   const effectiveConfig = useMemo(
@@ -291,6 +321,25 @@ export function DashboardProvider({
     config.visible.records,
     config.visible.sets,
   ]);
+
+  // Filter processedData based on current mode (global vs set) and filteredRecordIds
+  const currentModeProcessData = useMemo(() => {
+    return processedData.filter((record) => {
+      const parsedId = parseRecordId(record.id);
+      
+      // Check if record matches current operation mode
+      // If currentSet is null (global mode), only show global records
+      // If currentSet is set (set mode), only show records from that set
+      const matchesMode = currentSet === null 
+        ? !parsedId.isSet  // Global mode: only show global records
+        : parsedId.setName === currentSet; // Set mode: only show records from current set
+      
+      // Check if the base ID is in filteredRecordIds
+      const matchesFilter = filteredRecordIds.includes(parsedId.originalId);
+      
+      return matchesMode && matchesFilter;
+    });
+  }, [processedData, currentSet, filteredRecordIds]);
 
   // Determine if left panel should be disabled
   const isLeftPanelDisabled = useMemo(() => {
@@ -667,27 +716,22 @@ export function DashboardProvider({
   };
 
   // Create a new set from filtered records
-  const createSet = (
-    name: string,
-    description: string,
-    fromFiltered: boolean
-  ) => {
+  // Uses filteredRecordIds which already respects context (currentSet) and all filters
+  const createSet = (name: string, description: string) => {
     setConfig((prev) => {
       // Check for duplicate name
       if (prev.sets.some((s) => s.name === name)) {
         throw new Error(`Set with name "${name}" already exists`);
       }
 
-      // Use filteredRecordIds if creating from filtered, otherwise all records
-      const recordIds = fromFiltered
-        ? filteredRecordIds
-        : Object.keys(prev.recordMetadata);
+      // Use filteredRecordIds which already respects currentSet and all filters
+      const effectiveMetadata = prev.recordMetadata;
 
-      // Create record metadata for set (copy from global)
+      // Create record metadata for set (copy from effective metadata source)
       const setRecordMetadata: Record<string, RecordMetadata> = {};
-      recordIds.forEach((id) => {
-        if (prev.recordMetadata[id]) {
-          setRecordMetadata[id] = { ...prev.recordMetadata[id] };
+      filteredRecordIds.forEach((id) => {
+        if (effectiveMetadata[id]) {
+          setRecordMetadata[id] = { ...effectiveMetadata[id] };
         }
       });
 
@@ -856,10 +900,12 @@ export function DashboardProvider({
     selectedRecordId,
     highlightedRecordId,
     processedData,
+    currentModeProcessData,
     isLeftPanelDisabled,
     chartVisualizationMode,
     currentSet,
     filteredRecordIds,
+    filteredRecordIdsByTag,
     effectiveConfig,
     isProcessing,
     setConfig,

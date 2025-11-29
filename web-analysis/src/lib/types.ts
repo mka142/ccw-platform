@@ -100,10 +100,12 @@ export interface DashboardState {
   selectedRecordId: string | null;
   highlightedRecordId: string | null;
   processedData: ProcessedRecord[];
+  currentModeProcessData: ProcessedRecord[]; // Filtered processedData based on current mode and filteredRecordIds
   isLeftPanelDisabled: boolean;
   chartVisualizationMode: ChartVisualizationMode;
   currentSet: string | null; // null = global, string = set name
-  filteredRecordIds: string[]; // Combined result of filterByIds and filterByTags
+  filteredRecordIds: string[]; // Filtered record IDs respecting filterByIds, filterByTags, excludeTags, and currentSet
+  filteredRecordIdsByTag: string[]; // Filtered record IDs respecting only filterByTags and excludeTags (ignores filterByIds)
   effectiveConfig: {
     resampling: ResamplingConfig;
     recordMetadata: Record<string, RecordMetadata>;
@@ -140,7 +142,7 @@ export interface DashboardContextValue extends DashboardState {
   setChartVisualizationMode: (mode: ChartVisualizationMode) => void;
   setRecordingStartTimestamp: (timestamp: number | undefined) => void;
   // Set management
-  createSet: (name: string, description: string, fromFiltered: boolean) => void;
+  createSet: (name: string, description: string) => void;
   updateSet: (name: string, updates: Partial<Omit<DataSet, 'name'>>) => void;
   deleteSet: (name: string) => void;
   setCurrentSet: (setName: string | null) => void;
