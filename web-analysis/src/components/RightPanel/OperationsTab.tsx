@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, TrendingUp, BarChart3, Activity, RefreshCw } from "lucide-react";
-import { InterpolationMethod } from "@/lib/types";
+import { X, TrendingUp, BarChart3, Activity, RefreshCw, Plus } from "lucide-react";
+import { InterpolationMethod, DataRecord } from "@/lib/types";
 import { InfoModal } from "@/components/ui/info-modal";
+import InsertReRecordModal from "./InsertReRecordModal";
 
 export default function OperationsTab() {
   const {
@@ -27,6 +28,7 @@ export default function OperationsTab() {
     clearResampling,
     config: { recordingStartTimestamp },
     processedData,
+    addRecords,
   } = useDashboard();
 
   const [resampleWindowMs, setResampleWindowMs] = useState(
@@ -47,8 +49,14 @@ export default function OperationsTab() {
   const [spearmanEndTime, setSpearmanEndTime] = useState("01:00");
   const [rollingSpearmanWindow, setRollingSpearmanWindow] = useState("10");
   const [resamplingStrategy, setResamplingStrategy] = useState<'shortest' | 'audio' | 'none'>('none');
+  const [showInsertModal, setShowInsertModal] = useState(false);
 
   const isIndividualMode = mode === "individual" && selectedRecordId;
+
+  const handleInsertReRecord = (records: DataRecord[], label: string, tags: string[]) => {
+    addRecords(records, label, tags);
+    setShowInsertModal(false);
+  };
 
   const handleApplyResampling = () => {
     const ms = parseInt(resampleWindowMs, 10);
@@ -353,6 +361,13 @@ export default function OperationsTab() {
 
   return (
     <>
+      {showInsertModal && (
+        <InsertReRecordModal
+          onClose={() => setShowInsertModal(false)}
+          onInsert={handleInsertReRecord}
+        />
+      )}
+
       <div className="p-4 border-b bg-muted/50">
         {/* COMMENTED OUT: Individual mode display */}
         <p className="text-sm text-muted-foreground">
@@ -376,8 +391,27 @@ export default function OperationsTab() {
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
+          {/* Insert Re-Record Data Button */}
+          {!isIndividualMode && (
+            <div>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => setShowInsertModal(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Wstaw dane Re-Record
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Importuj dane z sesji nagrywania re-record
+              </p>
+            </div>
+          )}
+
           {!isIndividualMode && (
             <>
+              <Separator />
+              
               {/* Data Transformations - Applied to filtered records (or set records) */}
               <div>
                 <Label className="text-sm font-medium flex items-center gap-2">

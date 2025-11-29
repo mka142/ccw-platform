@@ -760,6 +760,73 @@ export function DashboardProvider({
     }));
   };
 
+  // Add new records from re-record data
+  const addRecords = (
+    records: DataRecord[],
+    label: string,
+    tags: string[]
+  ) => {
+    if (records.length === 0) return;
+
+    // Get unique record ID from the first record
+    const recordId = records[0].id;
+
+    // Add records to rawData
+    setRawData((prev) => {
+      // Check if records with this ID already exist
+      const existingIds = new Set(prev.map((r) => r.id));
+      if (existingIds.has(recordId)) {
+        // Remove old records with this ID
+        const filtered = prev.filter((r) => r.id !== recordId);
+        return [...filtered, ...records];
+      }
+      return [...prev, ...records];
+    });
+
+    // Add metadata to config
+    setConfig((prev) => {
+      if (currentSet) {
+        // Add to set
+        return {
+          ...prev,
+          sets: prev.sets.map((s) =>
+            s.name === currentSet
+              ? {
+                  ...s,
+                  recordMetadata: {
+                    ...s.recordMetadata,
+                    [recordId]: {
+                      id: recordId,
+                      label,
+                      tags,
+                      xMove: 0,
+                      yMove: 0,
+                      operations: [],
+                    },
+                  },
+                }
+              : s
+          ),
+        };
+      }
+      // Add to global
+      return {
+        ...prev,
+        recordMetadata: {
+          ...prev.recordMetadata,
+          [recordId]: {
+            id: recordId,
+            label,
+            tags,
+            xMove: 0,
+            yMove: 0,
+            operations: [],
+          },
+        },
+      };
+    });
+  };
+
   const value: DashboardContextValue = {
     config,
     mode,
@@ -798,6 +865,7 @@ export function DashboardProvider({
     toggleGlobalVisibility,
     setYAxisRange,
     clearYAxisRange,
+    addRecords,
   };
 
   return (

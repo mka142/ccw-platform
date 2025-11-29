@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import LeftPanel from '@/components/LeftPanel';
 import AudioChartUploader from '@/components/AudioChartUploader';
 import RightPanel from '@/components/RightPanel';
@@ -72,6 +73,26 @@ export default function AnalysisDashboard() {
                 <li><strong>Zakładka Operacje</strong> - transformacje danych i operacje statystyczne</li>
                 <li><strong>Zakładka Ustawienia</strong> - konfiguracja wykresu i widoku</li>
               </ul>
+            </section>
+
+            <section>
+              <h4 className="font-semibold text-base mb-2">📥 Wstaw dane Re-Record</h4>
+              <p className="mb-2">
+                W zakładce <strong>Operacje</strong> znajdziesz przycisk <strong>"Wstaw dane Re-Record"</strong>, 
+                który umożliwia import danych z sesji nagrywania re-record:
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li><strong>Format danych</strong> - JSON z tablicą punktów <code>{`{t: timestamp, v: value}`}</code></li>
+                <li><strong>Wprowadzanie</strong> - możesz wkleić JSON bezpośrednio lub załadować z pliku</li>
+                <li><strong>Synchronizacja timestampów</strong> - jeśli dane zawierają <code>recordingTimestampStart</code> 
+                    i projekt ma ustawiony <code>recordingStartTimestamp</code>, timestamps zostaną automatycznie 
+                    zsynchronizowane</li>
+                <li><strong>Etykieta i tagi</strong> - możesz ustawić własną etykietę i tagi dla importowanych danych</li>
+              </ul>
+              <p className="mt-2 text-muted-foreground">
+                Dane z re-record są automatycznie dodawane jako nowy rekord i mogą być używane razem z innymi 
+                danymi do analizy i porównań.
+              </p>
             </section>
 
             <section>
@@ -147,18 +168,26 @@ export default function AnalysisDashboard() {
           <div className="col-span-3 min-h-0">
             <LeftPanel 
               panelHeader={
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-start gap-3">
+                  <Image 
+                    src="/logo.png" 
+                    alt="Logo" 
+                    width={60}
+                    height={60}
+                    className="object-contain"
+                  />
+               
                   <div>
                     <h1 className="text-2xl font-bold">Panel Analizy</h1>
                     <p className="text-sm text-muted-foreground">
-                      Interaktywna wizualizacja danych
+                      Co czują Wrocławianie?
                     </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowInfoModal(true)}
-                    className="h-8 w-8"
+                    className="h-8 w-8 mb-auto"
                     title="Informacje o aplikacji"
                   >
                     <Info className="h-4 w-4" />

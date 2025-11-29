@@ -146,6 +146,8 @@ export interface DashboardContextValue extends DashboardState {
   // Y-axis range control
   setYAxisRange: (min: number, max: number) => void;
   clearYAxisRange: () => void;
+  // Add records from re-record data
+  addRecords: (records: DataRecord[], label: string, tags: string[]) => void;
 }
 
 // Helper type for chart data
