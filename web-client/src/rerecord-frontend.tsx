@@ -13,7 +13,8 @@ import NoZoomWrapper from "./components/NoZoomWrapper";
 import IosOnlySafari from "./lib/IosOnlySafari";
 import ReRecordPage from "./pages/ReRecordPage";
 
-import "./styles/globals.css";
+import "../styles/globals.css";
+import "./index.css";
 
 /**
  * Extract token from URL path
