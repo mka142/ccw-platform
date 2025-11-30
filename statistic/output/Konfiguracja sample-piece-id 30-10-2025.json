@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "resampling": {
+    "applied": false,
+    "windowMs": 1000,
+    "interpolationMethod": "linear"
+  },
+  "recordMetadata": {
+    "690344c86ead945dafe42662": {
+      "id": "690344c86ead945dafe42662",
+      "tags": [
+        "kobieta",
+        "15-19",
+        "wykszt. podstawowe",
+        "szko\u0142a muzyczna I stopnia",
+        "trudno powiedzie\u0107",
+        "cz\u0119st. s\u0142uch. kon: kilka razy w miesi\u0105cu",
+        "muzyka jazzowa",
+        "muzyka popularna"
+      ],
+      "xMove": 0,
+      "yMove": 0,
+      "operations": [],
+      "label": "3"
+    },
+    "690345526ead945dafe4266b": {
+      "id": "690345526ead945dafe4266b",
+      "tags": [],
+      "xMove": 0,
+      "yMove": 0,
+      "operations": []
+    }
+  },
+  "globalOperations": [],
+  "filterByIds": [],
+  "filterByTags": [],
+  "excludeTags": [],
+  "sets": [],
+  "visible": {
+    "records": true,
+    "sets": true
+  },
+  "recordingStartTimestamp": 0
+}
