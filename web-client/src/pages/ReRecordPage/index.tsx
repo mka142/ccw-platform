@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import {
   TENSION_RECORDER_CONTAINER_CLASSES,
@@ -15,17 +15,30 @@ interface ReRecordPageProps {
 
 export default function ReRecordPage({ token }: ReRecordPageProps) {
   const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isFinished, setIsFinished] = useState(false);
 
   // Send heartbeat to server every 10 seconds
   useEffect(() => {
     const sendHeartbeat = async () => {
       try {
-        await fetch(config.api.reRecordForm.heartbeat(token), {
+        const response = await fetch(config.api.reRecordForm.heartbeat(token), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
         });
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data?.isFinished) {
+            setIsFinished(true);
+            // Clear interval when finished
+            if (heartbeatIntervalRef.current) {
+              clearInterval(heartbeatIntervalRef.current);
+              heartbeatIntervalRef.current = null;
+            }
+          }
+        }
       } catch (error) {
         console.error("Error sending heartbeat:", error);
       }
@@ -64,6 +77,20 @@ export default function ReRecordPage({ token }: ReRecordPageProps) {
       console.error("Error sending data:", error);
     }
   };
+
+  // Show finished screen when recording is finished
+  if (isFinished) {
+    return (
+      <div className={TENSION_RECORDER_CONTAINER_CLASSES}>
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <h1 className="text-4xl font-bold text-white mb-4">Nagrywanie zakończone</h1>
+            <p className="text-xl text-white/90">Dziękujemy!</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={TENSION_RECORDER_CONTAINER_CLASSES}>

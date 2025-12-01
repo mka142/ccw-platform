@@ -99,6 +99,7 @@ router.post("/responses/:accessToken/heartbeat", async (req: Request, res: Respo
         data: {
           isActive: result.data?.isActive,
           lastHeartbeat: result.data?.lastHeartbeat,
+          isFinished: result.data?.recordingFinished || false,
         },
       });
     } else {

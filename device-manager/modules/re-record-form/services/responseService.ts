@@ -145,6 +145,7 @@ export class ResponseService {
     isActive: boolean;
     recordingTimestampStart: number | null;
     recordingFinished: boolean;
+    isFinished: boolean;
     lastHeartbeat: number | null;
     connectionLogs: { status: string; timestamp: number }[];
   } | null> {
@@ -162,6 +163,7 @@ export class ResponseService {
       isActive,
       recordingTimestampStart: response.recordingTimestampStart,
       recordingFinished: response.recordingFinished,
+      isFinished: response.recordingFinished,
       lastHeartbeat: response.lastHeartbeat,
       connectionLogs: response.connectionLogs || [],
     };
