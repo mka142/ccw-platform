@@ -43,7 +43,7 @@ export interface ResamplingConfig {
 }
 
 export interface GlobalOperation {
-  type: 'mean' | 'standardDeviation' | 'changes' | 'movingAverage' | 'quantize' | 'spearmanCorrelation' | 'rollingSpearman' | 'custom';
+  type: 'mean' | 'standardDeviation' | 'changes' | 'movingAverage' | 'quantize' | 'spearmanCorrelation' | 'rollingSpearman' | 'zScore' | 'minMaxNormalization' | 'custom';
   params: Record<string, number | string | boolean>;
   label?: string; // Optional label for the operation result
 }

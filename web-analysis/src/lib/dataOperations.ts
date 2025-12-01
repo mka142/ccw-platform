@@ -322,6 +322,89 @@ export function calculateStandardDeviation(
 }
 
 /**
+ * Calculate Z-score standardization across multiple record datasets
+ * Z-score transforms each dataset to have mean=0 and standard deviation=1
+ */
+export function calculateZScore(
+  datasets: Array<{ id: string; data: Array<{ timestamp: number; value: number }> }>
+): Array<{ id: string; data: Array<{ timestamp: number; value: number }> }> {
+  if (datasets.length === 0) return [];
+
+  return datasets.map(dataset => {
+    if (dataset.data.length === 0) {
+      return { id: dataset.id, data: [] };
+    }
+
+    // Calculate mean and standard deviation for this dataset
+    const values = dataset.data.map(d => d.value);
+    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+    
+    // Calculate variance and standard deviation
+    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+    const stdDev = Math.sqrt(variance);
+
+    // If standard deviation is 0, all values are the same, return zeros
+    if (stdDev === 0) {
+      return {
+        id: dataset.id,
+        data: dataset.data.map(d => ({ timestamp: d.timestamp, value: 0 }))
+      };
+    }
+
+    // Calculate Z-score: z = (x - mean) / stdDev
+    const zScoreData = dataset.data.map(d => ({
+      timestamp: d.timestamp,
+      value: (d.value - mean) / stdDev
+    }));
+
+    return {
+      id: dataset.id,
+      data: zScoreData
+    };
+  });
+}
+
+/**
+ * Calculate Min-Max normalization across multiple record datasets
+ * Normalizes each dataset independently to [0, 1] range
+ */
+export function calculateMinMaxNormalization(
+  datasets: Array<{ id: string; data: Array<{ timestamp: number; value: number }> }>
+): Array<{ id: string; data: Array<{ timestamp: number; value: number }> }> {
+  if (datasets.length === 0) return [];
+
+  return datasets.map(dataset => {
+    if (dataset.data.length === 0) {
+      return { id: dataset.id, data: [] };
+    }
+
+    // Find min and max values in this dataset
+    const values = dataset.data.map(d => d.value);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    // If all values are the same (min === max), return 0.5 for all values
+    if (min === max) {
+      return {
+        id: dataset.id,
+        data: dataset.data.map(d => ({ timestamp: d.timestamp, value: 0.5 }))
+      };
+    }
+
+    // Normalize to [0, 1] range: normalized = (x - min) / (max - min)
+    const normalizedData = dataset.data.map(d => ({
+      timestamp: d.timestamp,
+      value: (d.value - min) / (max - min)
+    }));
+
+    return {
+      id: dataset.id,
+      data: normalizedData
+    };
+  });
+}
+
+/**
  * Calculate changes (derivative/diff) between consecutive values
  * Returns the difference between each value and the previous value
  * First value is omitted since there's no previous value to compare
@@ -720,6 +803,12 @@ export function applyGlobalOperation(
         datasets,
         windowSize
       );
+    }
+    case 'zScore': {
+      return calculateZScore(datasets);
+    }
+    case 'minMaxNormalization': {
+      return calculateMinMaxNormalization(datasets);
     }
     default:
       return datasets;

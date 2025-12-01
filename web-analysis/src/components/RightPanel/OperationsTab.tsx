@@ -90,6 +90,19 @@ export default function OperationsTab() {
     clearResampling();
   };
 
+  const handleApplyZScore = () => {
+    if (!effectiveConfig.resampling.applied) {
+      alert(
+        "Resampling musi być zastosowany przed użyciem normalizacji Z-score"
+      );
+      return;
+    }
+    addGlobalOperation({
+      type: "zScore",
+      params: {},
+    });
+  };
+
   const handleApplyMean = () => {
     if (!effectiveConfig.resampling.applied) {
       alert(
@@ -112,6 +125,19 @@ export default function OperationsTab() {
     }
     addGlobalOperation({
       type: "standardDeviation",
+      params: {},
+    });
+  };
+
+  const handleApplyMinMaxNormalization = () => {
+    if (!effectiveConfig.resampling.applied) {
+      alert(
+        "Resampling musi być zastosowany przed użyciem normalizacji Min-Max"
+      );
+      return;
+    }
+    addGlobalOperation({
+      type: "minMaxNormalization",
       params: {},
     });
   };
@@ -996,6 +1022,101 @@ export default function OperationsTab() {
             </>
           )}
 
+          {/* Z-Score Normalization - Only in Global Mode with Resampling */}
+          {!isIndividualMode && (
+            <>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Normalizacja (Z-Score)
+                  </Label>
+                  <InfoModal title="Normalizacja Z-Score (Standardyzacja)">
+                    <p className="font-semibold">Co to jest?</p>
+                    <p>
+                      Normalizacja Z-score (standardyzacja) przekształca każdy rekord danych tak,
+                      aby miał średnią równą 0 i odchylenie standardowe równe 1.
+                      Wszystkie wartości są przeskalowane względem własnej średniej i odchylenia standardowego.
+                    </p>
+
+                    <p className="font-semibold mt-3">Jak działa?</p>
+                    <p>
+                      Dla każdego rekordu danych, najpierw obliczana jest średnia (μ) i odchylenie
+                      standardowe (σ) wszystkich wartości w tym rekordzie. Następnie każda wartość
+                      jest przekształcana według wzoru:
+                    </p>
+                    <code className="block bg-muted p-2 rounded mt-1">
+                      z = (x - μ) / σ
+                    </code>
+                    <p className="mt-1">
+                      gdzie:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li><code>x</code> - oryginalna wartość</li>
+                      <li><code>μ</code> - średnia wszystkich wartości w rekordzie</li>
+                      <li><code>σ</code> - odchylenie standardowe wszystkich wartości w rekordzie</li>
+                      <li><code>z</code> - znormalizowana wartość (Z-score)</li>
+                    </ul>
+
+                    <p className="font-semibold mt-3">Właściwości Z-score:</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li><strong>Średnia = 0:</strong> Po normalizacji średnia każdego rekordu wynosi 0</li>
+                      <li><strong>Odchylenie standardowe = 1:</strong> Po normalizacji odchylenie standardowe każdego rekordu wynosi 1</li>
+                      <li><strong>Zachowanie kształtu:</strong> Relatywne różnice między wartościami pozostają zachowane</li>
+                      <li><strong>Skalowanie:</strong> Wszystkie rekordy są przeskalowane do tej samej jednostki (liczby odchyleń standardowych od średniej)</li>
+                    </ul>
+
+                    <p className="font-semibold mt-3">Kiedy używać?</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>Gdy chcesz porównać rekordy o różnych jednostkach i skalach</li>
+                      <li>Gdy chcesz znormalizować dane przed analizą statystyczną</li>
+                      <li>Gdy chcesz zidentyfikować wartości odstające (outliers) - wartości |z| &gt; 2 lub 3 są nietypowe</li>
+                      <li>Gdy chcesz przygotować dane do algorytmów uczenia maszynowego wymagających normalizacji</li>
+                      <li>Gdy chcesz zobaczyć, ile odchyleń standardowych każda wartość odchyla się od średniej</li>
+                    </ul>
+
+                    <p className="font-semibold mt-3">Przykład:</p>
+                    <p>Oryginalne dane: [10, 20, 30, 40, 50]</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
+                      <li>Średnia μ = 30</li>
+                      <li>Odchylenie standardowe σ ≈ 15.81</li>
+                      <li>Z-score: [-1.26, -0.63, 0, 0.63, 1.26]</li>
+                    </ul>
+                    <p className="mt-2 text-sm">
+                      Wartości ujemne są poniżej średniej, wartości dodatnie powyżej średniej.
+                      Wartość bezwzględna Z-score pokazuje, ile odchyleń standardowych dana wartość
+                      odchyla się od średniej.
+                    </p>
+
+                    <p className="font-semibold mt-3">Wymagania:</p>
+                    <p>
+                      Wymaga włączonego resamplingu, aby wszystkie serie miały
+                      te same znaczniki czasowe. Z-score jest obliczany osobno dla każdego rekordu
+                      na podstawie jego własnej średniej i odchylenia standardowego.
+                    </p>
+                  </InfoModal>
+                </div>
+                <div className="space-y-2 mt-2">
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={handleApplyZScore}
+                    disabled={!effectiveConfig.resampling.applied}
+                  >
+                    Zastosuj Normalizację Z-Score
+                  </Button>
+                  {!effectiveConfig.resampling.applied && (
+                    <p className="text-xs text-muted-foreground">
+                      Zastosuj resampling aby włączyć normalizację Z-score
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+            </>
+          )}
+
           {/* Statistical Operations - Only in Global Mode with Resampling */}
           {!isIndividualMode && (
             <>
@@ -1114,6 +1235,95 @@ export default function OperationsTab() {
                         </li>
                         <li>Do oceny jakości/zgodności wielu czujników</li>
                       </ul>
+                    </InfoModal>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      className="flex-1 justify-start"
+                      variant="outline"
+                      onClick={handleApplyMinMaxNormalization}
+                      disabled={!effectiveConfig.resampling.applied}
+                    >
+                      Normalizacja Min-Max
+                    </Button>
+                    <InfoModal title="Normalizacja Min-Max">
+                      <p className="font-semibold">Co to jest?</p>
+                      <p>
+                        Normalizacja Min-Max przekształca każdy rekord danych do zakresu [0, 1],
+                        gdzie wartość minimalna w rekordzie staje się 0, a maksymalna staje się 1.
+                        Wszystkie wartości pośrednie są proporcjonalnie przeskalowane.
+                      </p>
+
+                      <p className="font-semibold mt-3">Jak działa?</p>
+                      <p>
+                        Dla każdego rekordu danych, najpierw znajdujemy minimalną (min) i maksymalną (max)
+                        wartość w tym rekordzie. Następnie każda wartość jest przekształcana według wzoru:
+                      </p>
+                      <code className="block bg-muted p-2 rounded mt-1">
+                        normalized = (x - min) / (max - min)
+                      </code>
+                      <p className="mt-1">
+                        gdzie:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li><code>x</code> - oryginalna wartość</li>
+                        <li><code>min</code> - minimalna wartość w rekordzie</li>
+                        <li><code>max</code> - maksymalna wartość w rekordzie</li>
+                        <li><code>normalized</code> - znormalizowana wartość w zakresie [0, 1]</li>
+                      </ul>
+
+                      <p className="font-semibold mt-3">Właściwości Min-Max:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li><strong>Zakres [0, 1]:</strong> Wszystkie wartości po normalizacji mieszczą się w zakresie od 0 do 1</li>
+                        <li><strong>Zachowanie proporcji:</strong> Relatywne różnice między wartościami pozostają zachowane</li>
+                        <li><strong>Zachowanie kształtu:</strong> Kształt wykresu pozostaje taki sam, tylko skala się zmienia</li>
+                        <li><strong>Niezależna normalizacja:</strong> Każdy rekord jest normalizowany osobno na podstawie własnych wartości min/max</li>
+                      </ul>
+
+                      <p className="font-semibold mt-3">Kiedy używać?</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li>Gdy chcesz porównać rekordy o różnych zakresach wartości na tej samej skali</li>
+                        <li>Gdy potrzebujesz danych w zakresie [0, 1] dla algorytmów uczenia maszynowego</li>
+                        <li>Gdy chcesz zachować relatywne proporcje wartości w każdym rekordzie</li>
+                        <li>Gdy chcesz znormalizować dane bez zmiany kształtu wykresu</li>
+                        <li>Gdy chcesz przygotować dane do dalszej analizy statystycznej</li>
+                      </ul>
+
+                      <p className="font-semibold mt-3">Przykład:</p>
+                      <p>Oryginalne dane: [10, 20, 30, 40, 50]</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
+                        <li>min = 10</li>
+                        <li>max = 50</li>
+                        <li>Zakres: 50 - 10 = 40</li>
+                      </ul>
+                      <p className="mt-2 text-sm">
+                        Znormalizowane wartości:
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
+                        <li>10 → (10-10)/(50-10) = 0.0</li>
+                        <li>20 → (20-10)/(50-10) = 0.25</li>
+                        <li>30 → (30-10)/(50-10) = 0.5</li>
+                        <li>40 → (40-10)/(50-10) = 0.75</li>
+                        <li>50 → (50-10)/(50-10) = 1.0</li>
+                      </ul>
+
+                      <p className="font-semibold mt-3">Różnica między Z-Score a Min-Max:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li><strong>Z-Score:</strong> Średnia = 0, odchylenie standardowe = 1, wartości mogą być ujemne</li>
+                        <li><strong>Min-Max:</strong> Zakres [0, 1], wszystkie wartości nieujemne, zachowuje proporcje względne</li>
+                      </ul>
+                      <p className="mt-2 text-sm">
+                        Min-Max jest lepsze gdy potrzebujesz wartości w zakresie [0, 1], 
+                        podczas gdy Z-Score jest lepsze gdy ważna jest odległość od średniej w jednostkach odchylenia standardowego.
+                      </p>
+
+                      <p className="font-semibold mt-3">Wymagania:</p>
+                      <p>
+                        Wymaga włączonego resamplingu, aby wszystkie serie miały
+                        te same znaczniki czasowe. Min-Max jest obliczane osobno dla każdego rekordu
+                        na podstawie jego własnych wartości min i max.
+                      </p>
                     </InfoModal>
                   </div>
 
