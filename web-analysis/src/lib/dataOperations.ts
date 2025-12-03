@@ -1,4 +1,6 @@
 import { DataRecord, RecordOperation, GlobalOperation, InterpolationMethod } from './types';
+import { toDecimal, fromDecimal, decimalMin, decimalMax, safeDivide, decimalMean, decimalStdDev, roundToStep } from './decimalUtils';
+import Decimal from 'decimal.js';
 
 /**
  * Normalize data to a specific range
@@ -11,21 +13,33 @@ export function normalizeData(
   if (data.length === 0) return data;
 
   const values = data.map(d => d.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const min = fromDecimal(decimalMin(values));
+  const max = fromDecimal(decimalMax(values));
   
   if (min === max) {
     return data.map(d => ({ ...d, value: minRange }));
   }
 
-  return data.map(d => ({
-    timestamp: d.timestamp,
-    value: minRange + ((d.value - min) / (max - min)) * (maxRange - minRange)
-  }));
+  // Use Decimal for precise normalization calculations
+  const decMinRange = toDecimal(minRange);
+  const decMaxRange = toDecimal(maxRange);
+  const decMin = toDecimal(min);
+  const decMax = toDecimal(max);
+  const rangeDiff = decMax.minus(decMin);
+  const outputRange = decMaxRange.minus(decMinRange);
+
+  return data.map(d => {
+    const decValue = toDecimal(d.value);
+    const normalized = safeDivide(decValue.minus(decMin), rangeDiff).times(outputRange).plus(decMinRange);
+    return {
+      timestamp: d.timestamp,
+      value: fromDecimal(normalized)
+    };
+  });
 }
 
 /**
- * Linear interpolation between two points
+ * Linear interpolation between two points using Decimal precision
  */
 function linearInterpolate(
   x: number,
@@ -35,7 +49,19 @@ function linearInterpolate(
   y1: number
 ): number {
   if (x1 === x0) return y0;
-  return y0 + ((x - x0) * (y1 - y0)) / (x1 - x0);
+  
+  // Use Decimal precision for interpolation calculation
+  const decX = toDecimal(x);
+  const decX0 = toDecimal(x0);
+  const decY0 = toDecimal(y0);
+  const decX1 = toDecimal(x1);
+  const decY1 = toDecimal(y1);
+  
+  const numerator = decX.minus(decX0).times(decY1.minus(decY0));
+  const denominator = decX1.minus(decX0);
+  const interpolated = decY0.plus(safeDivide(numerator, denominator));
+  
+  return fromDecimal(interpolated);
 }
 
 /**
@@ -264,7 +290,7 @@ export function calculateMean(
 
   const timestamps = Array.from(timestampSet).sort((a, b) => a - b);
 
-  // For each timestamp, calculate mean of available values
+  // For each timestamp, calculate mean of available values using Decimal precision
   return timestamps.map(timestamp => {
     const values: number[] = [];
     datasets.forEach(dataset => {
@@ -273,7 +299,7 @@ export function calculateMean(
     });
 
     const mean = values.length > 0
-      ? values.reduce((sum, v) => sum + v, 0) / values.length
+      ? fromDecimal(decimalMean(values))
       : 0;
 
     return { timestamp, value: mean };
@@ -296,7 +322,7 @@ export function calculateStandardDeviation(
 
   const timestamps = Array.from(timestampSet).sort((a, b) => a - b);
 
-  // For each timestamp, calculate standard deviation of available values
+  // For each timestamp, calculate standard deviation of available values using Decimal precision
   return timestamps.map(timestamp => {
     const values: number[] = [];
     datasets.forEach(dataset => {
@@ -308,14 +334,8 @@ export function calculateStandardDeviation(
       return { timestamp, value: 0 };
     }
 
-    // Calculate mean
-    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-
-    // Calculate variance
-    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
-
-    // Standard deviation is square root of variance
-    const stdDev = Math.sqrt(variance);
+    // Use Decimal precision for standard deviation calculation
+    const stdDev = fromDecimal(decimalStdDev(values));
 
     return { timestamp, value: stdDev };
   });
@@ -324,6 +344,7 @@ export function calculateStandardDeviation(
 /**
  * Calculate Z-score standardization across multiple record datasets
  * Z-score transforms each dataset to have mean=0 and standard deviation=1
+ * Each dataset is normalized independently using its own mean and std dev
  */
 export function calculateZScore(
   datasets: Array<{ id: string; data: Array<{ timestamp: number; value: number }> }>
@@ -335,13 +356,10 @@ export function calculateZScore(
       return { id: dataset.id, data: [] };
     }
 
-    // Calculate mean and standard deviation for this dataset
+    // Calculate mean and standard deviation for this dataset using Decimal precision
     const values = dataset.data.map(d => d.value);
-    const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-    
-    // Calculate variance and standard deviation
-    const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
-    const stdDev = Math.sqrt(variance);
+    const mean = fromDecimal(decimalMean(values));
+    const stdDev = fromDecimal(decimalStdDev(values));
 
     // If standard deviation is 0, all values are the same, return zeros
     if (stdDev === 0) {
@@ -351,11 +369,17 @@ export function calculateZScore(
       };
     }
 
-    // Calculate Z-score: z = (x - mean) / stdDev
-    const zScoreData = dataset.data.map(d => ({
-      timestamp: d.timestamp,
-      value: (d.value - mean) / stdDev
-    }));
+    // Calculate Z-score using Decimal precision: z = (x - mean) / stdDev
+    const decMean = toDecimal(mean);
+    const decStdDev = toDecimal(stdDev);
+    const zScoreData = dataset.data.map(d => {
+      const decValue = toDecimal(d.value);
+      const zScore = safeDivide(decValue.minus(decMean), decStdDev);
+      return {
+        timestamp: d.timestamp,
+        value: fromDecimal(zScore)
+      };
+    });
 
     return {
       id: dataset.id,
@@ -378,10 +402,12 @@ export function calculateMinMaxNormalization(
       return { id: dataset.id, data: [] };
     }
 
-    // Find min and max values in this dataset
+    // Find min and max values in this dataset using Decimal precision
     const values = dataset.data.map(d => d.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
+    const decMin = decimalMin(values);
+    const decMax = decimalMax(values);
+    const min = fromDecimal(decMin);
+    const max = fromDecimal(decMax);
 
     // If all values are the same (min === max), return 0.5 for all values
     if (min === max) {
@@ -391,11 +417,16 @@ export function calculateMinMaxNormalization(
       };
     }
 
-    // Normalize to [0, 1] range: normalized = (x - min) / (max - min)
-    const normalizedData = dataset.data.map(d => ({
-      timestamp: d.timestamp,
-      value: (d.value - min) / (max - min)
-    }));
+    // Normalize to [0, 1] range using Decimal precision: normalized = (x - min) / (max - min)
+    const rangeDiff = decMax.minus(decMin);
+    const normalizedData = dataset.data.map(d => {
+      const decValue = toDecimal(d.value);
+      const normalized = safeDivide(decValue.minus(decMin), rangeDiff);
+      return {
+        timestamp: d.timestamp,
+        value: fromDecimal(normalized)
+      };
+    });
 
     return {
       id: dataset.id,
@@ -429,7 +460,7 @@ export function calculateChanges(
 
 /**
  * Quantize data values to a specific precision step
- * Rounds values to the nearest multiple of the step
+ * Rounds values to the nearest multiple of the step using Decimal precision
  */
 export function quantizeData(
   data: Array<{ timestamp: number; value: number }>,
@@ -437,10 +468,13 @@ export function quantizeData(
 ): Array<{ timestamp: number; value: number }> {
   if (data.length === 0 || step <= 0) return data;
 
-  return data.map(d => ({
-    timestamp: d.timestamp,
-    value: Math.round(d.value / step) * step
-  }));
+  return data.map(d => {
+    const quantized = roundToStep(d.value, step);
+    return {
+      timestamp: d.timestamp,
+      value: fromDecimal(quantized)
+    };
+  });
 }
 
 /**
@@ -468,61 +502,67 @@ export function calculateMovingAverage(
   
   switch (algorithm) {
     case 'SMA': {
-      // Simple Moving Average - arithmetic mean of last N values
+      // Simple Moving Average - arithmetic mean of last N values using Decimal precision
       for (let i = windowSize - 1; i < data.length; i++) {
-        let sum = 0;
+        const windowValues: number[] = [];
         for (let j = i - windowSize + 1; j <= i; j++) {
-          sum += data[j].value;
+          windowValues.push(data[j].value);
         }
+        const mean = fromDecimal(decimalMean(windowValues));
         result.push({
           timestamp: data[i].timestamp,
-          value: sum / windowSize
+          value: mean
         });
       }
       break;
     }
     
     case 'WMA': {
-      // Weighted Moving Average - more recent values have higher weight
+      // Weighted Moving Average - more recent values have higher weight using Decimal precision
       const weights = Array.from({ length: windowSize }, (_, i) => i + 1);
       const weightSum = weights.reduce((sum, w) => sum + w, 0);
+      const decWeightSum = toDecimal(weightSum);
       
       for (let i = windowSize - 1; i < data.length; i++) {
-        let weightedSum = 0;
+        let weightedSum = new Decimal(0);
         for (let j = 0; j < windowSize; j++) {
-          weightedSum += data[i - windowSize + 1 + j].value * weights[j];
+          const value = toDecimal(data[i - windowSize + 1 + j].value);
+          const weight = toDecimal(weights[j]);
+          weightedSum = weightedSum.plus(value.times(weight));
         }
+        const avg = weightedSum.dividedBy(decWeightSum);
         result.push({
           timestamp: data[i].timestamp,
-          value: weightedSum / weightSum
+          value: fromDecimal(avg)
         });
       }
       break;
     }
     
     case 'RMA': {
-      // Running Moving Average (Smoothed Moving Average)
+      // Running Moving Average (Smoothed Moving Average) using Decimal precision
       // Formula: RMA[i] = (RMA[i-1] * (N-1) + value[i]) / N
       // First value is SMA of first N values
-      let rma = 0;
-      
-      // Calculate initial SMA for first window
+      const initialValues: number[] = [];
       for (let i = 0; i < windowSize; i++) {
-        rma += data[i].value;
+        initialValues.push(data[i].value);
       }
-      rma = rma / windowSize;
+      let rma = decimalMean(initialValues);
+      const decWindowSize = toDecimal(windowSize);
+      const decWindowSizeMinusOne = toDecimal(windowSize - 1);
       
       result.push({
         timestamp: data[windowSize - 1].timestamp,
-        value: rma
+        value: fromDecimal(rma)
       });
       
       // Apply RMA formula for remaining values
       for (let i = windowSize; i < data.length; i++) {
-        rma = (rma * (windowSize - 1) + data[i].value) / windowSize;
+        const decValue = toDecimal(data[i].value);
+        rma = rma.times(decWindowSizeMinusOne).plus(decValue).dividedBy(decWindowSize);
         result.push({
           timestamp: data[i].timestamp,
-          value: rma
+          value: fromDecimal(rma)
         });
       }
       break;
