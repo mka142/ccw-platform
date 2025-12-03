@@ -304,11 +304,11 @@ export function DashboardProvider({
     // Otherwise, combine global and sets data based on visibility
     const result: ProcessedRecord[] = [];
 
-    if (config.visible.records) {
+    if (config.visible.records && globalProcessedData) {
       result.push(...globalProcessedData);
     }
 
-    if (config.visible.sets) {
+    if (config.visible.sets && setsProcessedData) {
       result.push(...setsProcessedData);
     }
 

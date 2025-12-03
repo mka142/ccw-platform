@@ -61,6 +61,7 @@ export function useDataProcessor(): UseDataProcessorReturn {
       } else if (type === "ERROR") {
         const pendingRequest = pendingRequests.get(requestId);
         if (pendingRequest) {
+          console.error("[useDataProcessor] Worker error:", payload);
           pendingRequest.reject(new Error(payload));
           pendingRequests.delete(requestId);
           
