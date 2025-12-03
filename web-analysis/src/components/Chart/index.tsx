@@ -251,9 +251,14 @@ export default function Chart({
       data: typeof processedData
     ): ChartDataSeries[] => {
       // Find the Y-axis range from all data points
+      // Use reduce instead of Math.min/max(...array) to avoid stack overflow with large arrays
       const allYValues = data.flatMap((r) => r.data.map((d) => d.value));
-      const minY = Math.min(...allYValues);
-      const maxY = Math.max(...allYValues);
+      const minY = allYValues.length > 0
+        ? allYValues.reduce((min, val) => (val < min ? val : min), allYValues[0])
+        : 0;
+      const maxY = allYValues.length > 0
+        ? allYValues.reduce((max, val) => (val > max ? val : max), allYValues[0])
+        : 0;
 
       // Add vertical line at current time
       dataSeries.push({
