@@ -19,8 +19,11 @@ import {
   InterpolationMethod,
   ChartVisualizationMode,
   DataSet,
+  DataCache,
+  DataCacheEntry,
 } from "@/lib/types";
 import { useDataProcessor } from "@/hooks/useDataProcessor";
+import { OPERATION_DEFAULTS } from "@/lib/operationDefaults";
 
 // Utility function to parse prefixed record IDs
 export interface ParsedRecordId {
@@ -56,6 +59,13 @@ export function parseRecordId(prefixedId: string): ParsedRecordId {
     originalId,
     fullId: prefixedId,
   };
+}
+
+// Generate ObjectId-like change key (timestamp + random string)
+function generateChangeKey(): string {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 15);
+  return `${timestamp}${random}`;
 }
 
 const DashboardContext = createContext<DashboardContextValue | undefined>(
@@ -116,11 +126,127 @@ export function DashboardProvider({
     ProcessedRecord[] | null
   >(null);
 
+  // Data cache for storing processed data after resampling
+  const [dataCache, setDataCache] = useState<DataCache>({});
+
+  // Helper function to generate cache key from operations with all parameters
+  const generateCacheKey = (
+    resampling: { applied: boolean; windowMs: number },
+    globalOperations: GlobalOperation[]
+  ): string[] => {
+    const operations: string[] = [];
+    
+    // Include resampling with window time
+    if (resampling.applied) {
+      operations.push(`resampling-${resampling.windowMs}ms`);
+    }
+    
+    // Include each global operation with its parameters
+    globalOperations.forEach((op) => {
+      let operationKey : string = op.type
+      
+      // Add parameters based on operation type
+      switch (op.type) {
+        case 'movingAverage':
+          const windowSize = typeof op.params.windowSize === 'number' 
+            ? op.params.windowSize 
+            : OPERATION_DEFAULTS.movingAverage.windowSize;
+          const algorithm = (op.params.algorithm as string) || OPERATION_DEFAULTS.movingAverage.algorithm;
+          operationKey = `${op.type}-window${windowSize}-${algorithm}`;
+          break;
+          
+        case 'quantize':
+          const step = typeof op.params.step === 'number' 
+            ? op.params.step 
+            : OPERATION_DEFAULTS.quantize.step;
+          operationKey = `${op.type}-step${step}`;
+          break;
+          
+        case 'spearmanCorrelation':
+          const startTime = typeof op.params.startTime === 'number' 
+            ? op.params.startTime 
+            : OPERATION_DEFAULTS.spearmanCorrelation.startTime;
+          // Normalize endTime: use "max" if not provided or if explicitly set to MAX_SAFE_INTEGER
+          const endTimeValue = typeof op.params.endTime === 'number' 
+            ? op.params.endTime 
+            : OPERATION_DEFAULTS.spearmanCorrelation.endTime;
+          const endTime = endTimeValue === Number.MAX_SAFE_INTEGER ? 'max' : endTimeValue;
+          const resamplingWindowMs = typeof op.params.resamplingWindowMs === 'number' 
+            ? op.params.resamplingWindowMs 
+            : OPERATION_DEFAULTS.spearmanCorrelation.resamplingWindowMs;
+          operationKey = `${op.type}-start${startTime}-end${endTime}-window${resamplingWindowMs}`;
+          break;
+          
+        case 'rollingSpearman':
+          const rollingWindow = typeof op.params.windowSize === 'number' 
+            ? op.params.windowSize 
+            : OPERATION_DEFAULTS.rollingSpearman.windowSize;
+          operationKey = `${op.type}-window${rollingWindow}`;
+          break;
+          
+        // Operations without parameters or with default behavior
+        case 'mean':
+        case 'standardDeviation':
+        case 'changes':
+        case 'zScore':
+        case 'minMaxNormalization':
+        case 'custom':
+        default:
+          // For operations without parameters, just use the type
+          // If there are any params, include them as a sorted string
+          const paramKeys = Object.keys(op.params).sort();
+          if (paramKeys.length > 0) {
+            const paramString = paramKeys
+              .map(key => `${key}:${op.params[key]}`)
+              .join('-');
+            operationKey = `${op.type}-${paramString}`;
+          }
+          break;
+      }
+      
+      operations.push(operationKey);
+    });
+    
+    return operations;
+  };
+
+  // Helper function to check if cache is valid for given operations
+  const isCacheValid = (
+    cacheEntry: DataCacheEntry | undefined,
+    operations: string[]
+  ): boolean => {
+    if (!cacheEntry) return false;
+    if (cacheEntry.appliedOperations.length !== operations.length) return false;
+    return cacheEntry.appliedOperations.every(
+      (op, idx) => op === operations[idx]
+    );
+  };
+
   // Get current set configuration
   const currentSetConfig = useMemo(() => {
     if (!currentSet) return null;
     return config.sets.find((s) => s.name === currentSet) || null;
   }, [currentSet, config.sets]);
+
+  // Memoized current set effective config for change detection
+  const currentSetEffectiveConfig = useMemo(() => {
+    if (!currentSetConfig) return null;
+    return {
+      resampling: currentSetConfig.resampling,
+      recordMetadata: currentSetConfig.recordMetadata,
+      globalOperations: currentSetConfig.globalOperations,
+      filterByIds: currentSetConfig.filterByIds,
+      filterByTags: currentSetConfig.filterByTags || [],
+      excludeTags: currentSetConfig.excludeTags || [],
+    };
+  }, [
+    currentSetConfig?.resampling,
+    currentSetConfig?.recordMetadata,
+    currentSetConfig?.globalOperations,
+    currentSetConfig?.filterByIds,
+    currentSetConfig?.filterByTags,
+    currentSetConfig?.excludeTags,
+  ]);
 
   // Get effective configuration (set-specific or global)
   const effectiveResampling = currentSetConfig?.resampling || config.resampling;
@@ -185,30 +311,71 @@ export function DashboardProvider({
   ]);
 
   // Create a complete effective config object for easy consumption
+  // Includes all properties needed for processing
   const effectiveConfig = useMemo(
     () => ({
       resampling: effectiveResampling,
       recordMetadata: effectiveRecordMetadata,
       globalOperations: effectiveGlobalOperations,
       filterByIds: effectiveFilterByIds,
+      filterByTags: effectiveFilterByTags,
+      excludeTags: effectiveExcludeTags,
     }),
     [
       effectiveResampling,
       effectiveRecordMetadata,
       effectiveGlobalOperations,
       effectiveFilterByIds,
+      effectiveFilterByTags,
+      effectiveExcludeTags,
     ]
   );
 
-  // Process global data in Web Worker
-  const recordMetadataStr = JSON.stringify(config.recordMetadata);
-  const resamplingStr = JSON.stringify(config.resampling);
-  const globalOperationsStr = JSON.stringify(config.globalOperations);
-  const filterByIdsStr = JSON.stringify(config.filterByIds);
-  const filterByTagsStr = JSON.stringify(config.filterByTags);
-  const excludeTagsStr = JSON.stringify(config.excludeTags);
+  // Change state keys for triggering data processing
+  const [globalChangeKey, setGlobalChangeKey] = useState<string>(generateChangeKey());
+  const [currentSetChangeKey, setCurrentSetChangeKey] = useState<string>(generateChangeKey());
+  const [allSetsChangeKey, setAllSetsChangeKey] = useState<string>(generateChangeKey());
 
+  // Update global change key when global config changes
   useEffect(() => {
+    setGlobalChangeKey(generateChangeKey());
+  }, [
+    config.resampling,
+    config.recordMetadata,
+    config.globalOperations,
+    config.filterByIds,
+    config.filterByTags,
+    config.excludeTags,
+  ]);
+
+  // Update current set change key when current set config changes
+  useEffect(() => {
+    if (!currentSet || !currentSetEffectiveConfig) {
+      return;
+    }
+    setCurrentSetChangeKey(generateChangeKey());
+  }, [currentSet, currentSetEffectiveConfig]);
+
+  // Update all sets change key when any set changes
+  useEffect(() => {
+    setAllSetsChangeKey(generateChangeKey());
+  }, [config.sets]);
+
+  // Process global data in Web Worker with caching
+  useEffect(() => {
+    // Generate cache key
+    const cacheKey = "global";
+    const operations = generateCacheKey(config.resampling, config.globalOperations);
+    const cachedEntry = dataCache[cacheKey];
+
+    // Check if cache is valid
+    if (config.resampling.applied && isCacheValid(cachedEntry, operations)) {
+      console.log("Using cached data for global");
+      setGlobalProcessedData(cachedEntry.data);
+      return;
+    }
+
+    // Process data
     processDataWorker({
       rawData,
       recordMetadata: config.recordMetadata,
@@ -219,22 +386,23 @@ export function DashboardProvider({
       excludeTags: config.excludeTags,
       idPrefix: "global",
     })
-      .then(setGlobalProcessedData)
+      .then((data) => {
+        setGlobalProcessedData(data);
+        // Store in cache if resampling is applied
+        if (config.resampling.applied) {
+          setDataCache((prev) => ({
+            ...prev,
+            [cacheKey]: {
+              appliedOperations: operations,
+              data,
+            },
+          }));
+        }
+      })
       .catch(console.error);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    rawData,
-    recordMetadataStr,
-    resamplingStr,
-    globalOperationsStr,
-    filterByIdsStr,
-    filterByTagsStr,
-    excludeTagsStr,
-  ]);
+  }, [rawData, globalChangeKey]);
 
-  // Process sets data in Web Worker
-  const setsStr = JSON.stringify(config.sets);
-
+  // Process sets data in Web Worker with caching
   useEffect(() => {
     if (currentSet) {
       // If editing a set, skip processing all sets to avoid duplication
@@ -245,6 +413,19 @@ export function DashboardProvider({
       const allSetsData: ProcessedRecord[] = [];
       for (const set of config.sets) {
         if (set.visible) {
+          // Generate cache key
+          const cacheKey = set.name;
+          const operations = generateCacheKey(set.resampling, set.globalOperations);
+          const cachedEntry = dataCache[cacheKey];
+
+          // Check if cache is valid
+          if (set.resampling.applied && isCacheValid(cachedEntry, operations)) {
+            console.log(`Using cached data for set: ${set.name}`);
+            allSetsData.push(...cachedEntry.data);
+            continue;
+          }
+
+          // Process data
           const setData = await processDataWorker({
             rawData,
             recordMetadata: set.recordMetadata,
@@ -256,41 +437,75 @@ export function DashboardProvider({
             idPrefix: set.name,
           });
           allSetsData.push(...setData);
+
+          // Store in cache if resampling is applied
+          if (set.resampling.applied) {
+            setDataCache((prev) => ({
+              ...prev,
+              [cacheKey]: {
+                appliedOperations: operations,
+                data: setData,
+              },
+            }));
+          }
         }
       }
       setSetsProcessedData(allSetsData);
     };
     processSets().catch(console.error);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.sets, currentSet, rawData]);
+  }, [rawData, allSetsChangeKey, currentSet]);
 
-  // Process current set data in Web Worker
+  // Process current set data in Web Worker with caching
   useEffect(() => {
-    if (!currentSet) {
+    if (!currentSet || !currentSetConfig) {
       setCurrentSetProcessedData(null);
       return;
     }
 
-    const currentSetData = config.sets.find((s) => s.name === currentSet);
-    if (!currentSetData) {
-      setCurrentSetProcessedData(null);
+    // Generate cache key
+    const cacheKey = currentSetConfig.name;
+    const operations = generateCacheKey(
+      currentSetConfig.resampling,
+      currentSetConfig.globalOperations
+    );
+    const cachedEntry = dataCache[cacheKey];
+
+    // Check if cache is valid
+    if (
+      currentSetConfig.resampling.applied &&
+      isCacheValid(cachedEntry, operations)
+    ) {
+      console.log(`Using cached data for current set: ${currentSet}`);
+      setCurrentSetProcessedData(cachedEntry.data);
       return;
     }
 
+    // Process data
     processDataWorker({
       rawData,
-      recordMetadata: currentSetData.recordMetadata,
-      resampling: currentSetData.resampling,
-      globalOperations: currentSetData.globalOperations,
-      filterByIds: currentSetData.filterByIds,
-      filterByTags: currentSetData.filterByTags || [], // Fallback for existing sets without filterByTags
-      excludeTags: currentSetData.excludeTags || [], // Fallback for existing sets without excludeTags
-      idPrefix: currentSetData.name,
+      recordMetadata: currentSetConfig.recordMetadata,
+      resampling: currentSetConfig.resampling,
+      globalOperations: currentSetConfig.globalOperations,
+      filterByIds: currentSetConfig.filterByIds,
+      filterByTags: currentSetConfig.filterByTags || [], // Fallback for existing sets without filterByTags
+      excludeTags: currentSetConfig.excludeTags || [], // Fallback for existing sets without excludeTags
+      idPrefix: currentSetConfig.name,
     })
-      .then(setCurrentSetProcessedData)
+      .then((data) => {
+        setCurrentSetProcessedData(data);
+        // Store in cache if resampling is applied
+        if (currentSetConfig.resampling.applied) {
+          setDataCache((prev) => ({
+            ...prev,
+            [cacheKey]: {
+              appliedOperations: operations,
+              data,
+            },
+          }));
+        }
+      })
       .catch(console.error);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSet, rawData, setsStr]);
+  }, [rawData, currentSetChangeKey, currentSet, currentSetConfig]);
 
   // Combine processed data based on current context
   const processedData = useMemo(() => {
@@ -304,11 +519,11 @@ export function DashboardProvider({
     // Otherwise, combine global and sets data based on visibility
     const result: ProcessedRecord[] = [];
 
-    if (config.visible.records && globalProcessedData) {
+    if (config.visible.records) {
       result.push(...globalProcessedData);
     }
 
-    if (config.visible.sets && setsProcessedData) {
+    if (config.visible.sets) {
       result.push(...setsProcessedData);
     }
 
@@ -342,16 +557,32 @@ export function DashboardProvider({
   }, [processedData, currentSet, filteredRecordIds]);
 
   // Determine if left panel should be disabled
+  // Disabled when resampling is applied (only statistical operations allowed)
   const isLeftPanelDisabled = useMemo(() => {
-    // Check if any global operation changes the dataset structure (like mean)
-    return effectiveGlobalOperations.some((op) => op.type === "mean");
-  }, [effectiveGlobalOperations]);
+    return effectiveResampling.applied;
+  }, [effectiveResampling.applied]);
 
   // Update record metadata (applies to current set or global)
+  // Disabled when resampling is applied (except for label and tags which don't affect data)
   const updateRecordMetadata = (
     id: string,
     metadata: Partial<RecordMetadata>
   ) => {
+    // Disable data-affecting operations when resampling is applied
+    if (effectiveResampling.applied) {
+      // Only allow label and tags updates (non-data-affecting)
+      const allowedKeys = ["label", "tags"];
+      const hasDataAffectingChanges = Object.keys(metadata).some(
+        (key) => !allowedKeys.includes(key)
+      );
+      if (hasDataAffectingChanges) {
+        console.warn(
+          "Cannot update data-affecting metadata when resampling is applied"
+        );
+        return;
+      }
+    }
+
     setConfig((prev) => {
       if (currentSet) {
         // Update in set
@@ -542,7 +773,14 @@ export function DashboardProvider({
   };
 
   // Apply operation to specific record (applies to current set or global)
+  // Disabled when resampling is applied
   const applyOperationToRecord = (id: string, operation: RecordOperation) => {
+    // Disable when resampling is applied
+    if (effectiveResampling.applied) {
+      console.warn("Cannot apply record operations when resampling is applied");
+      return;
+    }
+
     setConfig((prev) => {
       if (currentSet) {
         // Update in set
@@ -673,9 +911,17 @@ export function DashboardProvider({
   };
 
   // Clear resampling and global operations (applies to current set or global)
+  // Also clears cache when resampling is disabled
   const clearResampling = () => {
     setConfig((prev) => {
       if (currentSet) {
+        // Clear cache for this set
+        setDataCache((prevCache) => {
+          const newCache = { ...prevCache };
+          delete newCache[currentSet];
+          return newCache;
+        });
+
         // Update in set
         return {
           ...prev,
@@ -694,6 +940,13 @@ export function DashboardProvider({
           ),
         };
       }
+      // Clear cache for global
+      setDataCache((prevCache) => {
+        const newCache = { ...prevCache };
+        delete newCache["global"];
+        return newCache;
+      });
+
       // Update in global
       return {
         ...prev,
@@ -828,11 +1081,18 @@ export function DashboardProvider({
   };
 
   // Add new records from re-record data
+  // Disabled when resampling is applied
   const addRecords = (
     records: DataRecord[],
     label: string,
     tags: string[]
   ) => {
+    // Disable when resampling is applied
+    if (effectiveResampling.applied) {
+      console.warn("Cannot add records when resampling is applied");
+      return;
+    }
+
     if (records.length === 0) return;
 
     // Get unique record ID from the first record
@@ -908,6 +1168,7 @@ export function DashboardProvider({
     filteredRecordIdsByTag,
     effectiveConfig,
     isProcessing,
+    dataCache,
     setConfig,
     updateRecordMetadata,
     addGlobalOperation,

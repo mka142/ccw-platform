@@ -289,13 +289,13 @@ export default function Chart({
       const navigatorDataPoints =
         data.length > 0
           ? data[0].data.map((point) => {
-              const durationMs = point.timestamp - minTimestamp;
-              const durationSec = durationMs / 1000;
-              return {
-                x: durationSec,
-                y: point.value,
-              };
-            })
+            const durationMs = point.timestamp - minTimestamp;
+            const durationSec = durationMs / 1000;
+            return {
+              x: durationSec,
+              y: point.value,
+            };
+          })
           : [];
 
       // Add anchor points to navigator to ensure full timeline visibility
@@ -330,16 +330,16 @@ export default function Chart({
       recordingStartTimestamp ??
       (allTimestamps.length > 0
         ? allTimestamps.reduce(
-            (min, ts) => (ts < min ? ts : min),
-            allTimestamps[0]
-          )
+          (min, ts) => (ts < min ? ts : min),
+          allTimestamps[0]
+        )
         : 0);
     const maxTimestamp =
       allTimestamps.length > 0
         ? allTimestamps.reduce(
-            (max, ts) => (ts > max ? ts : max),
-            allTimestamps[0]
-          )
+          (max, ts) => (ts > max ? ts : max),
+          allTimestamps[0]
+        )
         : 0;
 
     // Generate data series for each record
@@ -476,16 +476,16 @@ export default function Chart({
 
   return (
     <Card className="h-full flex flex-col pt-0 pb-0">
-      <div className="p-4 border-b">
+      <div className="p-4 border-b flex justify-between overflow-x-auto">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-lg font-semibold text-nowrap">
               {config.title || "Timeline Chart"}
             </h2>
           </div>
-        </div>
 
-        <div className="flex mt-3 pt-3 border-t justify-between">
+        </div>
+        <div className="flex justify-between">
           {/* Y-axis range controls */}
           <div className="flex items-center gap-2 ">
             <Label className="text-sm whitespace-nowrap">Zakres osi Y:</Label>
@@ -563,6 +563,7 @@ export default function Chart({
             )}
           </div>
         </div>
+
       </div>
 
       <div className="flex-1 p-4" ref={containerRef}>

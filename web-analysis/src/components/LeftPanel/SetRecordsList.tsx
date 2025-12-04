@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft } from 'lucide-react';
 import RecordCard from './RecordCard';
+import RecordIdsExport from './RecordIdsExport';
 
 export default function SetRecordsList() {
-  const { config, currentSet, filteredRecordIdsByTag, setCurrentSet, updateRecordMetadata, removeOperationFromRecord, toggleIdFilter } = useDashboard();
+  const { config, currentSet, filteredRecordIdsByTag, filteredRecordIds, setCurrentSet, updateRecordMetadata, removeOperationFromRecord, toggleIdFilter, isLeftPanelDisabled } = useDashboard();
 
   if (!currentSet) return null;
 
@@ -43,6 +44,14 @@ export default function SetRecordsList() {
         <p className="text-sm text-muted-foreground mt-1">
           {set.description || 'Brak opisu'}
         </p>
+        {/* Export/Copy IDs button */}
+        <div className="mt-3">
+          <RecordIdsExport
+            recordIds={filteredRecordIds}
+            disabled={isLeftPanelDisabled}
+            fileNamePrefix={`record-ids-${set.name}`}
+          />
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
@@ -64,10 +73,10 @@ export default function SetRecordsList() {
                   id={id}
                   metadata={metadata}
                   isHighlighted={false}
-                  isDisabled={false}
+                  isDisabled={isLeftPanelDisabled}
                   showCheckbox={true}
                   isChecked={isFiltered}
-                  onCheckChange={() => toggleIdFilter(id)}
+                  onCheckChange={() => !isLeftPanelDisabled && toggleIdFilter(id)}
                   onUpdateMetadata={updateRecordMetadata}
                   onRemoveOperation={removeOperationFromRecord}
                   resamplingApplied={set.resampling.applied}

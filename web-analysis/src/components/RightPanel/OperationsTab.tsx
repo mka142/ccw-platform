@@ -19,6 +19,7 @@ import { X, TrendingUp, BarChart3, Activity, RefreshCw, Plus } from "lucide-reac
 import { InterpolationMethod, DataRecord } from "@/lib/types";
 import { InfoModal } from "@/components/ui/info-modal";
 import InsertReRecordModal from "./InsertReRecordModal";
+import { OPERATION_DEFAULTS } from "@/lib/operationDefaults";
 
 export default function OperationsTab() {
   const {
@@ -45,16 +46,26 @@ export default function OperationsTab() {
     useState<InterpolationMethod>(
       effectiveConfig.resampling.interpolationMethod
     );
-  const [normalizeMin, setNormalizeMin] = useState("0");
-  const [normalizeMax, setNormalizeMax] = useState("100");
-  const [quantizeStep, setQuantizeStep] = useState("1");
-  const [movingAverageWindow, setMovingAverageWindow] = useState("5");
+  const [normalizeMin, setNormalizeMin] = useState(
+    OPERATION_DEFAULTS.normalize.minRange.toString()
+  );
+  const [normalizeMax, setNormalizeMax] = useState(
+    OPERATION_DEFAULTS.normalize.maxRange.toString()
+  );
+  const [quantizeStep, setQuantizeStep] = useState(
+    OPERATION_DEFAULTS.quantize.step.toString()
+  );
+  const [movingAverageWindow, setMovingAverageWindow] = useState(
+    OPERATION_DEFAULTS.movingAverage.windowSize.toString()
+  );
   const [movingAverageAlgorithm, setMovingAverageAlgorithm] = useState<
     "SMA" | "WMA" | "RMA"
-  >("SMA");
+  >(OPERATION_DEFAULTS.movingAverage.algorithm);
   const [spearmanStartTime, setSpearmanStartTime] = useState("00:00");
   const [spearmanEndTime, setSpearmanEndTime] = useState("01:00");
-  const [rollingSpearmanWindow, setRollingSpearmanWindow] = useState("10");
+  const [rollingSpearmanWindow, setRollingSpearmanWindow] = useState(
+    OPERATION_DEFAULTS.rollingSpearman.windowSize.toString()
+  );
   const [resamplingStrategy, setResamplingStrategy] = useState<'shortest' | 'audio' | 'none'>('none');
   const [showInsertModal, setShowInsertModal] = useState(false);
 
@@ -401,12 +412,15 @@ export default function OperationsTab() {
                 className="w-full"
                 variant="outline"
                 onClick={() => setShowInsertModal(true)}
+                disabled={effectiveConfig.resampling.applied}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Wstaw dane Re-Record
               </Button>
               <p className="text-xs text-muted-foreground mt-2 text-center">
-                Importuj dane z sesji nagrywania re-record
+                {effectiveConfig.resampling.applied
+                  ? "Wyłączone - resampling jest aktywny"
+                  : "Importuj dane z sesji nagrywania re-record"}
               </p>
             </div>
           )}

@@ -94,6 +94,16 @@ export interface ProcessedRecord {
   label?: string; // Optional label (for global operations or set display names)
 }
 
+// Cache types for storing processed data after resampling
+export interface DataCacheEntry {
+  appliedOperations: string[]; // Array of operation identifiers (e.g., 'resampling-500ms', 'zScore', 'mean')
+  data: ProcessedRecord[];
+}
+
+export interface DataCache {
+  [key: string]: DataCacheEntry; // Key is set name or 'global'
+}
+
 export interface DashboardState {
   config: Config;
   mode: OperationMode;
@@ -113,6 +123,7 @@ export interface DashboardState {
     filterByIds: string[];
   };
   isProcessing: boolean;
+  dataCache: DataCache; // Cache for storing processed data after resampling
 }
 
 export interface DashboardContextValue extends DashboardState {

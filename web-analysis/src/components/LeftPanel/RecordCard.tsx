@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,14 @@ export default function RecordCard({
   const [isEditing, setIsEditing] = useState(false);
   const [labelInput, setLabelInput] = useState(metadata.label || "");
   const [tagInput, setTagInput] = useState("");
+
+
+  useEffect(() => {
+    //exit edit mode on unmount
+    return () => {
+      onEditModeChange?.(id, false);
+    };
+  }, []);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -108,9 +116,8 @@ export default function RecordCard({
 
   return (
     <Card
-      className={`p-3 ${isHighlighted ? "ring-2 ring-primary" : ""} ${
-        isDisabled ? "opacity-50" : ""
-      }`}
+      className={`p-3 ${isHighlighted ? "ring-2 ring-primary" : ""} ${isDisabled ? "opacity-50" : ""
+        }`}
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">

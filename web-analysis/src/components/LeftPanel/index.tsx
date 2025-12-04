@@ -18,6 +18,7 @@ import { Eye, EyeOff, ChevronLeft } from "lucide-react";
 import SetsList from "./SetsList";
 import SetRecordsList from "./SetRecordsList";
 import RecordCard from "./RecordCard";
+import RecordIdsExport from "./RecordIdsExport";
 
 interface LeftPanelProps {
   panelHeader?: React.ReactNode;
@@ -32,6 +33,7 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
     isLeftPanelDisabled,
     currentSet,
     filteredRecordIdsByTag,
+    filteredRecordIds,
     setMode,
     setSelectedRecordId,
     setCurrentSet,
@@ -151,10 +153,21 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
             className="flex-1 m-0 flex flex-col min-h-0"
           >
             {isLeftPanelDisabled && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Wyłączone z powodu aktywnych operacji globalnych
-              </p>
+              <div className="p-4 border-b bg-muted/50">
+                <p className="text-sm text-muted-foreground">
+                  Panel wyłączony - resampling jest aktywny. Dostępne są tylko operacje statystyczne.
+                </p>
+              </div>
             )}
+
+            {/* Export/Copy IDs button */}
+            <div className="p-4 border-b">
+              <RecordIdsExport
+                recordIds={filteredRecordIds}
+                disabled={isLeftPanelDisabled}
+                fileNamePrefix="record-ids"
+              />
+            </div>
 
             {/* Tag filters */}
             {allTags.length > 0 && (

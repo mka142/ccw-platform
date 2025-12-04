@@ -1,5 +1,6 @@
 import { DataRecord, RecordOperation, GlobalOperation, InterpolationMethod } from './types';
 import { toDecimal, fromDecimal, decimalMin, decimalMax, safeDivide, decimalMean, decimalStdDev, roundToStep } from './decimalUtils';
+import { OPERATION_DEFAULTS } from './operationDefaults';
 import Decimal from 'decimal.js';
 
 /**
@@ -255,19 +256,27 @@ export function applyOperation(
     case 'normalize':
       return normalizeData(
         data,
-        typeof operation.params.minRange === 'number' ? operation.params.minRange : 0,
-        typeof operation.params.maxRange === 'number' ? operation.params.maxRange : 100
+        typeof operation.params.minRange === 'number' 
+          ? operation.params.minRange 
+          : OPERATION_DEFAULTS.normalize.minRange,
+        typeof operation.params.maxRange === 'number' 
+          ? operation.params.maxRange 
+          : OPERATION_DEFAULTS.normalize.maxRange
       );
     case 'quantize':
       return quantizeData(
         data,
-        typeof operation.params.step === 'number' ? operation.params.step : 1
+        typeof operation.params.step === 'number' 
+          ? operation.params.step 
+          : OPERATION_DEFAULTS.quantize.step
       );
     case 'movingAverage':
       return calculateMovingAverage(
         data,
-        typeof operation.params.windowSize === 'number' ? operation.params.windowSize : 3,
-        (operation.params.algorithm as 'SMA' | 'WMA' | 'RMA') || 'SMA'
+        typeof operation.params.windowSize === 'number' 
+          ? operation.params.windowSize 
+          : OPERATION_DEFAULTS.recordMovingAverage.windowSize,
+        (operation.params.algorithm as 'SMA' | 'WMA' | 'RMA') || OPERATION_DEFAULTS.recordMovingAverage.algorithm
       );
     default:
       return data;
@@ -800,7 +809,7 @@ export function applyGlobalOperation(
     case 'quantize': {
       const step = typeof operation.params.step === 'number' 
         ? operation.params.step 
-        : 1;
+        : OPERATION_DEFAULTS.quantize.step;
       return datasets.map(dataset => ({
         id: dataset.id,
         data: quantizeData(dataset.data, step)
@@ -809,8 +818,8 @@ export function applyGlobalOperation(
     case 'movingAverage': {
       const windowSize = typeof operation.params.windowSize === 'number' 
         ? operation.params.windowSize 
-        : 5;
-      const algorithm = (operation.params.algorithm as 'SMA' | 'WMA' | 'RMA') || 'SMA';
+        : OPERATION_DEFAULTS.movingAverage.windowSize;
+      const algorithm = (operation.params.algorithm as 'SMA' | 'WMA' | 'RMA') || OPERATION_DEFAULTS.movingAverage.algorithm;
       return datasets.map(dataset => ({
         id: dataset.id,
         data: calculateMovingAverage(dataset.data, windowSize, algorithm)
@@ -819,13 +828,13 @@ export function applyGlobalOperation(
     case 'spearmanCorrelation': {
       const startTime = typeof operation.params.startTime === 'number' 
         ? operation.params.startTime 
-        : 0;
+        : OPERATION_DEFAULTS.spearmanCorrelation.startTime;
       const endTime = typeof operation.params.endTime === 'number' 
         ? operation.params.endTime 
         : Number.MAX_SAFE_INTEGER;
       const resamplingWindowMs = typeof operation.params.resamplingWindowMs === 'number' 
         ? operation.params.resamplingWindowMs 
-        : 1000;
+        : OPERATION_DEFAULTS.spearmanCorrelation.resamplingWindowMs;
       
       return calculateSpearmanCorrelationMatrix(
         datasets,
@@ -837,7 +846,7 @@ export function applyGlobalOperation(
     case 'rollingSpearman': {
       const windowSize = typeof operation.params.windowSize === 'number' 
         ? operation.params.windowSize 
-        : 10;
+        : OPERATION_DEFAULTS.rollingSpearman.windowSize;
       
       return calculateRollingSpearmanCorrelation(
         datasets,
