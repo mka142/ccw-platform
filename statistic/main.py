@@ -7,10 +7,12 @@ from operations import resample_data
 import pandas as pd
 import numpy as np
 from scipy import stats
-from typing import List, Dict
+from typing import List, Dict, Optional
 import matplotlib.pyplot as plt
 import os
+import json
 from datetime import datetime
+from utils import OptionSelector, create_user_custom_handler, create_user_exclude_handler
 
 
 def print_header(text: str):
@@ -30,30 +32,24 @@ def select_concerts(db: Database) -> List[str]:
         print("No concerts found!")
         return []
 
-    print("\nAvailable concerts:")
-    for i, concert in enumerate(concerts, 1):
-        print(f"  {i}. {concert['name']} (ID: {concert['id'][:8]}...)")
-    print(f"  a. ALL concerts")
-
-    while True:
-        choice = input(f"\nSelect concert (1-{len(concerts)} or 'a' for ALL): ").strip().lower()
-        if choice == 'a':
-            print("Selected: ALL concerts")
-            return [c["id"] for c in concerts]
-        try:
-            choice_num = int(choice)
-            if 1 <= choice_num <= len(concerts):
-                selected = [concerts[choice_num - 1]["id"]]
-                print(f"Selected: {concerts[choice_num - 1]['name']}")
-                return selected
-            else:
-                print("Invalid choice. Try again.")
-        except ValueError:
-            print("Invalid input. Enter a number or 'a' for ALL.")
+    selector = OptionSelector(
+        options=concerts,
+        display_func=lambda concert, idx: f"  {idx}. {concert['name']} (ID: {concert['id'][:8]}...)",
+        value_extractor=lambda concert: concert["id"],
+        success_message_func=lambda concert: concert['name'],
+        allow_all=True,
+        prompt=f"\nSelect concert (1-{len(concerts)} or 'a' for ALL): ",
+    )
+    
+    result = selector.select_multiple()
+    # Override the generic "Selected: ALL" message with a more specific one
+    if result and len(result) == len(concerts):
+        print("Selected: ALL concerts")
+    return result
 
 
-def select_pieces(db: Database, concert_ids: List[str]) -> List[str]:
-    """Interactive piece selection"""
+def select_piece(db: Database, concert_ids: List[str]) -> Optional[str]:
+    """Interactive single piece selection"""
     print_header("Piece Selection")
 
     all_pieces = set()
@@ -65,791 +61,423 @@ def select_pieces(db: Database, concert_ids: List[str]) -> List[str]:
 
     if not pieces:
         print("No pieces found!")
-        return []
+        return None
 
     print(f"\nAvailable pieces ({len(pieces)} total):")
-    for i, piece in enumerate(pieces[:10], 1):
-        print(f"  {i}. {piece}")
-    if len(pieces) > 10:
-        print(f"  ... and {len(pieces) - 10} more")
-    print(f"  a. ALL pieces")
-
-    while True:
-        choice = input(f"\nSelect piece (1-{len(pieces)} or 'a' for ALL): ").strip().lower()
-        if choice == 'a':
-            print("Selected: ALL pieces")
-            return pieces
-        try:
-            choice_num = int(choice)
-            if 1 <= choice_num <= len(pieces):
-                selected = [pieces[choice_num - 1]]
-                print(f"Selected: {pieces[choice_num - 1]}")
-                return selected
-            else:
-                print("Invalid choice. Try again.")
-        except ValueError:
-            print("Invalid input. Enter a number or 'a' for ALL.")
+    
+    selector = OptionSelector(
+        options=pieces,
+        display_func=lambda piece, idx: f"  {idx}. {piece}",
+        value_extractor=lambda piece: piece,
+        success_message_func=lambda piece: piece,
+        allow_all=False,  # Only single selection
+        prompt=f"\nSelect piece (1-{len(pieces)}): ",
+        max_display=10,
+    )
+    
+    result = selector.select_single()
+    return result
 
 
-def select_users(
-    db: Database, concert_ids: List[str], piece_ids: List[str]
+def select_users_for_piece(
+    db: Database, concert_ids: List[str], piece_id: str
 ) -> Dict[str, List[str]]:
-    """Interactive user selection per concert and piece"""
+    """Interactive user selection per concert for a single piece"""
     print_header("User Selection")
 
     result = {}
 
+    concerts = db.list_concerts()
+
     for concert_id in concert_ids:
-        for piece_id in piece_ids:
-            users = db.list_concert_piece_users(concert_id, piece_id)
+        users = db.list_concert_piece_users(concert_id, piece_id)
 
-            if not users:
-                continue
+        concert_name = next(f'{concert["name"]} {concert["id"][:8]}...' for concert in concerts if concert["id"] == concert_id)
 
-            key = f"{concert_id}_{piece_id}"
+        if not users:
+            print(f"\nConcert: {concert_name}, Piece: {piece_id}")
+            print("No users found for this concert/piece combination")
+            continue
 
-            print(f"\nConcert: {concert_id[:8]}..., Piece: {piece_id}")
-            print(f"Found {len(users)} users")
+        print(f"\nConcert: {concert_name}, Piece: {piece_id}")
+        print(f"Found {len(users)} users")
 
-            for i, user in enumerate(users[:5], 1):
-                print(f"  {i}. User {user['id'][:8]}... " f"({user['deviceType']})")
-            if len(users) > 5:
-                print(f"  ... and {len(users) - 5} more")
-            print(f"  a. ALL users")
-            print(f"  c. CUSTOM selection (provide list)")
-            print(f"  e. EXCLUDE users (from all)")
-
-            while True:
-                choice = input(
-                    f"Select users (1-{len(users)} or 'a'/'c'/'e'): "
-                ).strip().lower()
-                
-                if choice == 'a':
-                        result[key] = [u["id"] for u in users]
-                        print(f"Selected: ALL {len(users)} users")
-                        break
-                elif choice == 'c':
-                        # Custom list of IDs
-                        print("\nEnter user IDs (comma-separated):")
-                        print("You can use full IDs or first 8 characters")
-                        custom_input = input("IDs: ").strip()
-                        
-                        if not custom_input:
-                            print("No IDs provided. Try again.")
-                            continue
-                        
-                        # Parse input
-                        input_ids = [
-                            id.strip() for id in custom_input.split(",")
-                        ]
-                        
-                        # Match IDs (support partial matching)
-                        matched_users = []
-                        for input_id in input_ids:
-                            for user in users:
-                                if (user["id"] == input_id or 
-                                    user["id"].startswith(input_id)):
-                                    if user["id"] not in matched_users:
-                                        matched_users.append(user["id"])
-                                    break
-                        
-                        if matched_users:
-                            result[key] = matched_users
-                            print(f"Selected: {len(matched_users)} users")
-                            for uid in matched_users:
-                                print(f"  - {uid[:8]}...")
-                            break
-                        else:
-                            print("No matching users found. Try again.")
-                        continue
-                elif choice == 'e':
-                        # Exclude users
-                        print("\nEnter user IDs to EXCLUDE (comma-separated):")
-                        print("You can use full IDs or first 8 characters")
-                        exclude_input = input("IDs to exclude: ").strip()
-                        
-                        if not exclude_input:
-                            # No exclusions, use all
-                            result[key] = [u["id"] for u in users]
-                            print(f"No exclusions. Selected: ALL {len(users)} users")
-                            break
-                        
-                        # Parse exclusion list
-                        exclude_ids = [
-                            id.strip() for id in exclude_input.split(",")
-                        ]
-                        
-                        # Match exclusion IDs
-                        excluded_users = set()
-                        for exclude_id in exclude_ids:
-                            for user in users:
-                                if (user["id"] == exclude_id or 
-                                    user["id"].startswith(exclude_id)):
-                                    excluded_users.add(user["id"])
-                                    break
-                        
-                        # Get remaining users
-                        remaining_users = [
-                            u["id"] for u in users 
-                            if u["id"] not in excluded_users
-                        ]
-                        
-                        if remaining_users:
-                            result[key] = remaining_users
-                            print(f"Excluded: {len(excluded_users)} users")
-                            print(f"Selected: {len(remaining_users)} users")
-                            break
-                        else:
-                            print("All users would be excluded. Try again.")
-                        continue
-                else:
-                    # Try to parse as number for individual user selection
-                    try:
-                        choice_num = int(choice)
-                        if 1 <= choice_num <= len(users):
-                            result[key] = [users[choice_num - 1]["id"]]
-                            print(f"Selected: {users[choice_num - 1]['id'][:8]}...")
-                            break
-                        else:
-                            print("Invalid choice. Try again.")
-                    except ValueError:
-                        print("Invalid input. Enter a number (1-{}) or 'a'/'c'/'e'.".format(len(users)))
+        # Create handlers for custom and exclude options
+        custom_handler = create_user_custom_handler(id_key="id")
+        exclude_handler = create_user_exclude_handler(id_key="id")
+        
+        selector = OptionSelector(
+            options=users,
+            display_func=lambda user, idx: f"  {idx}. User {user['id'][:8]}... ({user['deviceType']})",
+            value_extractor=lambda user: user["id"],
+            success_message_func=lambda user: f"{user['id'][:8]}...",
+            allow_all=True,
+            special_keys={
+                'c': {
+                    'label': 'CUSTOM selection (provide list)',
+                    'handler': custom_handler
+                },
+                'e': {
+                    'label': 'EXCLUDE users (from all)',
+                    'handler': exclude_handler
+                }
+            },
+            prompt=f"Select users (1-{len(users)} or 'a'/'c'/'e'): ",
+            max_display=5,
+        )
+        
+        selected_ids = selector.select_multiple()
+        if selected_ids:
+            result[concert_id] = selected_ids
 
     return result
 
 
-def run_spearman_correlation_test(
-    db: Database,
-    concert_ids: List[str],
-    piece_ids: List[str],
-    user_selections: Dict[str, List[str]],
-    window_ms: float = 1000,
-):
-    """
-    Run Spearman rank correlation test
-    Rows: resampled time points
-    Columns: users
-    """
-    print_header("Spearman Rank Correlation Test")
-
-    for concert_id in concert_ids:
-        for piece_id in piece_ids:
-            key = f"{concert_id}_{piece_id}"
-
-            if key not in user_selections:
-                continue
-
-            user_ids = user_selections[key]
-
-            if len(user_ids) < 2:
-                print(f"\nSkipping {piece_id}: need at least 2 users")
-                continue
-
-            print(f"\n{'='*80}")
-            print(f"Concert: {concert_id[:8]}...")
-            print(f"Piece: {piece_id}")
-            print(f"Users: {len(user_ids)}")
-
-            # Collect data for all users
-            user_data = {}
-
-            for user_id in user_ids:
-                forms = db.get_forms_for_concert_piece_user(
-                    concert_id, piece_id, user_id
-                )
-
-                if not forms:
-                    continue
-
-                # Prepare and resample data
-                data = [
-                    {"timestamp": form["timestamp"], "value": form["value"]}
-                    for form in forms
-                ]
-
-                resampled = resample_data(
-                    data, window_ms=window_ms, interpolation_method="linear"
-                )
-
-                user_data[user_id] = resampled
-
-            if len(user_data) < 2:
-                print(f"Not enough users with data: {len(user_data)}")
-                continue
-
-            # Find common timestamp range
-            all_timestamps = set()
-            for user_id, data in user_data.items():
-                all_timestamps.update([d["timestamp"] for d in data])
-
-            common_timestamps = sorted(list(all_timestamps))
-
-            # Build matrix: rows = timestamps, columns = users
-            matrix = []
-            user_list = list(user_data.keys())
-            
-            print(f"Building data matrix for {len(common_timestamps)} timestamps")
-
-            for timestamp in common_timestamps:
-                row = []
-                for user_id in user_list:
-                    # Find value at this timestamp
-                    value = None
-                    for point in user_data[user_id]:
-                        if point["timestamp"] == timestamp:
-                            value = point["value"]
-                            break
-
-                    if value is not None:
-                        row.append(value)
-                    else:
-                        row.append(np.nan)
-
-                # Only include row if at least 2 non-NaN values
-                if sum(1 for v in row if not np.isnan(v)) >= 2:
-                    matrix.append(row)
-
-            if len(matrix) < 2:
-                print(f"Not enough common data points: {len(matrix)}")
-                continue
-
-            # Convert to DataFrame for analysis
-            df = pd.DataFrame(matrix, columns=[f"User_{uid[:8]}" for uid in user_list])
-
-            print(f"\nData matrix shape: {df.shape}")
-            print(f"Samples (rows): {df.shape[0]}")
-            print(f"Users (columns): {df.shape[1]}")
-
-            # Calculate Spearman correlation matrix
-            print("\nCalculating Spearman rank correlation...")
-
-            # Remove columns with all NaN
-            df_clean = df.dropna(axis=1, how="all")
-
-            if df_clean.shape[1] < 2:
-                print("Not enough users with complete data")
-                continue
-
-            # Calculate correlation matrix
-            corr_matrix, p_values = calculate_spearman_matrix(df_clean)
-
-            print("\n" + "-" * 80)
-            print("Spearman Rank Correlation Matrix:")
-            print("-" * 80)
-            print(corr_matrix.to_string())
-
-            print("\n" + "-" * 80)
-            print("P-values:")
-            print("-" * 80)
-            print(p_values.to_string())
-
-            # Summary statistics
-            print("\n" + "-" * 80)
-            print("Summary Statistics:")
-            print("-" * 80)
-
-            # Get upper triangle values (excluding diagonal)
-            upper_tri = np.triu_indices_from(corr_matrix.values, k=1)
-            correlations = corr_matrix.values[upper_tri]
-            p_vals = p_values.values[upper_tri]
-
-            # Remove NaN values for statistics
-            valid_corr = correlations[~np.isnan(correlations)]
-            valid_p = p_vals[~np.isnan(p_vals)]
-
-            if len(valid_corr) > 0:
-                print(f"Mean correlation: {np.mean(valid_corr):.4f}")
-                print(f"Median correlation: {np.median(valid_corr):.4f}")
-                print(f"Std correlation: {np.std(valid_corr):.4f}")
-                print(f"Min correlation: {np.min(valid_corr):.4f}")
-                print(f"Max correlation: {np.max(valid_corr):.4f}")
-
-                # Count significant correlations (p < 0.05)
-                significant = np.sum(valid_p < 0.05)
-                total = len(valid_p)
-                print(
-                    f"\nSignificant correlations (p < 0.05): "
-                    f"{significant}/{total} "
-                    f"({100*significant/total:.1f}%)"
-                )
-            else:
-                print("No valid correlations to analyze")
-
-
-def calculate_spearman_matrix(df: pd.DataFrame):
-    """Calculate Spearman correlation matrix with p-values"""
-    n_cols = df.shape[1]
-    corr_matrix = np.zeros((n_cols, n_cols))
-    p_matrix = np.zeros((n_cols, n_cols))
-
-    for i in range(n_cols):
-        for j in range(n_cols):
-            if i == j:
-                corr_matrix[i, j] = 1.0
-                p_matrix[i, j] = 0.0
-            else:
-                # Remove NaN pairs
-                mask = ~(df.iloc[:, i].isna() | df.iloc[:, j].isna())
-                x = df.iloc[:, i][mask]
-                y = df.iloc[:, j][mask]
-
-                if len(x) >= 3:  # Need at least 3 points
-                    corr, p_val = stats.spearmanr(x, y)
-                    corr_matrix[i, j] = corr
-                    p_matrix[i, j] = p_val
-                else:
-                    corr_matrix[i, j] = np.nan
-                    p_matrix[i, j] = np.nan
-
-    corr_df = pd.DataFrame(corr_matrix, index=df.columns, columns=df.columns)
-    p_df = pd.DataFrame(p_matrix, index=df.columns, columns=df.columns)
-
-    return corr_df, p_df
-
-
-def run_value_histogram_analysis(
-    db: Database,
-    concert_ids: List[str],
-    piece_ids: List[str],
-    user_selections: Dict[str, List[str]],
-):
-    """
-    Create histograms of values for each piece with normal distribution overlay
-    and test for normality
-    """
-    print_header("Value Histogram Analysis with Normal Distribution")
-
-    # Collect all pieces data
-    all_piece_data = {}
-    normality_results = {}
+def generate_config(db: Database) -> Optional[Dict]:
+    """Generate a piece configuration by selecting concerts, piece, and users"""
+    print_header("Generate Piece Config")
+    
+    # Step 1: Select concerts
+    concert_ids = select_concerts(db)
+    if not concert_ids:
+        print("No concerts selected. Cancelling config generation.")
+        return None
+    
+    # Step 2: Select single piece
+    piece_id = select_piece(db, concert_ids)
+    if not piece_id:
+        print("No piece selected. Cancelling config generation.")
+        return None
+    
+    # Step 3: Select users for piece from each concert
+    user_selections = select_users_for_piece(db, concert_ids, piece_id)
+    if not user_selections:
+        print("No users selected. Cancelling config generation.")
+        return None
+    
+    # Step 4: Get config values per concert
+    print_header("Config Defaults")
     
     # Get concert names for display
     concerts = db.list_concerts()
     concert_names = {c["id"]: c["name"] for c in concerts}
-
-    for concert_id in concert_ids:
-        for piece_id in piece_ids:
-            key = f"{concert_id}_{piece_id}"
-
-            if key not in user_selections:
-                continue
-
-            user_ids = user_selections[key]
-
-            # Get forms for this piece
-            df_piece = db.get_forms_dataframe(
-                concert_id=concert_id, piece_id=piece_id
-            )
-
-            # Filter to selected users if specified
-            if key in user_selections:
-                df_piece = df_piece[
-                    df_piece["client_id"].isin(user_ids)
-                ]
-
-            if df_piece.empty:
-                print(f"\nSkipping {piece_id}: no data found")
-                continue
-
-            # Extract values (range 0-100, will be aggregated into 10 buckets)
-            values = df_piece['value'].values
-
-            # Filter values to 0-100 range
-            values = values[(values >= 0) & (values <= 100)]
-
-            if len(values) == 0:
-                print(f"\nSkipping {piece_id}: no values in range 0-100")
-                continue
-
-            # Store data for this piece
-            piece_key = f"{concert_id}_{piece_id}"
-            all_piece_data[piece_key] = {
-                'values': values,
-                'concert_id': concert_id,
-                'concert_name': concert_names.get(concert_id, f"Concert {concert_id[:8]}..."),
-                'piece_id': piece_id,
-            }
-            print(f"Testing normality for {piece_id} with {len(values)} samples")
-            
-            # Quantize values into buckets (0-10, 10-20, ..., 90-100)
-            # This matches the histogram buckets
-            # Manually quantize: divide by 10 and floor, then clip to [0, 9]
-            quantized_indices = np.floor(values / 10).astype(int)
-            quantized_indices = np.clip(quantized_indices, 0, 9)
-            # Convert to bucket midpoints for testing (5, 15, 25, ..., 95)
-            bucket_midpoints = np.array([5, 15, 25, 35, 45, 55, 65, 75, 85, 95])
-            quantized_to_midpoints = bucket_midpoints[quantized_indices]
-            
-            # Initialize variables
-            stat, p_value = np.nan, np.nan
-            is_normal = None
-            
-            # Test for normality using Shapiro-Wilk test
-            # (works well for sample sizes up to 5000)
-            if len(values) >= 3 and len(values) <= 5000:
-                try:
-                    # Use quantized values for consistency with histogram
-                    stat, p_value = stats.shapiro(quantized_to_midpoints)
-                    if not np.isnan(p_value):
-                        is_normal = p_value > 0.05
-                except Exception as e:
-                    print(f"  Warning: Shapiro-Wilk test failed: {e}")
-                    is_normal = None
-            elif len(values) > 5000:
-                try:
-                    # For large samples, use Kolmogorov-Smirnov test
-                    # against normal distribution using quantized/bucketed values
-                    mean_val = np.mean(quantized_to_midpoints)
-                    std_val = np.std(quantized_to_midpoints)
-                    
-                    # Check if std is valid (not zero or NaN)
-                    if std_val > 0 and not np.isnan(std_val):
-                        stat, p_value = stats.kstest(
-                            quantized_to_midpoints, 
-                            lambda x: stats.norm.cdf(x, loc=mean_val, scale=std_val)
-                        )
-                        if not np.isnan(p_value) and not np.isnan(stat):
-                            is_normal = p_value > 0.05
-                            print(f"  K-S test: stat={stat:.4f}, p={p_value:.4f}, normal={is_normal}")
-                        else:
-                            print(f"  Warning: K-S test returned NaN (stat={stat}, p={p_value})")
-                            is_normal = None
-                    else:
-                        print(f"  Warning: Invalid std_val ({std_val}), cannot test normality")
-                        is_normal = None
-                except Exception as e:
-                    print(f"  Warning: K-S test failed: {e}")
-                    is_normal = None
-            else:
-                # Too few samples (n < 3)
-                stat, p_value = np.nan, np.nan
-                is_normal = None
-
-            normality_results[piece_key] = {
-                'is_normal': is_normal,
-                'p_value': p_value,
-                'statistic': stat,
-                'n_samples': len(values),
-            }
-
-    if not all_piece_data:
-        print("No data available for histogram analysis.")
-        return
-
-    # Create subplots for all pieces
-    n_pieces = len(all_piece_data)
     
-    # Calculate grid dimensions
-    cols = min(3, n_pieces)
-    rows = (n_pieces + cols - 1) // cols
-
-    fig, axes = plt.subplots(rows, cols, figsize=(15, 5 * rows))
+    # Interpolation method (global)
+    interpolation_methods = ["linear", "step"]
+    print("\nSelect interpolation method (applies to all concerts):")
+    for i, method in enumerate(interpolation_methods, 1):
+        print(f"  {i}. {method}")
     
-    # Handle different subplot configurations
-    # plt.subplots returns different types: single Axes, 1D array, or 2D array
-    if n_pieces == 1:
-        axes = [axes]
-    elif isinstance(axes, np.ndarray):
-        if axes.ndim == 2:
-            axes = axes.flatten()
-        else:
-            axes = list(axes)
-    else:
-        axes = [axes]
-
-    # Plot each piece
-    for idx, (piece_key, data) in enumerate(all_piece_data.items()):
-        values = data['values']
-        concert_id = data['concert_id']
-        concert_name = data['concert_name']
-        piece_id = data['piece_id']
-        ax = axes[idx]
-
-        # Calculate statistics
-        mean_val = np.mean(values)
-        std_val = np.std(values)
-        n_samples = len(values)
-
-        # Create histogram with 10 buckets: 0-10, 10-20, 20-30, ..., 90-100
-        bins = np.arange(0, 101, 10)  # Bins: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-        counts, bin_edges, patches = ax.hist(
-            values, 
-            bins=bins, 
-            density=True, 
-            alpha=0.7, 
-            color='skyblue',
-            edgecolor='black',
-            label='Histogram'
-        )
-
-        # Overlay normal distribution
-        x_norm = np.linspace(0, 100, 1000)
-        y_norm = stats.norm.pdf(x_norm, loc=mean_val, scale=std_val)
-        ax.plot(x_norm, y_norm, 'r-', linewidth=2, label='Normal Distribution')
-
-        # Get normality result
-        norm_result = normality_results[piece_key]
-        is_normal = norm_result['is_normal']
-        p_value = norm_result['p_value']
-
-        # Set title with concert name, piece, and normality status
-        title = f"{concert_name}\n"
-        title += f"Piece: {piece_id[:30]}...\n"
-        title += f"μ={mean_val:.2f}, σ={std_val:.2f}, n={n_samples}"
-        
-        if is_normal is True:
-            title += "\n✓ Normal (p={:.4f})".format(p_value)
-            ax.set_facecolor('#e8f5e9')  # Light green background
-        elif is_normal is False:
-            title += "\n✗ Not Normal (p={:.4f})".format(p_value)
-            ax.set_facecolor('#ffebee')  # Light red background
-        else:
-            # Cannot test - either n<3 or test failed
-            if n_samples < 3:
-                title += "\n? Cannot test (n<3)"
-            else:
-                title += "\n? Cannot test (test failed)"
-
-        ax.set_title(title, fontsize=10)
-        ax.set_xlabel('Value (0-100)', fontsize=9)
-        ax.set_ylabel('Density', fontsize=9)
-        ax.set_xlim(0, 100)
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=8)
-        
-        # Set x-axis ticks to show bucket boundaries
-        ax.set_xticks(bins)
-
-    # Hide unused subplots
-    for idx in range(n_pieces, len(axes)):
-        axes[idx].axis('off')
-
-    plt.tight_layout()
-    
-    # Save the plot to a file instead of showing (for non-interactive environments)
-    # Create output directory if it doesn't exist
-    output_dir = 'output'
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Generate filename with timestamp
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = os.path.join(output_dir, f'histogram_analysis_{timestamp}.png')
-    
-    plt.savefig(filename, dpi=150, bbox_inches='tight')
-    print(f"\n✓ Histogram saved to: {filename}")
-    
-    # Try to show if possible (for interactive environments)
-    try:
-        plt.show()
-    except Exception:
-        pass  # Ignore if display is not available
-    
-    plt.close()
-
-    # Print summary
-    print("\n" + "=" * 80)
-    print("Normality Test Summary")
-    print("=" * 80)
-
-    normal_pieces = []
-    non_normal_pieces = []
-    untestable_pieces = []
-
-    for piece_key, result in normality_results.items():
-        data = all_piece_data[piece_key]
-        piece_id = data['piece_id']
-        
-        if result['is_normal'] is True:
-            normal_pieces.append((piece_id, result))
-        elif result['is_normal'] is False:
-            non_normal_pieces.append((piece_id, result))
-        else:
-            untestable_pieces.append((piece_id, result))
-
-    if normal_pieces:
-        print(f"\n✓ Pieces with NORMAL distribution ({len(normal_pieces)}):")
-        for piece_id, result in normal_pieces:
-            print(f"  - {piece_id}")
-            print(f"    p-value: {result['p_value']:.4f}, n={result['n_samples']}")
-
-    if non_normal_pieces:
-        print(f"\n✗ Pieces with NON-NORMAL distribution ({len(non_normal_pieces)}):")
-        for piece_id, result in non_normal_pieces:
-            print(f"  - {piece_id}")
-            print(f"    p-value: {result['p_value']:.4f}, n={result['n_samples']}")
-
-    if untestable_pieces:
-        print(f"\n? Pieces that could not be tested ({len(untestable_pieces)}):")
-        for piece_id, result in untestable_pieces:
-            print(f"  - {piece_id} (n={result['n_samples']})")
-
-    print("\n" + "=" * 80)
-
-
-def run_statistics_info(
-    db: Database,
-    concert_ids: List[str],
-    piece_ids: List[str],
-    user_selections: Dict[str, List[str]],
-):
-    """
-    Display statistical information about concerts, pieces, and users
-    """
-    print_header("Concert Statistics Info")
-
-    for concert_id in concert_ids:
-        # Get concert info
-        concerts = db.list_concerts()
-        concert_info = next(
-            (c for c in concerts if c["id"] == concert_id), None
-        )
-
-        if not concert_info:
-            continue
-
-        print(f"\n{'='*80}")
-        print(f"CONCERT: {concert_info['name']}")
-        print(f"ID: {concert_id}")
-        print(f"Created: {concert_info.get('createdAt', 'N/A')}")
-        print(f"Active: {concert_info.get('isActive', False)}")
-        print("=" * 80)
-
-        # Get all pieces for this concert
-        all_concert_pieces = db.list_concert_pieces(concert_id)
-
-        print(f"\nTotal unique pieces in concert: {len(all_concert_pieces)}")
-
-        # Get all users for this concert across all pieces
-        all_concert_users = set()
-        for piece_id in all_concert_pieces:
-            users = db.list_concert_piece_users(concert_id, piece_id)
-            all_concert_users.update([u["id"] for u in users])
-
-        print(f"Total unique users in concert: {len(all_concert_users)}")
-
-        # Get total forms for this concert
-        df_concert = db.get_forms_dataframe(concert_id=concert_id)
-        print(f"Total forms submitted: {len(df_concert)}")
-
-        if not df_concert.empty:
-            print(f"\nValue statistics across all pieces:")
-            print(f"  Mean: {df_concert['value'].mean():.2f}")
-            print(f"  Median: {df_concert['value'].median():.2f}")
-            print(f"  Std: {df_concert['value'].std():.2f}")
-            print(f"  Min: {df_concert['value'].min():.2f}")
-            print(f"  Max: {df_concert['value'].max():.2f}")
-
-        # Now show info for each piece
-        print(f"\n{'-'*80}")
-        print("PIECES BREAKDOWN:")
-        print("-" * 80)
-
-        # Filter to requested pieces
-        pieces_to_show = [p for p in all_concert_pieces if p in piece_ids]
-
-        for piece_id in pieces_to_show:
-            key = f"{concert_id}_{piece_id}"
-
-            print(f"\nPiece: {piece_id}")
-            print("-" * 40)
-
-            # Get users for this piece
-            piece_users = db.list_concert_piece_users(concert_id, piece_id)
-
-            # If user selection exists for this combo, use it
-            if key in user_selections:
-                selected_user_ids = user_selections[key]
-                print(f"Total users: {len(piece_users)}")
-                print(f"Selected users: {len(selected_user_ids)}")
-            else:
-                selected_user_ids = [u["id"] for u in piece_users]
-                print(f"Total users: {len(selected_user_ids)}")
-
-            # Get forms for this piece
-            df_piece = db.get_forms_dataframe(
-                concert_id=concert_id, piece_id=piece_id
-            )
-
-            # Filter to selected users if specified
-            if key in user_selections:
-                df_piece = df_piece[
-                    df_piece["client_id"].isin(selected_user_ids)
-                ]
-
-            if not df_piece.empty:
-                print(f"Total forms: {len(df_piece)}")
-                print(f"\nValue statistics:")
-                print(f"  Mean: {df_piece['value'].mean():.2f}")
-                print(f"  Median: {df_piece['value'].median():.2f}")
-                print(f"  Std: {df_piece['value'].std():.2f}")
-                print(f"  Min: {df_piece['value'].min():.2f}")
-                print(f"  Max: {df_piece['value'].max():.2f}")
-
-                # Time range
-                if "timestamp" in df_piece.columns:
-                    time_range = (
-                        df_piece["timestamp"].max() - 
-                        df_piece["timestamp"].min()
-                    )
-                    time_range_seconds = (
-                        time_range.total_seconds()
-                        if hasattr(time_range, "total_seconds")
-                        else 0
-                    )
-                    print(f"\nTime range: {time_range_seconds:.1f} seconds")
-
-                # Forms per user statistics
-                forms_per_user = df_piece.groupby("client_id").size()
-                print(f"\nForms per user:")
-                print(f"  Mean: {forms_per_user.mean():.1f}")
-                print(f"  Median: {forms_per_user.median():.1f}")
-                print(f"  Min: {forms_per_user.min()}")
-                print(f"  Max: {forms_per_user.max()}")
-
-                # Device type breakdown if available
-                if key in user_selections:
-                    device_types = {}
-                    for user in piece_users:
-                        if user["id"] in selected_user_ids:
-                            device = user.get("deviceType", "Unknown")
-                            device_types[device] = (
-                                device_types.get(device, 0) + 1
-                            )
-
-                    if device_types:
-                        print(f"\nDevice types:")
-                        for device, count in sorted(device_types.items()):
-                            print(f"  {device}: {count} users")
-            else:
-                print("No forms found for this piece")
-
-
-def select_test():
-    """Interactive test selection"""
-    print_header("Test Selection")
-
-    tests = [
-        ("Statistics Info", "stats"),
-        ("Spearman Rank Correlation", "spearman"),
-        ("Value Histogram with Normal Distribution", "histogram"),
-    ]
-
-    print("\nAvailable tests:")
-    for i, (name, _) in enumerate(tests, 1):
-        print(f"  {i}. {name}")
-
     while True:
-        choice = input(f"\nSelect test (1-{len(tests)}): ").strip()
+        method_input = input(f"\nSelect interpolation method (1-{len(interpolation_methods)}, default: 1): ").strip()
+        if not method_input:
+            interpolation_method = "linear"
+            break
         try:
-            choice_num = int(choice)
-            if 1 <= choice_num <= len(tests):
-                test_name, test_id = tests[choice_num - 1]
-                print(f"Selected: {test_name}")
-                return test_id
+            method_num = int(method_input)
+            if 1 <= method_num <= len(interpolation_methods):
+                interpolation_method = interpolation_methods[method_num - 1]
+                break
             else:
                 print("Invalid choice. Try again.")
         except ValueError:
             print("Invalid input. Enter a number.")
+    
+    # Recording settings per concert
+    print("\n" + "=" * 80)
+    print(" Recording Settings (per concert)")
+    print("=" * 80)
+    
+    recording_start_timestamps = {}
+    recording_durations = {}
+    resampling_ms = {}
+    
+    for concert_id in concert_ids:
+        concert_name = concert_names.get(concert_id, f"Concert {concert_id[:8]}...")
+        print(f"\nConcert: {concert_name} ({concert_id[:8]}...)")
+        
+        # Recording start timestamp
+        while True:
+            start_ts_input = input(f"  Recording start timestamp (default: 0): ").strip()
+            if not start_ts_input:
+                recording_start_timestamps[concert_id] = 0
+                break
+            try:
+                recording_start_timestamps[concert_id] = float(start_ts_input)
+                break
+            except ValueError:
+                print("  Invalid input. Enter a number.")
+        
+        # Recording duration
+        while True:
+            duration_input = input(f"  Recording duration in milliseconds (default: 0): ").strip()
+            if not duration_input:
+                recording_durations[concert_id] = 0
+                break
+            try:
+                duration = float(duration_input)
+                if duration >= 0:
+                    recording_durations[concert_id] = duration
+                    break
+                else:
+                    print("  Duration must be >= 0.")
+            except ValueError:
+                print("  Invalid input. Enter a number.")
+        
+        # Resampling window
+        while True:
+            resampling_input = input(f"  Resampling window in milliseconds (default: 1000): ").strip()
+            if not resampling_input:
+                resampling_ms[concert_id] = 1000
+                break
+            try:
+                resampling = float(resampling_input)
+                if resampling > 0:
+                    resampling_ms[concert_id] = resampling
+                    break
+                else:
+                    print("  Resampling window must be > 0.")
+            except ValueError:
+                print("  Invalid input. Enter a number.")
+    
+    # Build config
+    config = {
+        "concert_ids": concert_ids,
+        "piece_id": piece_id,
+        "users": user_selections,  # Dict mapping concert_id -> list of user_ids
+        "recordingStartTimestamp": recording_start_timestamps,  # Dict mapping concert_id -> timestamp
+        "recordingDuration": recording_durations,  # Dict mapping concert_id -> duration
+        "resamplingMs": resampling_ms,  # Dict mapping concert_id -> resampling window
+        "interpolationMethod": interpolation_method,
+    }
+    
+    print("\n✓ Config generated successfully!")
+    return config
+
+
+def save_config(config: Dict, filename: Optional[str] = None) -> str:
+    """Save config to JSON file"""
+    if filename is None:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"output/piece_config_{timestamp}.json"
+    
+    # Ensure output directory exists
+    output_dir = os.path.dirname(filename) if os.path.dirname(filename) else "output"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    with open(filename, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    print(f"✓ Config saved to: {filename}")
+    return filename
+
+
+def load_config(db: Database, filename: Optional[str] = None) -> Optional[Dict]:
+    """Load config from JSON file with validation"""
+    if filename is None:
+        # Ask user to choose from list or provide path
+        print("\nLoad config from:")
+        print("  1. Choose from list")
+        print("  2. Provide file path")
+        
+        while True:
+            choice = input("\nSelect option (1-2): ").strip()
+            if choice == "1":
+                # List available config files
+                config_dir = "output"
+                if not os.path.exists(config_dir):
+                    print(f"Config directory '{config_dir}' does not exist.")
+                    return None
+                
+                config_files = [f for f in os.listdir(config_dir) if f.startswith("piece_config_") and f.endswith(".json")]
+                
+                if not config_files:
+                    print("No config files found in output/ directory.")
+                    return None
+                
+                print("\nAvailable config files:")
+                for i, config_file in enumerate(config_files, 1):
+                    print(f"  {i}. {config_file}")
+                
+                while True:
+                    file_choice = input(f"\nSelect config file (1-{len(config_files)}): ").strip()
+                    try:
+                        choice_num = int(file_choice)
+                        if 1 <= choice_num <= len(config_files):
+                            filename = os.path.join(config_dir, config_files[choice_num - 1])
+                            break
+                        else:
+                            print("Invalid choice. Try again.")
+                    except ValueError:
+                        print("Invalid input. Enter a number.")
+                break
+            elif choice == "2":
+                filename = input("Enter config file path: ").strip()
+                if not filename:
+                    print("No path provided. Cancelling.")
+                    return None
+                break
+            else:
+                print("Invalid choice. Enter 1 or 2.")
+    
+    if not os.path.exists(filename):
+        print(f"Config file '{filename}' does not exist.")
+        return None
+    
+    try:
+        with open(filename, 'r') as f:
+            config = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error parsing config file: {e}")
+        return None
+    except Exception as e:
+        print(f"Error loading config file: {e}")
+        return None
+    
+    # Validate config
+    print("\nValidating config...")
+    validation_result = validate_config(db, config)
+    
+    if validation_result["warnings"]:
+        print("\n⚠ Warnings:")
+        for warning in validation_result["warnings"]:
+            print(f"  - {warning}")
+    
+    if not validation_result["valid"]:
+        print("\n✗ Config validation failed:")
+        for error in validation_result["errors"]:
+            print(f"  - {error}")
+        return None
+    
+    # Build validated data structure
+    validated_data = []
+    concerts = db.list_concerts()
+    concert_names = {c["id"]: c["name"] for c in concerts}
+    
+    for concert_id in config.get("concert_ids", []):
+        concert_name = concert_names.get(concert_id, f"Concert {concert_id[:8]}...")
+        user_ids = config.get("users", {}).get(concert_id, [])
+        
+        # Get config values (handle both old and new format)
+        recording_start = config.get("recordingStartTimestamp", {})
+        recording_duration = config.get("recordingDuration", {})
+        resampling_ms = config.get("resamplingMs", {})
+        
+        if isinstance(recording_start, dict):
+            start_ts = recording_start.get(concert_id, 0)
+            duration = recording_duration.get(concert_id, 0)
+            resampling = resampling_ms.get(concert_id, 1000)
+        else:
+            # Old format - single values
+            start_ts = recording_start if isinstance(recording_start, (int, float)) else 0
+            duration = recording_duration if isinstance(recording_duration, (int, float)) else 0
+            resampling = resampling_ms if isinstance(resampling_ms, (int, float)) else 1000
+        
+        validated_data.append({
+            "concert_id": concert_id,
+            "concert_name": concert_name,
+            "piece_id": config.get("piece_id"),
+            "user_ids": user_ids,
+            "recordingStartTimestamp": start_ts,
+            "recordingDuration": duration,
+            "resamplingMs": resampling,
+            "interpolationMethod": config.get("interpolationMethod", "linear"),
+        })
+    
+    print("\n✓ Config loaded and validated successfully!")
+    return {
+        "config": config,
+        "validated_data": validated_data,
+    }
+
+
+def validate_config(db: Database, config: Dict) -> Dict:
+    """Validate config: check concerts and users exist"""
+    errors = []
+    warnings = []
+    
+    # Get all available concerts
+    available_concerts = db.list_concerts()
+    available_concert_ids = {c["id"] for c in available_concerts}
+    
+    # Get all users
+    all_users = db.users
+    user_id_to_concert = {}
+    for user in all_users:
+        user_id = user.get("_id", {}).get("$oid", "")
+        concert_id = user.get("concertId", {}).get("$oid", "")
+        if user_id and concert_id:
+            user_id_to_concert[user_id] = concert_id
+    
+    # Validate concerts
+    concert_ids = config.get("concert_ids", [])
+    if not concert_ids:
+        errors.append("No concerts specified in config")
+    else:
+        for concert_id in concert_ids:
+            if concert_id not in available_concert_ids:
+                errors.append(f"Concert {concert_id[:8]}... does not exist in database")
+    
+    # Validate piece_id
+    piece_id = config.get("piece_id")
+    if not piece_id:
+        errors.append("No piece_id specified in config")
+    
+    # Validate users
+    users_config = config.get("users", {})
+    if not users_config:
+        errors.append("No users specified in config")
+    else:
+        for concert_id, user_ids in users_config.items():
+            if concert_id not in available_concert_ids:
+                continue  # Already reported as error above
+            
+            if not user_ids:
+                warnings.append(f"Concert {concert_id[:8]}... has no users selected")
+                continue
+            
+            # Check each user exists and belongs to the concert
+            for user_id in user_ids:
+                if user_id not in user_id_to_concert:
+                    errors.append(f"User {user_id[:8]}... does not exist in database")
+                elif user_id_to_concert[user_id] != concert_id:
+                    errors.append(f"User {user_id[:8]}... does not belong to concert {concert_id[:8]}...")
+    
+    # Validate piece exists for each concert
+    if piece_id and concert_ids:
+        for concert_id in concert_ids:
+            if concert_id in available_concert_ids:
+                pieces = db.list_concert_pieces(concert_id)
+                if piece_id not in pieces:
+                    warnings.append(f"Piece '{piece_id}' not found in concert {concert_id[:8]}...")
+    
+    return {
+        "valid": len(errors) == 0,
+        "errors": errors,
+        "warnings": warnings,
+    }
+
+
+def show_main_menu() -> str:
+    """Display main menu and return selected option"""
+    print_header("Main Menu")
+    
+    options = [
+        ("Generate piece config", "generate"),
+        ("Load config", "load"),
+    ]
+    
+    print("\nAvailable options:")
+    selector = OptionSelector(
+        options=options,
+        display_func=lambda opt, idx: f"  {idx}. {opt[0]}",
+        value_extractor=lambda opt: opt[1],
+        success_message_func=lambda opt: opt[0],
+        allow_all=False,
+        prompt=f"\nSelect option (1-{len(options)}): ",
+    )
+    
+    return selector.select_single()
 
 
 def main():
@@ -862,56 +490,55 @@ def main():
     # Initialize database
     db = Database()
 
-    # Step 1: Select concerts
-    concert_ids = select_concerts(db)
-    if not concert_ids:
-        print("No concerts selected. Exiting.")
-        return
-
-    # Step 2: Select pieces
-    piece_ids = select_pieces(db, concert_ids)
-    if not piece_ids:
-        print("No pieces selected. Exiting.")
-        return
-
-    # Step 3: Select users
-    user_selections = select_users(db, concert_ids, piece_ids)
-    if not user_selections:
-        print("No users selected. Exiting.")
-        return
-
-    # Step 4: Select test
-    test_id = select_test()
-
-    # Step 5: Run test
-    if test_id == "stats":
-        # Run statistics info (no resampling needed)
-        run_statistics_info(db, concert_ids, piece_ids, user_selections)
-    elif test_id == "spearman":
-        # Ask for resampling window
-        print_header("Resampling Configuration")
-        while True:
-            window_input = input(
-                "\nResample window in milliseconds (default: 1000): "
-            ).strip()
-            if not window_input:
-                window_ms = 1000
+    # Main menu loop
+    while True:
+        choice = show_main_menu()
+        
+        if choice == "generate":
+            # Generate config
+            config = generate_config(db)
+            if config:
+                save_config(config)
+                # After generating, proceed to load it
+                print("\nProceeding to load the generated config...")
+                choice = "load"
+            else:
+                print("\nConfig generation cancelled.")
+                continue
+        
+        if choice == "load":
+            # Load config
+            result = load_config(db)
+            if result:
+                config = result["config"]
+                validated_data = result["validated_data"]
+                
+                print("\n" + "=" * 80)
+                print(" Config Summary")
+                print("=" * 80)
+                print(f"  Piece ID: {config.get('piece_id', 'N/A')}")
+                print(f"  Concerts: {len(validated_data)}")
+                total_users = sum(len(data['user_ids']) for data in validated_data)
+                print(f"  Total users: {total_users}")
+                print(f"  Interpolation method: {config.get('interpolationMethod', 'N/A')}")
+                
+                print("\n  Concert details:")
+                for data in validated_data:
+                    print(f"    - {data['concert_name']} ({data['concert_id'][:8]}...)")
+                    print(f"      Users: {len(data['user_ids'])}")
+                    print(f"      Start: {data['recordingStartTimestamp']}, Duration: {data['recordingDuration']} ms")
+                    print(f"      Resampling: {data['resamplingMs']} ms")
+                
+                # TODO: Use validated_data for analysis
+                print("\nConfig ready for analysis. (Analysis implementation pending)")
                 break
-            try:
-                window_ms = float(window_input)
-                if window_ms > 0:
-                    break
-                else:
-                    print("Window must be positive.")
-            except ValueError:
-                print("Invalid input. Enter a number.")
-
-        run_spearman_correlation_test(
-            db, concert_ids, piece_ids, user_selections, window_ms
-        )
-    elif test_id == "histogram":
-        # Run histogram analysis with normal distribution
-        run_value_histogram_analysis(db, concert_ids, piece_ids, user_selections)
+            else:
+                print("\nConfig loading cancelled or failed.")
+                continue
+        
+        if choice is None:
+            print("\nExiting...")
+            break
 
     print_header("Analysis Complete")
 
