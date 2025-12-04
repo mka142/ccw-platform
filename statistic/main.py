@@ -3,7 +3,7 @@ Main script for concert statistics analysis
 """
 
 from db import Database
-from operations import resample_data
+from operations import resample_data, resample_data_with_period
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -13,6 +13,7 @@ import os
 import json
 from datetime import datetime
 from utils import OptionSelector, create_user_custom_handler, create_user_exclude_handler
+import config
 
 
 def print_header(text: str):
@@ -133,329 +134,176 @@ def select_users_for_piece(
     return result
 
 
-def generate_config(db: Database) -> Optional[Dict]:
-    """Generate a piece configuration by selecting concerts, piece, and users"""
-    print_header("Generate Piece Config")
-    
-    # Step 1: Select concerts
-    concert_ids = select_concerts(db)
-    if not concert_ids:
-        print("No concerts selected. Cancelling config generation.")
-        return None
-    
-    # Step 2: Select single piece
-    piece_id = select_piece(db, concert_ids)
-    if not piece_id:
-        print("No piece selected. Cancelling config generation.")
-        return None
-    
-    # Step 3: Select users for piece from each concert
-    user_selections = select_users_for_piece(db, concert_ids, piece_id)
-    if not user_selections:
-        print("No users selected. Cancelling config generation.")
-        return None
-    
-    # Step 4: Get config values per concert
-    print_header("Config Defaults")
-    
-    # Get concert names for display
-    concerts = db.list_concerts()
-    concert_names = {c["id"]: c["name"] for c in concerts}
-    
-    # Interpolation method (global)
-    interpolation_methods = ["linear", "step"]
-    print("\nSelect interpolation method (applies to all concerts):")
-    for i, method in enumerate(interpolation_methods, 1):
-        print(f"  {i}. {method}")
-    
-    while True:
-        method_input = input(f"\nSelect interpolation method (1-{len(interpolation_methods)}, default: 1): ").strip()
-        if not method_input:
-            interpolation_method = "linear"
-            break
-        try:
-            method_num = int(method_input)
-            if 1 <= method_num <= len(interpolation_methods):
-                interpolation_method = interpolation_methods[method_num - 1]
-                break
-            else:
-                print("Invalid choice. Try again.")
-        except ValueError:
-            print("Invalid input. Enter a number.")
-    
-    # Recording settings per concert
-    print("\n" + "=" * 80)
-    print(" Recording Settings (per concert)")
-    print("=" * 80)
-    
-    recording_start_timestamps = {}
-    recording_durations = {}
-    resampling_ms = {}
-    
-    for concert_id in concert_ids:
-        concert_name = concert_names.get(concert_id, f"Concert {concert_id[:8]}...")
-        print(f"\nConcert: {concert_name} ({concert_id[:8]}...)")
-        
-        # Recording start timestamp
-        while True:
-            start_ts_input = input(f"  Recording start timestamp (default: 0): ").strip()
-            if not start_ts_input:
-                recording_start_timestamps[concert_id] = 0
-                break
-            try:
-                recording_start_timestamps[concert_id] = float(start_ts_input)
-                break
-            except ValueError:
-                print("  Invalid input. Enter a number.")
-        
-        # Recording duration
-        while True:
-            duration_input = input(f"  Recording duration in milliseconds (default: 0): ").strip()
-            if not duration_input:
-                recording_durations[concert_id] = 0
-                break
-            try:
-                duration = float(duration_input)
-                if duration >= 0:
-                    recording_durations[concert_id] = duration
-                    break
-                else:
-                    print("  Duration must be >= 0.")
-            except ValueError:
-                print("  Invalid input. Enter a number.")
-        
-        # Resampling window
-        while True:
-            resampling_input = input(f"  Resampling window in milliseconds (default: 1000): ").strip()
-            if not resampling_input:
-                resampling_ms[concert_id] = 1000
-                break
-            try:
-                resampling = float(resampling_input)
-                if resampling > 0:
-                    resampling_ms[concert_id] = resampling
-                    break
-                else:
-                    print("  Resampling window must be > 0.")
-            except ValueError:
-                print("  Invalid input. Enter a number.")
-    
-    # Build config
-    config = {
-        "concert_ids": concert_ids,
-        "piece_id": piece_id,
-        "users": user_selections,  # Dict mapping concert_id -> list of user_ids
-        "recordingStartTimestamp": recording_start_timestamps,  # Dict mapping concert_id -> timestamp
-        "recordingDuration": recording_durations,  # Dict mapping concert_id -> duration
-        "resamplingMs": resampling_ms,  # Dict mapping concert_id -> resampling window
-        "interpolationMethod": interpolation_method,
-    }
-    
-    print("\n✓ Config generated successfully!")
-    return config
 
 
-def save_config(config: Dict, filename: Optional[str] = None) -> str:
-    """Save config to JSON file"""
-    if filename is None:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"output/piece_config_{timestamp}.json"
+def apply_resampling(
+    db: Database,
+    validated_data: List[Dict]
+) -> Optional[List[Dict]]:
+    """
+    Apply resampling to all validated data
     
-    # Ensure output directory exists
-    output_dir = os.path.dirname(filename) if os.path.dirname(filename) else "output"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    with open(filename, 'w') as f:
-        json.dump(config, f, indent=2)
-    
-    print(f"✓ Config saved to: {filename}")
-    return filename
-
-
-def load_config(db: Database, filename: Optional[str] = None) -> Optional[Dict]:
-    """Load config from JSON file with validation"""
-    if filename is None:
-        # Ask user to choose from list or provide path
-        print("\nLoad config from:")
-        print("  1. Choose from list")
-        print("  2. Provide file path")
+    Args:
+        db: Database instance
+        validated_data: List of validated concert data dictionaries
         
-        while True:
-            choice = input("\nSelect option (1-2): ").strip()
-            if choice == "1":
-                # List available config files
-                config_dir = "output"
-                if not os.path.exists(config_dir):
-                    print(f"Config directory '{config_dir}' does not exist.")
-                    return None
-                
-                config_files = [f for f in os.listdir(config_dir) if f.startswith("piece_config_") and f.endswith(".json")]
-                
-                if not config_files:
-                    print("No config files found in output/ directory.")
-                    return None
-                
-                print("\nAvailable config files:")
-                for i, config_file in enumerate(config_files, 1):
-                    print(f"  {i}. {config_file}")
-                
-                while True:
-                    file_choice = input(f"\nSelect config file (1-{len(config_files)}): ").strip()
-                    try:
-                        choice_num = int(file_choice)
-                        if 1 <= choice_num <= len(config_files):
-                            filename = os.path.join(config_dir, config_files[choice_num - 1])
-                            break
-                        else:
-                            print("Invalid choice. Try again.")
-                    except ValueError:
-                        print("Invalid input. Enter a number.")
-                break
-            elif choice == "2":
-                filename = input("Enter config file path: ").strip()
-                if not filename:
-                    print("No path provided. Cancelling.")
-                    return None
-                break
-            else:
-                print("Invalid choice. Enter 1 or 2.")
+    Returns:
+        List of resampled data per concert with user data
+    """
+    print_header("Applying Resampling")
     
-    if not os.path.exists(filename):
-        print(f"Config file '{filename}' does not exist.")
-        return None
+    resampled_results = []
     
-    try:
-        with open(filename, 'r') as f:
-            config = json.load(f)
-    except json.JSONDecodeError as e:
-        print(f"Error parsing config file: {e}")
-        return None
-    except Exception as e:
-        print(f"Error loading config file: {e}")
-        return None
-    
-    # Validate config
-    print("\nValidating config...")
-    validation_result = validate_config(db, config)
-    
-    if validation_result["warnings"]:
-        print("\n⚠ Warnings:")
-        for warning in validation_result["warnings"]:
-            print(f"  - {warning}")
-    
-    if not validation_result["valid"]:
-        print("\n✗ Config validation failed:")
-        for error in validation_result["errors"]:
-            print(f"  - {error}")
-        return None
-    
-    # Build validated data structure
-    validated_data = []
-    concerts = db.list_concerts()
-    concert_names = {c["id"]: c["name"] for c in concerts}
-    
-    for concert_id in config.get("concert_ids", []):
-        concert_name = concert_names.get(concert_id, f"Concert {concert_id[:8]}...")
-        user_ids = config.get("users", {}).get(concert_id, [])
+    for concert_data in validated_data:
+        concert_id = concert_data['concert_id']
+        concert_name = concert_data['concert_name']
+        piece_id = concert_data['piece_id']
+        user_ids = concert_data['user_ids']
+        recording_start = concert_data['recordingStartTimestamp']
+        recording_duration = concert_data['recordingDuration']
+        resampling_ms = concert_data['resamplingMs']
+        interpolation_method = concert_data['interpolationMethod']
         
-        # Get config values (handle both old and new format)
-        recording_start = config.get("recordingStartTimestamp", {})
-        recording_duration = config.get("recordingDuration", {})
-        resampling_ms = config.get("resamplingMs", {})
+        print(f"\nProcessing: {concert_name} ({concert_id[:8]}...)")
+        print(f"  Piece: {piece_id}")
+        print(f"  Users: {len(user_ids)}")
+        print(f"  Period: {recording_start} to {recording_start + recording_duration} ms")
+        print(f"  Resampling window: {resampling_ms} ms")
+        print(f"  Interpolation: {interpolation_method}")
         
-        if isinstance(recording_start, dict):
-            start_ts = recording_start.get(concert_id, 0)
-            duration = recording_duration.get(concert_id, 0)
-            resampling = resampling_ms.get(concert_id, 1000)
-        else:
-            # Old format - single values
-            start_ts = recording_start if isinstance(recording_start, (int, float)) else 0
-            duration = recording_duration if isinstance(recording_duration, (int, float)) else 0
-            resampling = resampling_ms if isinstance(resampling_ms, (int, float)) else 1000
+        # Calculate expected number of samples
+        from operations import adjust_duration_to_resampling_window
+        adjusted_duration, num_samples = adjust_duration_to_resampling_window(
+            recording_duration, resampling_ms
+        )
         
-        validated_data.append({
-            "concert_id": concert_id,
-            "concert_name": concert_name,
-            "piece_id": config.get("piece_id"),
-            "user_ids": user_ids,
-            "recordingStartTimestamp": start_ts,
-            "recordingDuration": duration,
-            "resamplingMs": resampling,
-            "interpolationMethod": config.get("interpolationMethod", "linear"),
-        })
-    
-    print("\n✓ Config loaded and validated successfully!")
-    return {
-        "config": config,
-        "validated_data": validated_data,
-    }
-
-
-def validate_config(db: Database, config: Dict) -> Dict:
-    """Validate config: check concerts and users exist"""
-    errors = []
-    warnings = []
-    
-    # Get all available concerts
-    available_concerts = db.list_concerts()
-    available_concert_ids = {c["id"] for c in available_concerts}
-    
-    # Get all users
-    all_users = db.users
-    user_id_to_concert = {}
-    for user in all_users:
-        user_id = user.get("_id", {}).get("$oid", "")
-        concert_id = user.get("concertId", {}).get("$oid", "")
-        if user_id and concert_id:
-            user_id_to_concert[user_id] = concert_id
-    
-    # Validate concerts
-    concert_ids = config.get("concert_ids", [])
-    if not concert_ids:
-        errors.append("No concerts specified in config")
-    else:
-        for concert_id in concert_ids:
-            if concert_id not in available_concert_ids:
-                errors.append(f"Concert {concert_id[:8]}... does not exist in database")
-    
-    # Validate piece_id
-    piece_id = config.get("piece_id")
-    if not piece_id:
-        errors.append("No piece_id specified in config")
-    
-    # Validate users
-    users_config = config.get("users", {})
-    if not users_config:
-        errors.append("No users specified in config")
-    else:
-        for concert_id, user_ids in users_config.items():
-            if concert_id not in available_concert_ids:
-                continue  # Already reported as error above
+        if adjusted_duration != recording_duration:
+            print(f"  ⚠ Duration adjusted: {recording_duration} → {adjusted_duration} ms")
+        
+        print(f"  Expected samples per user: {num_samples}")
+        
+        # Process each user
+        user_resampled_data = {}
+        users_processed = 0
+        users_failed = 0
+        
+        for user_id in user_ids:
+            # Get forms for this user
+            forms = db.get_forms_for_concert_piece_user(concert_id, piece_id, user_id)
             
-            if not user_ids:
-                warnings.append(f"Concert {concert_id[:8]}... has no users selected")
+            if not forms:
+                print(f"    ⚠ User {user_id[:8]}...: No forms found")
+                users_failed += 1
                 continue
             
-            # Check each user exists and belongs to the concert
-            for user_id in user_ids:
-                if user_id not in user_id_to_concert:
-                    errors.append(f"User {user_id[:8]}... does not exist in database")
-                elif user_id_to_concert[user_id] != concert_id:
-                    errors.append(f"User {user_id[:8]}... does not belong to concert {concert_id[:8]}...")
+            # Prepare data for resampling
+            data = [
+                {'timestamp': form['timestamp'], 'value': form['value']}
+                for form in forms
+            ]
+            
+            try:
+                # Apply resampling
+                resampled = resample_data_with_period(
+                    data=data,
+                    recording_start_timestamp=recording_start,
+                    recording_duration=recording_duration,
+                    resampling_ms=resampling_ms,
+                    interpolation_method=interpolation_method
+                )
+                
+                
+                # Verify we got the expected number of samples
+                if len(resampled) != num_samples:
+                    print(f"    ⚠ User {user_id[:8]}...: Expected {num_samples} samples, got {len(resampled)}")
+                
+                user_resampled_data[user_id] = resampled
+                users_processed += 1
+                
+            except Exception as e:
+                print(f"    ✗ User {user_id[:8]}...: Resampling failed - {e}")
+                users_failed += 1
+                continue
+        
+        print(f"  ✓ Processed: {users_processed} users, Failed: {users_failed} users")
+        
+        # Store results for this concert
+        resampled_results.append({
+            'concert_id': concert_id,
+            'concert_name': concert_name,
+            'piece_id': piece_id,
+            'recording_start': recording_start,
+            'recording_duration': adjusted_duration,
+            'resampling_ms': resampling_ms,
+            'interpolation_method': interpolation_method,
+            'expected_samples': num_samples,
+            'users': user_resampled_data,
+        })
     
-    # Validate piece exists for each concert
-    if piece_id and concert_ids:
-        for concert_id in concert_ids:
-            if concert_id in available_concert_ids:
-                pieces = db.list_concert_pieces(concert_id)
-                if piece_id not in pieces:
-                    warnings.append(f"Piece '{piece_id}' not found in concert {concert_id[:8]}...")
+    return resampled_results
+
+
+def plot_user_response(
+    user_data: List[Dict[str, float]],
+    concert_name: str,
+    user_id: str,
+    output_dir: str = 'output'
+) -> str:
+    """
+    Generate a plot for a single user's response data over time
     
-    return {
-        "valid": len(errors) == 0,
-        "errors": errors,
-        "warnings": warnings,
-    }
+    Args:
+        user_data: List of dictionaries with 'time' and 'value' keys
+        concert_name: Name of the concert (for plot title)
+        user_id: User ID (for plot title and filename)
+        output_dir: Directory to save the plot
+        
+    Returns:
+        Path to the saved plot file
+    """
+    if len(user_data) == 0:
+        raise ValueError("No data provided for plotting")
+    
+    # Extract time and value data
+    times = [point.get('time', 0) for point in user_data]
+    values = [point.get('value', 0) for point in user_data]
+    
+    # Create figure
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    # Plot value over time
+    ax.plot(times, values, linewidth=2, alpha=0.7, color='steelblue', marker='o', markersize=3)
+    
+    # Formatting
+    ax.set_xlabel('Time (ms)', fontsize=12)
+    ax.set_ylabel('Value', fontsize=12)
+    ax.set_title(f"{concert_name}\nUser: {user_id[:8]}...", fontsize=14, fontweight='bold')
+    ax.grid(True, alpha=0.3)
+    
+    # Add statistics text
+    mean_val = np.mean(values)
+    std_val = np.std(values)
+    min_val = np.min(values)
+    max_val = np.max(values)
+    stats_text = f'Mean: {mean_val:.2f}, Std: {std_val:.2f}\nMin: {min_val:.2f}, Max: {max_val:.2f}'
+    ax.text(0.02, 0.98, stats_text, transform=ax.transAxes,
+            fontsize=10, verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    
+    plt.tight_layout()
+    
+    # Save plot
+    os.makedirs(output_dir, exist_ok=True)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    safe_concert_name = "".join(c for c in concert_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    safe_concert_name = safe_concert_name.replace(' ', '_')[:30]  # Limit length
+    filename = f'user_response_{safe_concert_name}_{user_id[:8]}_{timestamp}.png'
+    output_path = os.path.join(output_dir, filename)
+    
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    
+    return output_path
 
 
 def show_main_menu() -> str:
@@ -496,9 +344,14 @@ def main():
         
         if choice == "generate":
             # Generate config
-            config = generate_config(db)
-            if config:
-                save_config(config)
+            cfg = config.generate(
+                db,
+                select_concerts,
+                select_piece,
+                select_users_for_piece
+            )
+            if cfg:
+                config.save(cfg)
                 # After generating, proceed to load it
                 print("\nProceeding to load the generated config...")
                 choice = "load"
@@ -508,19 +361,19 @@ def main():
         
         if choice == "load":
             # Load config
-            result = load_config(db)
+            result = config.load(db)
             if result:
-                config = result["config"]
+                cfg = result["config"]
                 validated_data = result["validated_data"]
                 
                 print("\n" + "=" * 80)
                 print(" Config Summary")
                 print("=" * 80)
-                print(f"  Piece ID: {config.get('piece_id', 'N/A')}")
+                print(f"  Piece ID: {cfg.get('piece_id', 'N/A')}")
                 print(f"  Concerts: {len(validated_data)}")
                 total_users = sum(len(data['user_ids']) for data in validated_data)
                 print(f"  Total users: {total_users}")
-                print(f"  Interpolation method: {config.get('interpolationMethod', 'N/A')}")
+                print(f"  Interpolation method: {cfg.get('interpolationMethod', 'N/A')}")
                 
                 print("\n  Concert details:")
                 for data in validated_data:
@@ -529,8 +382,10 @@ def main():
                     print(f"      Start: {data['recordingStartTimestamp']}, Duration: {data['recordingDuration']} ms")
                     print(f"      Resampling: {data['resamplingMs']} ms")
                 
-                # TODO: Use validated_data for analysis
-                print("\nConfig ready for analysis. (Analysis implementation pending)")
+                # Apply resampling to all data
+                resampled_data = apply_resampling(db, validated_data)
+                    
+                
                 break
             else:
                 print("\nConfig loading cancelled or failed.")
