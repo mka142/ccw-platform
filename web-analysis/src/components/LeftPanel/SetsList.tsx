@@ -10,9 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Edit2, Trash2, Layers } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Edit2, Trash2, Layers, Download, FileJson, FileSpreadsheet } from "lucide-react";
 import LineStyleForm from "./LineStyleForm";
 import { LineStyle } from "@/lib/types";
+import { downloadProcessedData, downloadProcessedDataAsCSV } from "@/lib/downloadUtils";
 
 // Utility function to determine if a color is light or dark
 function isLightColor(hexColor: string): boolean {
@@ -36,6 +43,7 @@ export default function SetsList() {
     deleteSet,
     setCurrentSet,
     toggleSetVisibility,
+    getSetProcessedData,
   } = useDashboard();
 
   const [editingSetName, setEditingSetName] = useState<string | null>(null);
@@ -115,6 +123,22 @@ export default function SetsList() {
 
   const handleEditRecords = (setName: string) => {
     setCurrentSet(setName);
+  };
+
+  const handleDownloadSetData = (setName: string, format: 'json' | 'csv' = 'json') => {
+    const processedData = getSetProcessedData(setName);
+    if (processedData.length === 0) {
+      alert('Brak danych do pobrania dla tego zestawu');
+      return;
+    }
+    
+    const filename = `set-${setName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+    
+    if (format === 'csv') {
+      downloadProcessedDataAsCSV(processedData, filename);
+    } else {
+      downloadProcessedData(processedData, filename);
+    }
   };
 
   return (
@@ -267,7 +291,7 @@ export default function SetsList() {
                         set.visible ? "Ukryj z wykresu" : "Pokaż na wykresie"
                       }
                     />
-                    <Layers className="h-4 w-4  flex-shrink-0 mt-0.5" />
+                    <Layers className="h-4 w-4 shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">{set.name}</p>
                       {set.description && (
@@ -285,18 +309,41 @@ export default function SetsList() {
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
+                  <div className="flex gap-1 shrink-0">
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => handleStartEdit(set.name)}
+                      title="Edytuj ustawienia zestawu"
                     >
                       <Edit2 className="h-3 w-3" />
                     </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Pobierz dane zestawu"
+                        >
+                          <Download className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleDownloadSetData(set.name, 'json')}>
+                          <FileJson className="h-4 w-4 mr-2" />
+                          Pobierz JSON
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDownloadSetData(set.name, 'csv')}>
+                          <FileSpreadsheet className="h-4 w-4 mr-2" />
+                          Pobierz CSV
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => handleDeleteSet(set.name)}
+                      title="Usuń zestaw"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>

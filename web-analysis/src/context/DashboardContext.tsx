@@ -1154,6 +1154,41 @@ export function DashboardProvider({
     });
   };
 
+  // Get global processed data for download
+  const getGlobalProcessedData = (): ProcessedRecord[] => {
+    return globalProcessedData;
+  };
+
+  // Get set processed data for download
+  const getSetProcessedData = (setName: string): ProcessedRecord[] => {
+    const set = config.sets.find((s) => s.name === setName);
+    if (!set) {
+      console.warn(`Set "${setName}" not found`);
+      return [];
+    }
+
+    // If this is the current set being edited, return currentSetProcessedData
+    if (currentSet === setName && currentSetProcessedData) {
+      return currentSetProcessedData;
+    }
+
+    // Otherwise, check cache or return empty (data might not be loaded if set is not visible)
+    const cacheKey = setName;
+    const cachedEntry = dataCache[cacheKey];
+    if (cachedEntry) {
+      return cachedEntry.data;
+    }
+
+    // If not in cache and not current set, check setsProcessedData
+    // Filter for records matching this set
+    const setRecords = setsProcessedData.filter((record) => {
+      const parsedId = parseRecordId(record.id);
+      return parsedId.setName === setName;
+    });
+
+    return setRecords;
+  };
+
   const value: DashboardContextValue = {
     config,
     mode,
@@ -1197,6 +1232,8 @@ export function DashboardProvider({
     setYAxisRange,
     clearYAxisRange,
     addRecords,
+    getGlobalProcessedData,
+    getSetProcessedData,
   };
 
   return (

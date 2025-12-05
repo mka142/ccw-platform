@@ -14,11 +14,18 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Eye, EyeOff, ChevronLeft } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Eye, EyeOff, ChevronLeft, Download, FileJson, FileSpreadsheet } from "lucide-react";
 import SetsList from "./SetsList";
 import SetRecordsList from "./SetRecordsList";
 import RecordCard from "./RecordCard";
 import RecordIdsExport from "./RecordIdsExport";
+import { downloadProcessedData, downloadProcessedDataAsCSV } from "@/lib/downloadUtils";
 
 interface LeftPanelProps {
   panelHeader?: React.ReactNode;
@@ -43,6 +50,7 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
     toggleExcludeTag,
     removeOperationFromRecord,
     toggleGlobalVisibility,
+    getGlobalProcessedData,
   } = useDashboard();
 
   const [activeTab, setActiveTab] = useState("records");
@@ -73,6 +81,22 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
     }
   };
 
+  const handleDownloadGlobalData = (format: 'json' | 'csv' = 'json') => {
+    const processedData = getGlobalProcessedData();
+    if (processedData.length === 0) {
+      alert('Brak danych do pobrania');
+      return;
+    }
+    
+    const filename = 'global-data';
+    
+    if (format === 'csv') {
+      downloadProcessedDataAsCSV(processedData, filename);
+    } else {
+      downloadProcessedData(processedData, filename);
+    }
+  };
+
   return (
     <Card className="h-full flex flex-col">
       {panelHeader && (
@@ -100,16 +124,40 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
           onValueChange={handleTabChange}
           className="flex flex-col h-full flex-1 overflow-auto"
         >
-          <div className="p-4 border-b">
+          <div className="p-4 border-b space-y-3">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="records" className="flex items-center gap-2">
+              <TabsTrigger value="records" className="flex items-center gap-2 justify-between">
+                <span className="flex items-center">
+<DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <span
+                      className="cursor-pointer mr-1"
+                      title="Pobierz dane globalne"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Download className="h-3 w-3" />
+                    </span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleDownloadGlobalData('json')} disabled={isLeftPanelDisabled}>
+                      <FileJson className="h-4 w-4 mr-2" />
+                      Pobierz JSON
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDownloadGlobalData('csv')} disabled={isLeftPanelDisabled}>
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Pobierz CSV
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <span>Rekordy</span>
+                </span>
+                
                 <span
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleGlobalVisibility("records");
                   }}
-                  className="ml-auto cursor-pointer"
+                  className="cursor-pointer"
                   title={
                     config.visible.records
                       ? "Ukryj rekordy z wykresu"

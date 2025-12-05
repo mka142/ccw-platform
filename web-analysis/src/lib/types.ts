@@ -164,6 +164,9 @@ export interface DashboardContextValue extends DashboardState {
   clearYAxisRange: () => void;
   // Add records from re-record data
   addRecords: (records: DataRecord[], label: string, tags: string[]) => void;
+  // Download processed data
+  getGlobalProcessedData: () => ProcessedRecord[];
+  getSetProcessedData: (setName: string) => ProcessedRecord[];
 }
 
 // Helper type for chart data
