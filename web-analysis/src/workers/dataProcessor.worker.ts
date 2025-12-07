@@ -177,15 +177,36 @@ function processData(params: ProcessDataMessage['payload']): ProcessedRecord[] {
 
     let result = filtered;
     globalOperations.forEach((operation) => {
-      result = applyGlobalOperation(
+      const processedRecords = applyGlobalOperation(
         result.map((p) => ({ id: p.id, data: p.data })),
         operation
-      ).map((r) => ({
-        id: `${idPrefix}:${r.id}`,
-        data: r.data,
-        originalData: filtered.find((p) => p.id === r.id)?.originalData || [],
-        label: operation.label,
-      }));
+      );
+      
+      // Determine if this operation preserves individual records (doesn't aggregate)
+      const preservesIndividualRecords = [
+        'changes',
+        'quantize', 
+        'movingAverage',
+        'zScore',
+        'minMaxNormalization'
+      ].includes(operation.type);
+      
+      result = processedRecords.map((r) => {
+        // Find the original record to get its label
+        const originalRecord = result.find((p) => p.id === r.id);
+
+        console.log(originalRecord)
+        
+        return {
+          id: `${idPrefix}:${r.id}`,
+          data: r.data,
+          originalData: filtered.find((p) => p.id === r.id)?.originalData || [],
+          // Preserve original label for non-aggregating operations, use operation label for aggregating ones
+          label: preservesIndividualRecords && originalRecord?.label 
+            ? originalRecord.label 
+            : operation.label,
+        };
+      });
     });
     return applyDownsampling(result);
   }

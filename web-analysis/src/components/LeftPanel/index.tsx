@@ -139,11 +139,11 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
                     </span>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleDownloadGlobalData('json')} disabled={isLeftPanelDisabled}>
+                    <DropdownMenuItem onClick={() => handleDownloadGlobalData('json')}>
                       <FileJson className="h-4 w-4 mr-2" />
                       Pobierz JSON
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDownloadGlobalData('csv')} disabled={isLeftPanelDisabled}>
+                    <DropdownMenuItem onClick={() => handleDownloadGlobalData('csv')}>
                       <FileSpreadsheet className="h-4 w-4 mr-2" />
                       Pobierz CSV
                     </DropdownMenuItem>
