@@ -50,6 +50,7 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
     toggleExcludeTag,
     removeOperationFromRecord,
     toggleGlobalVisibility,
+    deleteRecord,
     getGlobalProcessedData,
   } = useDashboard();
 
@@ -314,6 +315,7 @@ export default function LeftPanel({ panelHeader, onCollapse }: LeftPanelProps) {
                       onUpdateMetadata={updateRecordMetadata}
                       onRemoveOperation={removeOperationFromRecord}
                       onEditModeChange={handleEditModeChange}
+                      onDelete={deleteRecord}
                       resamplingApplied={config.resampling.applied}
                       showLabel={true}
                     />

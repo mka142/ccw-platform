@@ -32,9 +32,9 @@ export default function ProjectManager({ onClose }: ProjectManagerProps) {
     importFromFile,
   } = useProject();
 
-  const { customData, dataFile, clearData } = useData();
+  const { customData, dataFile, clearData, setCustomData } = useData();
   const { audioFile, clearAudio } = useAudio();
-  const { config } = useDashboard();
+  const { config, getRawData } = useDashboard();
 
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
@@ -67,15 +67,21 @@ export default function ProjectManager({ onClose }: ProjectManagerProps) {
       }
     }
 
-    // Create project with all data
+    // Create project with all data (including re-records)
+    const allData = getRawData();
     createProject(
       projectName, 
       projectDescription, 
-      customData || [], 
+      allData.length > 0 ? allData : (customData || []), 
       dataFile?.name,
       audioData,
       config
     );
+    
+    // Sync customData with rawData to keep UI in sync
+    if (allData.length > 0) {
+      setCustomData(allData);
+    }
     
     setProjectName('');
     setProjectDescription('');
@@ -132,8 +138,15 @@ export default function ProjectManager({ onClose }: ProjectManagerProps) {
       }
     }
 
-    // Update project with current workspace state
-    updateProject(customData || [], dataFile?.name, audioData, config);
+    // Update project with current workspace state (including re-records)
+    const allData = getRawData();
+    updateProject(allData.length > 0 ? allData : (customData || []), dataFile?.name, audioData, config);
+    
+    // Sync customData with rawData to keep UI in sync
+    if (allData.length > 0) {
+      setCustomData(allData);
+    }
+    
     alert('Projekt zapisany pomyślnie!');
   };
 

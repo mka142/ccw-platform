@@ -164,9 +164,13 @@ export interface DashboardContextValue extends DashboardState {
   clearYAxisRange: () => void;
   // Add records from re-record data
   addRecords: (records: DataRecord[], label: string, tags: string[]) => void;
+  // Delete record (for removing re-records)
+  deleteRecord: (recordId: string) => void;
   // Download processed data
   getGlobalProcessedData: () => ProcessedRecord[];
   getSetProcessedData: (setName: string) => ProcessedRecord[];
+  // Get raw data for project saving
+  getRawData: () => DataRecord[];
 }
 
 // Helper type for chart data

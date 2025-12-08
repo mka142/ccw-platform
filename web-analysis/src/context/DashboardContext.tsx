@@ -1154,6 +1154,49 @@ export function DashboardProvider({
     });
   };
 
+  // Delete record (primarily for removing re-records)
+  const deleteRecord = (recordId: string) => {
+    // Remove from rawData
+    setRawData((prev) => prev.filter((r) => r.id !== recordId));
+
+    // Remove metadata from config
+    setConfig((prev) => {
+      const newConfig = { ...prev };
+      
+      // Remove from global metadata
+      const { [recordId]: removed, ...restGlobal } = newConfig.recordMetadata;
+      newConfig.recordMetadata = restGlobal;
+      
+      // Remove from all sets
+      newConfig.sets = newConfig.sets.map((set) => {
+        const { [recordId]: removedFromSet, ...restSet } = set.recordMetadata;
+        return {
+          ...set,
+          recordMetadata: restSet,
+          filterByIds: set.filterByIds.filter((id) => id !== recordId),
+        };
+      });
+      
+      // Remove from global filterByIds
+      newConfig.filterByIds = newConfig.filterByIds.filter((id) => id !== recordId);
+      
+      return newConfig;
+    });
+
+    // Clear selection if deleted record was selected
+    if (selectedRecordId === recordId) {
+      setSelectedRecordId(null);
+    }
+    if (highlightedRecordId === recordId) {
+      setHighlightedRecordId(null);
+    }
+  };
+
+  // Get raw data for project saving
+  const getRawData = (): DataRecord[] => {
+    return rawData;
+  };
+
   // Get global processed data for download
   const getGlobalProcessedData = (): ProcessedRecord[] => {
     return globalProcessedData;
@@ -1198,6 +1241,7 @@ export function DashboardProvider({
     currentModeProcessData,
     isLeftPanelDisabled,
     chartVisualizationMode,
+    getRawData,
     currentSet,
     filteredRecordIds,
     filteredRecordIdsByTag,
@@ -1232,6 +1276,7 @@ export function DashboardProvider({
     setYAxisRange,
     clearYAxisRange,
     addRecords,
+    deleteRecord,
     getGlobalProcessedData,
     getSetProcessedData,
   };

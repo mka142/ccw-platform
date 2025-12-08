@@ -30,6 +30,7 @@ interface RecordCardProps {
   onUpdateMetadata: (id: string, metadata: Partial<RecordMetadata>) => void;
   onRemoveOperation: (id: string, operationIndex: number) => void;
   onEditModeChange?: (id: string, isEditing: boolean) => void;
+  onDelete?: (id: string) => void;
   resamplingApplied?: boolean;
   showLabel?: boolean;
 }
@@ -45,6 +46,7 @@ export default function RecordCard({
   onUpdateMetadata,
   onRemoveOperation,
   onEditModeChange,
+  onDelete,
   resamplingApplied = false,
   showLabel = true,
 }: RecordCardProps) {
@@ -114,6 +116,9 @@ export default function RecordCard({
     }
   };
 
+  // Check if this is a re-record entry
+  const isReRecord = id.startsWith('rerecord_');
+
   return (
     <Card
       className={`p-3 ${isHighlighted ? "ring-2 ring-primary" : ""} ${isDisabled ? "opacity-50" : ""
@@ -135,11 +140,28 @@ export default function RecordCard({
             )}
           </div>
         </div>
-        {!isEditing && !isDisabled && (
-          <Button size="sm" variant="ghost" onClick={handleEditClick}>
-            <Edit2 className="h-3 w-3" />
-          </Button>
-        )}
+        <div className="flex gap-1">
+          {!isEditing && !isDisabled && (
+            <Button size="sm" variant="ghost" onClick={handleEditClick}>
+              <Edit2 className="h-3 w-3" />
+            </Button>
+          )}
+          {isReRecord && onDelete && !isDisabled && (
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => {
+                if (confirm(`Czy na pewno chcesz usunąć rekord "${metadata.label || id}"?`)) {
+                  onDelete(id);
+                }
+              }}
+              className="text-destructive hover:text-destructive"
+              title="Usuń rekord re-record"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Tags */}

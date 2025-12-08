@@ -10,7 +10,7 @@ import RecordCard from './RecordCard';
 import RecordIdsExport from './RecordIdsExport';
 
 export default function SetRecordsList() {
-  const { config, currentSet, filteredRecordIdsByTag, filteredRecordIds, setCurrentSet, updateRecordMetadata, removeOperationFromRecord, toggleIdFilter, isLeftPanelDisabled } = useDashboard();
+  const { config, currentSet, filteredRecordIdsByTag, filteredRecordIds, setCurrentSet, updateRecordMetadata, removeOperationFromRecord, toggleIdFilter, deleteRecord, isLeftPanelDisabled } = useDashboard();
 
   if (!currentSet) return null;
 
@@ -79,6 +79,7 @@ export default function SetRecordsList() {
                   onCheckChange={() => !isLeftPanelDisabled && toggleIdFilter(id)}
                   onUpdateMetadata={updateRecordMetadata}
                   onRemoveOperation={removeOperationFromRecord}
+                  onDelete={deleteRecord}
                   resamplingApplied={set.resampling.applied}
                   showLabel={false}
                 />
