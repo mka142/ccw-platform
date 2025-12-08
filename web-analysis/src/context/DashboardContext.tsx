@@ -718,30 +718,94 @@ export function DashboardProvider({
   // Toggle tag filter
   const toggleTagFilter = (tag: string) => {
     setConfig((prev) => {
-      const isFiltered = prev.filterByTags.includes(tag);
-      return {
-        ...prev,
-        filterByTags: isFiltered
-          ? prev.filterByTags.filter((t) => t !== tag)
-          : [...prev.filterByTags, tag],
-      };
+      if (currentSet) {
+        // Update set-specific filter
+        const updatedSets = prev.sets.map((set) => {
+          if (set.name === currentSet) {
+            const isFiltered = (set.filterByTags || []).includes(tag);
+            return {
+              ...set,
+              filterByTags: isFiltered
+                ? (set.filterByTags || []).filter((t) => t !== tag)
+                : [...(set.filterByTags || []), tag],
+            };
+          }
+          return set;
+        });
+        return { ...prev, sets: updatedSets };
+      } else {
+        // Update global filter
+        const isFiltered = prev.filterByTags.includes(tag);
+        return {
+          ...prev,
+          filterByTags: isFiltered
+            ? prev.filterByTags.filter((t) => t !== tag)
+            : [...prev.filterByTags, tag],
+        };
+      }
     });
   };
 
   // Toggle exclude tag filter
   const toggleExcludeTag = (tag: string) => {
     setConfig((prev) => {
-      const isExcluded = prev.excludeTags.includes(tag);
-      const filterByTags = isExcluded
-        ? prev.filterByTags
-        : prev.filterByTags.filter((t) => t !== tag);
-      return {
-        ...prev,
-        filterByTags,
-        excludeTags: isExcluded
-          ? prev.excludeTags.filter((t) => t !== tag)
-          : [...prev.excludeTags, tag],
-      };
+      if (currentSet) {
+        // Update set-specific exclude filter
+        const updatedSets = prev.sets.map((set) => {
+          if (set.name === currentSet) {
+            const isExcluded = (set.excludeTags || []).includes(tag);
+            const filterByTags = isExcluded
+              ? (set.filterByTags || [])
+              : (set.filterByTags || []).filter((t) => t !== tag);
+            
+            // When adding tag to excludeTags, remove all records with this tag from filterByIds
+            let newFilterByIds = set.filterByIds;
+            if (!isExcluded) {
+              // Adding to exclude - remove records with this tag
+              newFilterByIds = set.filterByIds.filter((id) => {
+                const metadata = set.recordMetadata[id];
+                return metadata && !metadata.tags.includes(tag);
+              });
+            }
+            
+            return {
+              ...set,
+              filterByTags,
+              filterByIds: newFilterByIds,
+              excludeTags: isExcluded
+                ? (set.excludeTags || []).filter((t) => t !== tag)
+                : [...(set.excludeTags || []), tag],
+            };
+          }
+          return set;
+        });
+        return { ...prev, sets: updatedSets };
+      } else {
+        // Update global exclude filter
+        const isExcluded = prev.excludeTags.includes(tag);
+        const filterByTags = isExcluded
+          ? prev.filterByTags
+          : prev.filterByTags.filter((t) => t !== tag);
+        
+        // When adding tag to excludeTags, remove all records with this tag from filterByIds
+        let newFilterByIds = prev.filterByIds;
+        if (!isExcluded) {
+          // Adding to exclude - remove records with this tag
+          newFilterByIds = prev.filterByIds.filter((id) => {
+            const metadata = prev.recordMetadata[id];
+            return metadata && !metadata.tags.includes(tag);
+          });
+        }
+        
+        return {
+          ...prev,
+          filterByTags,
+          filterByIds: newFilterByIds,
+          excludeTags: isExcluded
+            ? prev.excludeTags.filter((t) => t !== tag)
+            : [...prev.excludeTags, tag],
+        };
+      }
     });
   };
 
