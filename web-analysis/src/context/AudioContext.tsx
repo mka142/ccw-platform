@@ -6,8 +6,11 @@ import { useProject } from './ProjectContext';
 interface AudioContextValue {
   audioFile: File | null;
   audioUrl: string | null;
+  audioDuration: number | null; // Duration in seconds
+  audioDurationMs: number | null; // Duration in milliseconds
   setAudioFile: (file: File | null) => void;
   setAudioUrl: (url: string | null) => void;
+  setAudioDuration: (duration: number | null) => void;
   clearAudio: () => void;
 }
 
@@ -28,6 +31,7 @@ interface AudioProviderProps {
 export function AudioProvider({ children }: AudioProviderProps) {
   const [audioFile, setAudioFileState] = useState<File | null>(null);
   const [audioUrl, setAudioUrlState] = useState<string | null>(null);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const { registerContextSetters } = useProject();
 
 
@@ -67,6 +71,7 @@ export function AudioProvider({ children }: AudioProviderProps) {
     }
     setAudioFileState(null);
     setAudioUrlState(null);
+    setAudioDuration(null);
   };
 
   // Cleanup on unmount
@@ -81,8 +86,11 @@ export function AudioProvider({ children }: AudioProviderProps) {
   const value: AudioContextValue = {
     audioFile,
     audioUrl,
+    audioDuration,
+    audioDurationMs: audioDuration !== null ? Math.round(audioDuration * 1000) : null,
     setAudioFile,
     setAudioUrl,
+    setAudioDuration,
     clearAudio,
   };
 

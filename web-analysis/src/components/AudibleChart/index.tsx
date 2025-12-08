@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import TimestampInfoButton from "./TimestampInfoButton";
+import { useAudio } from "@/context/AudioContext";
 
 interface AudibleChartProps {
   audioUrl: string;
@@ -17,6 +18,7 @@ export default function AudibleChart({
   recordingStartTimestamp 
 }: AudibleChartProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { setAudioDuration } = useAudio();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -34,6 +36,7 @@ export default function AudibleChart({
 
     const handleDurationChange = () => {
       setDuration(audio.duration);
+      setAudioDuration(audio.duration);
     };
 
     const handleEnded = () => {

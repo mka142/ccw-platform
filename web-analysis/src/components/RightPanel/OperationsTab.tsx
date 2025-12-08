@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useDashboard } from "@/context/DashboardContext";
+import { useAudio } from "@/context/AudioContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -38,6 +39,8 @@ export default function OperationsTab() {
     currentModeProcessData,
     addRecords,
   } = useDashboard();
+  
+  const { audioDurationMs } = useAudio();
 
   const [resampleWindowMs, setResampleWindowMs] = useState(
     effectiveConfig.resampling.windowMs.toString()
@@ -90,8 +93,9 @@ export default function OperationsTab() {
       strategy = 'audio';
       startTime = recordingStartTimestamp;
       // Calculate endTime based on audio duration if available
-      // For now, we'll let it be undefined and handle in the worker
-      endTime = undefined;
+      if (audioDurationMs !== null && audioDurationMs > 0) {
+        endTime = recordingStartTimestamp + audioDurationMs;
+      }
     }
 
     setResampling(ms, interpolationMethod, strategy, startTime, endTime);

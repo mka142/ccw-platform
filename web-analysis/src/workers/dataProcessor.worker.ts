@@ -137,11 +137,11 @@ function processData(params: ProcessDataMessage['payload']): ProcessedRecord[] {
       // Strategy 2: Use audio start/end (with extrapolation if needed)
       startTime = resampling.startTime;
       
-      // Calculate end time: use explicit endTime if provided, otherwise find max timestamp
+      // Use explicit endTime if provided (audio duration), otherwise find max timestamp
       if (resampling.endTime !== undefined) {
         endTime = resampling.endTime;
       } else {
-        // Find the maximum timestamp across all filtered records
+        // Find the maximum timestamp across all filtered records (fallback)
         let maxTimestamp = -Infinity;
         filtered.forEach(record => {
           if (record.data.length > 0) {
