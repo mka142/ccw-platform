@@ -67,8 +67,8 @@ if __name__ == "__main__":
                 # Get user tags
                 user_data = tags_dict.get(user_id, {})
 
-                # Calculate correlation
-                corr = calculate_spearman_correlation(arr, komp_arr)
+                # Calculate correlation with p-value
+                corr, p_value = calculate_spearman_correlation(arr, komp_arr)
 
                 if not np.isnan(corr):
                     correlation_data.append(
@@ -76,6 +76,7 @@ if __name__ == "__main__":
                             "record_id": record_id,
                             "label": label,
                             "correlation": corr,
+                            "p_value": p_value,
                             "płeć": user_data.get("płeć", "unknown"),
                             "wiek": user_data.get("wiek", "unknown"),
                             "wykształcenie": user_data.get("wykształcenie", "unknown"),
@@ -84,14 +85,51 @@ if __name__ == "__main__":
                     )
 
         import matplotlib.pyplot as plt
+        import pandas as pd
 
-        # plot with correlation histogram
-        correlations = [item["correlation"] for item in correlation_data]
-        plt.hist(correlations, bins=20, edgecolor="black")
-        plt.title("Histogram korelacji Spearmana z KOMPOZYTOR")
-        plt.xlabel("Korelacja Spearmana")
-        plt.ylabel("Liczba użytkowników")
-        plt.grid(axis="y", alpha=0.75)
+        # Convert to DataFrame
+        df_corr = pd.DataFrame(correlation_data)
+        
+        # Filter significant correlations (p < 0.05)
+        df_significant = df_corr[df_corr['p_value'] < 0.05]
+        
+        print(f"\nTotal correlations: {len(df_corr)}")
+        print(f"Significant correlations (p < 0.05): {len(df_significant)}")
+        print(f"Mean correlation: {df_corr['correlation'].mean():.3f}")
+        print(f"Mean p-value: {df_corr['p_value'].mean():.4f}")
+
+        # Plot histogram with p-value information
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        
+        # Correlation histogram
+        axes[0].hist(df_corr['correlation'], bins=20, edgecolor="black")
+        axes[0].set_title("Histogram korelacji Spearmana z KOMPOZYTOR")
+        axes[0].set_xlabel("Korelacja Spearmana")
+        axes[0].set_ylabel("Liczba użytkowników")
+        axes[0].axvline(
+            df_corr['correlation'].mean(),
+            color='red',
+            linestyle='--',
+            label=f'Mean: {df_corr["correlation"].mean():.3f}'
+        )
+        axes[0].grid(axis="y", alpha=0.75)
+        axes[0].legend()
+        
+        # P-value histogram
+        axes[1].hist(df_corr['p_value'], bins=20, edgecolor="black")
+        axes[1].set_title("Histogram p-values")
+        axes[1].set_xlabel("p-value")
+        axes[1].set_ylabel("Liczba użytkowników")
+        axes[1].axvline(
+            0.05,
+            color='red',
+            linestyle='--',
+            label='p = 0.05 (significance threshold)'
+        )
+        axes[1].grid(axis="y", alpha=0.75)
+        axes[1].legend()
+        
+        plt.tight_layout()
         plt.show()
 
     except Exception as e:

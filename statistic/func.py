@@ -27,11 +27,14 @@ def assign_ranks(values):
 
 
 def calculate_spearman_correlation(arr1, arr2):
-    """Calculate Spearman's rank correlation coefficient"""
+    """Calculate Spearman's rank correlation coefficient with p-value"""
     if len(arr1) == 0 or len(arr2) == 0 or len(arr1) != len(arr2):
-        return 0.0
+        return 0.0, 1.0
 
     n = len(arr1)
+    
+    if n < 3:
+        return 0.0, 1.0
 
     # Assign ranks
     ranks1 = assign_ranks(arr1)
@@ -43,4 +46,13 @@ def calculate_spearman_correlation(arr1, arr2):
     # Spearman's rank correlation coefficient formula
     rho = 1 - (6 * sum_squared_diff) / (n * (n * n - 1))
 
-    return rho
+    # Calculate p-value using t-distribution approximation
+    # t = rho * sqrt((n-2)/(1-rho^2))
+    if abs(rho) == 1.0:
+        p_value = 0.0
+    else:
+        from scipy import stats as sp_stats
+        t_stat = rho * np.sqrt((n - 2) / (1 - rho**2))
+        p_value = 2 * sp_stats.t.sf(abs(t_stat), n - 2)
+
+    return rho, p_value
