@@ -21,6 +21,15 @@ import { InterpolationMethod, DataRecord } from "@/lib/types";
 import { InfoModal } from "@/components/ui/info-modal";
 import InsertReRecordModal from "./InsertReRecordModal";
 import { OPERATION_DEFAULTS } from "@/lib/operationDefaults";
+import {
+  calculateLengthStatistics,
+  getRecordsToExclude,
+  extractCleanRecordId,
+  hasAutoExcludedTag,
+  addAutoExcludedTag,
+  removeAutoExcludedTag,
+  type RecordLengthInfo
+} from "@/lib/autoExclude";
 
 export default function OperationsTab() {
   const {
@@ -38,6 +47,7 @@ export default function OperationsTab() {
     config: { recordingStartTimestamp },
     currentModeProcessData,
     addRecords,
+    updateRecordMetadata
   } = useDashboard();
   
   const { audioDurationMs } = useAudio();
@@ -71,8 +81,113 @@ export default function OperationsTab() {
   );
   const [resamplingStrategy, setResamplingStrategy] = useState<'shortest' | 'audio' | 'none'>('none');
   const [showInsertModal, setShowInsertModal] = useState(false);
+  
+  // Exclude operation states
+  const [excludeOnlyRecordingRange, setExcludeOnlyRecordingRange] = useState(false);
+  const [excludeStdDevMultiplier, setExcludeStdDevMultiplier] = useState<1 | 2 | 3>(3);
 
   const isIndividualMode = mode === "individual" && selectedRecordId;
+
+  // Helper function to check if any AUTO_EXCLUDED tags exist
+  const hasAutoExcludedTags = () => {
+    return filteredRecordIds.some((id) => {
+      const metadata = effectiveConfig.recordMetadata[id];
+      return metadata && hasAutoExcludedTag(metadata.tags);
+    });
+  };
+
+  // Helper function to calculate record lengths after resampling
+  const getRecordLengthsAfterResampling = (): RecordLengthInfo[] => {
+    if (!effectiveConfig.resampling.applied || currentModeProcessData.length === 0) {
+      return [];
+    }
+    
+    return currentModeProcessData.map(record => {
+      let length = record.data.length;
+      
+      // If filtering by recording range is enabled, calculate length only within recording timestamps
+      if (excludeOnlyRecordingRange && recordingStartTimestamp !== undefined && audioDurationMs !== null && audioDurationMs > 0) {
+        const recordingEndTimestamp = recordingStartTimestamp + audioDurationMs;
+        const filteredData = record.data.filter(point => 
+          point.timestamp >= recordingStartTimestamp && 
+          point.timestamp <= recordingEndTimestamp
+        );
+        length = filteredData.length;
+      }
+      
+      return {
+        id: record.id,
+        length,
+        displayName: record.label || record.id.split(':').pop() || record.id
+      };
+    });
+  };
+
+  // Helper function to calculate statistics for record lengths
+  const getRecordLengthStatistics = () => {
+    const lengths = getRecordLengthsAfterResampling();
+    return calculateLengthStatistics(lengths);
+  };
+
+  // Handle Apply Auto Exclude
+  const handleApplyAutoExclude = () => {
+    if (!effectiveConfig.resampling.applied) {
+      alert("Resampling musi być zastosowany przed użyciem automatycznego wykluczania");
+      return;
+    }
+
+    const stats = getRecordLengthStatistics();
+    if (!stats) {
+      alert("Brak danych do analizy długości rekordów");
+      return;
+    }
+
+    // Fixed threshold: average - selected * standard deviation
+    const threshold = stats.average - (excludeStdDevMultiplier * stats.standardDeviation);
+    
+    if (threshold < 0) {
+      alert("Obliczony próg jest ujemny. Sprawdź dane wejściowe.");
+      return;
+    }
+
+    // Apply AUTO_EXCLUDED tag to records below threshold
+    const recordsToExclude = getRecordsToExclude(stats, threshold);
+    
+    if (recordsToExclude.length === 0) {
+      alert("Żaden rekord nie spełnia kryteriów wykluczenia");
+      return;
+    }
+
+    // Add AUTO_EXCLUDED tag to records below threshold
+    recordsToExclude.forEach(record => {
+      const cleanId = extractCleanRecordId(record.id);
+      const metadata = effectiveConfig.recordMetadata[cleanId];
+      if (metadata && !hasAutoExcludedTag(metadata.tags)) {
+        const newTags = addAutoExcludedTag(metadata.tags);
+        updateRecordMetadata(cleanId, { tags: newTags });
+      }
+    });
+
+    const rangeText = excludeOnlyRecordingRange ? " (w zakresie nagrania)" : "";
+    console.log(`Wykluczono ${recordsToExclude.length} rekordów z progiem ${threshold.toFixed(1)} punktów (średnia - ${excludeStdDevMultiplier}σ)${rangeText}`);
+  };
+
+  // Handle Clear Auto Exclude
+  const handleClearAutoExclude = () => {
+    let removedCount = 0;
+    
+    // Remove AUTO_EXCLUDED tag from all records
+    filteredRecordIds.forEach((id) => {
+      const metadata = effectiveConfig.recordMetadata[id];
+      if (metadata && hasAutoExcludedTag(metadata.tags)) {
+        const newTags = removeAutoExcludedTag(metadata.tags);
+        updateRecordMetadata(id, { tags: newTags });
+        removedCount++;
+      }
+    });
+
+    console.log(`Usunięto tag AUTO_EXCLUDED z ${removedCount} rekordów`);
+  };
 
   const handleInsertReRecord = (records: DataRecord[], label: string, tags: string[]) => {
     addRecords(records, label, tags);
@@ -1034,6 +1149,159 @@ export default function OperationsTab() {
                     })()}
                   </div>
                 )}
+              </div>
+
+              <Separator />
+            </>
+          )}
+
+          {/* Auto Exclude Records - Only in Global Mode with Resampling */}
+          {!isIndividualMode && (
+            <>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <X className="h-4 w-4" />
+                    Automatyczne Wykluczanie Rekordów
+                    {hasAutoExcludedTags() && (
+                      <Badge variant="destructive" className="ml-2">
+                        Aktywne
+                      </Badge>
+                    )}
+                  </Label>
+                  <InfoModal title="Automatyczne Wykluczanie Rekordów">
+                    <p className="font-semibold">Co to jest?</p>
+                    <p>
+                      Automatyczne wykluczanie identyfikuje i oznacza tagiem "AUTO_EXCLUDED" 
+                      rekordy, które po resamplingu mają długość mniejszą niż próg obliczony jako:
+                      <strong> średnia długość - 3 × odchylenie standardowe</strong>.
+                      Wykluczenie jest rozumiane jako dodanie tagu, który powoduje ukrycie 
+                      rekordów podczas filtrowania.
+                    </p>
+
+                    <p className="font-semibold mt-3">Metoda Obliczania:</p>
+                    
+                    <div className="mt-2">
+                      <p className="font-semibold">Próg = Średnia - 3 × Odchylenie Standardowe</p>
+                      <p>
+                        Ta metoda usuwa rekordy które są znacząco krótsze od przeciętnej (ponad 3 odchylenia standardowe).
+                        Wartość 3 sigma to standardowy próg dla identyfikacji wartości odstających w statystyce.
+                      </p>
+                    </div>
+
+                    <div className="mt-2">
+                      <p className="font-semibold">Filtr Zakresu Nagrania</p>
+                      <p>
+                        Opcjonalnie można ograniczyć analizę tylko do punktów czasowych w zakresie nagrania audio.
+                        To pozwala wykluczyć z analizy okresy przed i po nagraniu, skupiając się tylko na rzeczywistych danych.
+                      </p>
+                    </div>
+
+                    <p className="font-semibold mt-3">Jak działa?</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Analizuje długość wszystkich rekordów po zastosowaniu resamplingu</li>
+                      <li>Opcjonalnie filtruje punkty tylko w zakresie czasowym nagrania</li>
+                      <li>Oblicza próg jako średnia - 3 × odchylenie standardowe</li>
+                      <li>Dodaje tag "AUTO_EXCLUDED" do rekordów poniżej progu</li>
+                      <li>Wykluczenie automatycznie ukrywa rekordy w systemie filtrowania</li>
+                    </ul>
+
+                    <p className="font-semibold mt-3">Wymagania:</p>
+                    <p>
+                      Wymaga włączonego resamplingu, aby można było porównać długości rekordów 
+                      w tym samym oknie czasowym.
+                    </p>
+
+                    <p className="font-semibold mt-3">Cofanie Wykluczenia:</p>
+                    <p>
+                      Funkcja "Wyczyść" usuwa wszystkie tagi "AUTO_EXCLUDED" ze wszystkich rekordów,
+                      przywracając je do widoczności.
+                    </p>
+                  </InfoModal>
+                </div>
+                
+                <div className="space-y-3 mt-2">
+                  <div>
+                    <Label className="text-xs">Współczynnik odchylenia standardowego</Label>
+                    <select
+                      value={excludeStdDevMultiplier}
+                      onChange={(e) => setExcludeStdDevMultiplier(parseInt(e.target.value) as 1 | 2 | 3)}
+                      className="w-full p-2 text-sm border rounded mt-1 bg-background"
+                      disabled={!effectiveConfig.resampling.applied}
+                    >
+                      <option value={1}>1 σ (bardziej restrykcyjne)</option>
+                      <option value={2}>2 σ (umiarkowane)</option>
+                      <option value={3}>3 σ (mniej restrykcyjne)</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Próg = Średnia - {excludeStdDevMultiplier} × Odchylenie Standardowe
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="excludeOnlyRecordingRange"
+                      checked={excludeOnlyRecordingRange}
+                      onChange={(e) => setExcludeOnlyRecordingRange(e.target.checked)}
+                      disabled={!effectiveConfig.resampling.applied}
+                      className="rounded"
+                    />
+                    <Label htmlFor="excludeOnlyRecordingRange" className="text-sm">
+                      Analizuj tylko zakres nagrania audio
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground ml-6">
+                    {excludeOnlyRecordingRange 
+                      ? "Długość rekordów będzie liczona tylko dla punktów w zakresie czasowym nagrania" 
+                      : "Długość rekordów będzie liczona dla wszystkich punktów po resamplingu"}
+                  </p>
+
+                  {/* Show current statistics if resampling is applied */}
+                  {effectiveConfig.resampling.applied && (() => {
+                    const stats = getRecordLengthStatistics();
+                    return stats ? (
+                      <div className="p-3 bg-muted/50 rounded-lg space-y-2 text-xs">
+                        <Label className="font-medium">Statystyki Długości Rekordów{excludeOnlyRecordingRange ? " (w zakresie nagrania)" : ""}</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>Średnia: <span className="font-mono">{stats.average.toFixed(1)}</span></div>
+                          <div>Mediana: <span className="font-mono">{stats.median.toFixed(1)}</span></div>
+                        </div>
+                        <div>Odchylenie std: <span className="font-mono">{stats.standardDeviation.toFixed(1)}</span></div>
+                        <div className="space-y-1 mt-2">
+                          <div>Próg wykluczenia (μ - {excludeStdDevMultiplier}σ): <span className="font-mono font-semibold text-red-600">{(stats.average - excludeStdDevMultiplier * stats.standardDeviation).toFixed(1)}</span></div>
+                          <div className="text-xs text-muted-foreground">Rekordy krótsze niż {(stats.average - excludeStdDevMultiplier * stats.standardDeviation).toFixed(1)} punktów zostaną wykluczane</div>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
+                  {!hasAutoExcludedTags() ? (
+                    <Button 
+                      className="w-full" 
+                      onClick={handleApplyAutoExclude}
+                      disabled={!effectiveConfig.resampling.applied}
+                    >
+                      Zastosuj Automatyczne Wykluczanie
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      variant="destructive"
+                      onClick={handleClearAutoExclude}
+                    >
+                      Wyczyść Automatyczne Wykluczanie
+                    </Button>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground">
+                    {!effectiveConfig.resampling.applied
+                      ? "Zastosuj resampling aby włączyć automatyczne wykluczanie"
+                      : hasAutoExcludedTags() 
+                        ? "Rekordy z tagiem AUTO_EXCLUDED są automatycznie ukrywane"
+                        : `Oznacza rekordy krótsze niż średnia - ${excludeStdDevMultiplier}×odchylenie tagiem AUTO_EXCLUDED`}
+                  </p>
+                </div>
               </div>
 
               <Separator />
