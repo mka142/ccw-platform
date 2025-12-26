@@ -129,49 +129,13 @@ export function resampleData(
     let value: number;
 
     if (!lowerPoint && upperPoint) {
-      // Before first data point - extrapolate backwards
-      if (sortedData.length >= 2) {
-        // Use first two points to extrapolate backwards
-        const p1 = sortedData[0];
-        const p2 = sortedData[1];
-        if (interpolationMethod === 'linear') {
-          value = linearInterpolate(
-            timestamp,
-            p1.timestamp,
-            p1.value,
-            p2.timestamp,
-            p2.value
-          );
-        } else {
-          // step interpolation - use first value
-          value = p1.value;
-        }
-      } else {
-        // Only one point - use its value
-        value = upperPoint.value;
-      }
+      // Before first data point - use NOCB (Next Observation Carried Backward)
+      // For musical tension data, we use the first known state
+      value = sortedData[0].value;
     } else if (lowerPoint && !upperPoint) {
-      // After last data point - extrapolate forwards
-      if (sortedData.length >= 2) {
-        // Use last two points to extrapolate forwards
-        const p1 = sortedData[sortedData.length - 2];
-        const p2 = sortedData[sortedData.length - 1];
-        if (interpolationMethod === 'linear') {
-          value = linearInterpolate(
-            timestamp,
-            p1.timestamp,
-            p1.value,
-            p2.timestamp,
-            p2.value
-          );
-        } else {
-          // step interpolation - use last value
-          value = p2.value;
-        }
-      } else {
-        // Only one point - use its value
-        value = lowerPoint.value;
-      }
+      // After last data point - use LOCF (Last Observation Carried Forward)
+      // For musical tension data, we maintain the last known state
+      value = sortedData[sortedData.length - 1].value;
     } else if (lowerPoint && upperPoint) {
       // Between points - interpolate
       if (lowerPoint.timestamp === timestamp) {

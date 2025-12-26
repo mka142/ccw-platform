@@ -969,6 +969,16 @@ export default function OperationsTab() {
                       </p>
                     </div>
 
+                    <div className="mt-2 p-2 bg-accent rounded border-l-4 border-blue-400">
+                      <p className="font-semibold text-sm">⚠️ Metoda Ekstrapolacji LOCF/NOCB:</p>
+                      <p className="text-sm text-">
+                        Dla danych napięcia muzycznego stosujemy LOCF (Last Observation Carried Forward) 
+                        i NOCB (Next Observation Carried Backward). Ostatni/pierwszy znany stan 
+                        jest utrzymywany, ponieważ nie można przewidzieć zmian napięcia muzycznego 
+                        - znamy tylko aktualny stan percepcji.
+                      </p>
+                    </div>
+
                     <p className="font-semibold mt-3">Dlaczego resampling?</p>
                     <ul className="list-disc list-inside space-y-1">
                       <li>
@@ -1007,9 +1017,10 @@ export default function OperationsTab() {
                       <p className="font-semibold">Dopasuj do audio</p>
                       <p>
                         Rozszerza wszystkie rekordy do pełnej długości nagrania
-                        audio. Brakujące dane na początku są ekstrapolowane
-                        wstecz, na końcu do przodu, używając wybranej metody
-                        interpolacji.
+                        audio. Brakujące dane przed pierwszym pomiarem są uzupełniane 
+                        pierwszą znaną wartością (NOCB), a po ostatnim pomiarze 
+                        ostatnią znaną wartością (LOCF). To odzwierciedla rzeczywisty 
+                        stan percepcji napięcia muzycznego.
                       </p>
                     </div>
                   </InfoModal>
