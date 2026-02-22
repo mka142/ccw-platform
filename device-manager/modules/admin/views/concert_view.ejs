@@ -141,11 +141,21 @@
         </div>
         <!-- Devices section -->
         <div class="column">
-          <div class="ui segment">
-            <h3 class="ui header">Urządzenia koncertu</h3>
-            <div id="devices-table-container">
-              <p>Ładowanie listy urządzeń...</p>
-            </div>
+          <%- include('DeviceTable', { concertId: concert._id, title: 'Urządzenia koncertu' }) %>
+          
+          <!-- Conference Dashboard Link -->
+          <div class="ui segment" style="margin-top: 1em;">
+            <h4 class="ui header">
+              <i class="chart line icon"></i>
+              <div class="content">
+                Dashboard Prezentacyjny
+                <div class="sub header">Wyświetlaj dane w czasie rzeczywistym podczas prezentacji</div>
+              </div>
+            </h4>
+            <a href="<%= url.admin %>/concerts/<%= concert._id %>/dashboard" class="ui blue fluid button" target="_blank">
+              <i class="external alternate icon"></i>
+              Otwórz Dashboard Prezentacyjny
+            </a>
           </div>
         </div>
       </div>
@@ -202,41 +212,6 @@
         }
       }
 
-      // Devices AJAX logic (unchanged)
-      const concertId = "<%= concert._id %>";
-      function renderDevicesTable(devices) {
-        const activeCount = devices.filter((d) => d.isActive).length;
-        let html = `<p>Liczba zarejestrowanych: ${devices.length}</p>`;
-        html += `<p>✅ Liczba aktywnych: ${activeCount}</p>`;
-        html += `<table class="ui celled striped table">
-            <thead><tr>
-            <th>ID</th>
-            <th>Typ</th>
-            <th>Aktywny?</th>
-            <th>Utworzony</th>
-            </tr></thead><tbody>`;
-        html += devices
-          .map((user) => {
-            return `<tr>
-            <td>${user._id}</td>
-            <td>${user.deviceType}</td>
-            <td><span class='ui ${user.isActive ? "green" : "grey"} label'>${user.isActive ? "TAK" : "NIE"}</span></td>
-            <td>${new Date(user.createdAt).toLocaleString()}</td>
-            </tr>`;
-          })
-          .join("");
-        html += `</tbody></table>`;
-        document.getElementById("devices-table-container").innerHTML = html;
-      }
-      function fetchDevices() {
-        fetch(`/api/user/concert/${concertId}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (Array.isArray(data.data)) renderDevicesTable(data.data);
-          });
-      }
-      setInterval(fetchDevices, 3000);
-      fetchDevices();
       // Enable Semantic UI dropdowns
       document.addEventListener("DOMContentLoaded", function () {
         $(".ui.dropdown").dropdown();

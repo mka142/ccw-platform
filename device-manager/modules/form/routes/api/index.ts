@@ -240,4 +240,121 @@ router.get("/client/:clientId/piece/:pieceId", async (req: Request, res: Respons
   }
 });
 
+/**
+ * GET /api/forms/concert/:concertId/realtime
+ *
+ * Get all form data for a specific concert for real-time dashboard.
+ *
+ * **Response Success (200):**
+ * ```json
+ * {
+ *   "success": true,
+ *   "data": [...],
+ *   "meta": {
+ *     "userCount": 5,
+ *     "dataPointCount": 1234
+ *   }
+ * }
+ * ```
+ */
+router.get("/concert/:concertId/realtime", async (req: Request, res: Response) => {
+  try {
+    const { concertId } = req.params;
+
+    if (!concertId) {
+      res.status(400).json({
+        success: false,
+        error: "Concert ID is required",
+      });
+      return;
+    }
+
+    const data = await FormService.getByConcert(concertId);
+    
+    // Group data by clientId to get user count
+    const userIds = new Set(data.map(point => point.clientId.toString()));
+    
+    res.json({
+      success: true,
+      data,
+      meta: {
+        userCount: userIds.size,
+        dataPointCount: data.length,
+      }
+    });
+  } catch (error) {
+    console.error("Failed to get realtime form data by concert:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get realtime form data",
+    });
+  }
+});
+
+/**
+ * GET /api/forms/concert/:concertId/recent/:timeRangeMs
+ *
+ * Get recent form data for a specific concert within time range for real-time dashboard.
+ *
+ * **Parameters:**
+ * - concertId: Concert ID to get data for
+ * - timeRangeMs: Time range in milliseconds (e.g., 30000 for last 30 seconds)
+ *
+ * **Response Success (200):**
+ * ```json
+ * {
+ *   "success": true,
+ *   "data": [...],
+ *   "meta": {
+ *     "timeRangeMs": 30000,
+ *     "userCount": 3,
+ *     "dataPointCount": 45
+ *   }
+ * }
+ * ```
+ */
+router.get("/concert/:concertId/recent/:timeRangeMs", async (req: Request, res: Response) => {
+  try {
+    const { concertId, timeRangeMs } = req.params;
+
+    if (!concertId || !timeRangeMs) {
+      res.status(400).json({
+        success: false,
+        error: "Concert ID and time range are required",
+      });
+      return;
+    }
+
+    const timeRange = parseInt(timeRangeMs);
+    if (isNaN(timeRange) || timeRange <= 0) {
+      res.status(400).json({
+        success: false,
+        error: "Invalid time range. Must be a positive number in milliseconds.",
+      });
+      return;
+    }
+
+    const data = await FormService.getRecentByConcert(concertId, timeRange);
+    
+    // Group data by clientId to get user count
+    const userIds = new Set(data.map(point => point.clientId.toString()));
+    
+    res.json({
+      success: true,
+      data,
+      meta: {
+        timeRangeMs: timeRange,
+        userCount: userIds.size,
+        dataPointCount: data.length,
+      }
+    });
+  } catch (error) {
+    console.error("Failed to get recent form data by concert:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get recent form data",
+    });
+  }
+});
+
 export default router;

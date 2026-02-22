@@ -1,0 +1,79 @@
+<!-- Device Table Component -->
+<!-- Usage: include('DeviceTable', { concertId: concert._id, title: 'Urządzenia koncertu', showRefreshButton: false }) -->
+
+<div class="ui segment">
+  <h3 class="ui header">
+    <%= title || 'Urządzenia koncertu' %>
+    <% if (typeof showRefreshButton !== 'undefined' && showRefreshButton) { %>
+      <button id="refresh-devices-<%= concertId %>" class="ui mini basic button" style="float: right;">
+        <i class="refresh icon"></i>Odśwież
+      </button>
+    <% } %>
+  </h3>
+  <div id="devices-table-container-<%= concertId %>">
+    <p>Ładowanie listy urządzeń...</p>
+  </div>
+</div>
+
+<script>
+(function() {
+  const concertId = "<%= concertId %>";
+  const containerId = "devices-table-container-" + concertId;
+  const refreshButtonId = "refresh-devices-" + concertId;
+
+  function renderDevicesTable_<%= concertId.toString().replace(/[^a-zA-Z0-9]/g, '_') %>(devices) {
+    const activeCount = devices.filter((d) => d.isActive).length;
+    let html = `<p>Total devices: ${devices.length}</p>`;
+    html += `<p>✅ Active devices: ${activeCount}</p>`;
+    html += `<table class="ui celled striped table">
+        <thead><tr>
+        <th>ID</th>
+        <th>Type</th>
+        <th>Active?</th>
+        <th>Created</th>
+        </tr></thead><tbody>`;
+    html += devices
+      .map((user) => {
+        return `<tr>
+        <td>${user._id}</td>
+        <td>${user.deviceType}</td>
+        <td><span class='ui ${user.isActive ? "green" : "grey"} label'>${user.isActive ? "YES" : "NO"}</span></td>
+        <td>${new Date(user.createdAt).toLocaleString()}</td>
+        </tr>`;
+      })
+      .join("");
+    html += `</tbody></table>`;
+    document.getElementById(containerId).innerHTML = html;
+  }
+
+  function fetchDevices_<%= concertId.toString().replace(/[^a-zA-Z0-9]/g, '_') %>() {
+    fetch(`/api/user/concert/${concertId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.data)) {
+          renderDevicesTable_<%= concertId.toString().replace(/[^a-zA-Z0-9]/g, '_') %>(data.data);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to fetch devices:', error);
+        document.getElementById(containerId).innerHTML = '<p class="ui red message">Error loading devices</p>';
+      });
+  }
+
+  // Auto-refresh every 3 seconds
+  const refreshInterval_<%= concertId.toString().replace(/[^a-zA-Z0-9]/g, '_') %> = setInterval(fetchDevices_<%= concertId.toString().replace(/[^a-zA-Z0-9]/g, '_') %>, 3000);
+
+  // Manual refresh button (if enabled)
+  <% if (typeof showRefreshButton !== 'undefined' && showRefreshButton) { %>
+  document.getElementById(refreshButtonId).addEventListener('click', fetchDevices_<%= concertId.toString().replace(/[^a-zA-Z0-9]/g, '_') %>);
+  <% } %>
+
+  // Initial load
+  fetchDevices_<%= concertId.toString().replace(/[^a-zA-Z0-9]/g, '_') %>();
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', function() {
+    clearInterval(refreshInterval_<%= concertId.toString().replace(/[^a-zA-Z0-9]/g, '_') %>);
+  });
+})();
+</script>

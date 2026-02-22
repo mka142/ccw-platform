@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+  <%- include('_semantic_head', { title }) %>
+  <style>
+    .dashboard-container {
+      height: 100vh;
+      overflow: hidden;
+      padding: 1em;
+      background: #f8f9fa;
+    }
+    .chart-container {
+      height: 60vh;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1em;
+      position: relative;
+    }
+    .controls-bar {
+      background: white;
+      padding: 1em;
+      border-radius: 8px;
+      margin-bottom: 1em;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .device-table-section {
+      height: 30vh;
+      overflow-y: auto;
+    }
+    .page-header {
+      margin: 1em 0;
+    }
+    .metric-cards {
+      display: flex;
+      gap: 1em;
+      margin-bottom: 1em;
+    }
+    .metric-card {
+      background: white;
+      padding: 1em;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      flex: 1;
+    }
+    .qr-section {
+      background: white;
+      padding: 1.5em;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .qr-container {
+      text-align: center;
+      padding: 1em;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-top: 1em;
+    }
+    .qr-container #qrcode {
+      background: white;
+      padding: 10px;
+      display: inline-block;
+      border-radius: 8px;
+      margin-top: 1em;
+    }
+    .qr-input {
+      margin-bottom: 1em;
+    }
+  </style>
+
+  <body class="dashboard-container">
+    <div style="display: flex; justify-content: space-between">
+      <h1 class="ui header page-header">
+        <i class="chart line icon"></i>
+        <div class="content">
+          Dashboard: <%= concert.name %>
+          <div class="sub header">Real-time presentation dashboard</div>
+        </div>
+      </h1>
+      <a href="/admin/concerts/<%= concert._id %>" class="ui basic button" style="float: right; margin-top: auto; margin-bottom: auto"> <i class="arrow left icon"></i>Back to concert </a>
+    </div>
+    <div style="display: flex">
+      <div description="80% width container for metrics and controls" style="flex: 1; margin-right: 1em">
+        <!-- Metrics Cards -->
+        <div class="metric-cards">
+          <div class="metric-card">
+            <div class="ui statistic">
+              <div class="value" id="active-devices-count">0</div>
+              <div class="label">Active devices</div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="ui statistic">
+              <div class="value" id="total-data-points">0</div>
+              <div class="label">Data points</div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="ui statistic">
+              <div class="value" id="last-update">-</div>
+              <div class="label">Last update</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+          <div class="ui grid">
+            <div class="eight wide column">
+              <div class="ui form">
+                <div class="inline fields">
+                  <label>Time range:</label>
+                  <div class="field">
+                    <div class="ui selection dropdown" id="time-range-dropdown">
+                      <input type="hidden" name="timeRange" value="30000" />
+                      <i class="dropdown icon"></i>
+                      <div class="default text">Select range</div>
+                      <div class="menu">
+                        <div class="item" data-value="30000">30 seconds</div>
+                        <div class="item" data-value="60000">1 minute</div>
+                        <div class="item" data-value="120000">2 minutes</div>
+                        <div class="item" data-value="300000">5 minutes</div>
+                        <div class="item" data-value="600000">10 minutes</div>
+                        <div class="item" data-value="0">All</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="eight wide column" style="text-align: right">
+              <button class="ui green button" id="refresh-chart-btn"><i class="refresh icon"></i>Refresh</button>
+              <button class="ui blue button" id="toggle-auto-refresh" data-auto="true"><i class="pause icon"></i>Stop auto-refresh</button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <div id="chartContainer" style="height: 100%; width: 100%"></div>
+        </div>
+      </div>
+      <div style="width: 500px; margin-left: 1em; display: flex; flex-direction: column">
+          <!-- QR Code Generator Section -->
+        <div class="qr-section">
+          <h4 class="ui header">
+            <i class="qrcode icon"></i>
+            <div class="content">
+              QR Code Generator
+              <div class="sub header">Generate QR code for client link</div>
+            </div>
+          </h4>
+          <div class="ui form">
+            <div class="field qr-input">
+              <label>Client link</label>
+              <div class="ui action input">
+                <input type="url" id="client-link-input" placeholder="https://example.com/client-app" />
+                <button class="ui blue button" id="generate-qr-btn"><i class="qrcode icon"></i>Generate QR</button>
+              </div>
+            </div>
+          </div>
+          <div class="qr-container" id="qr-container" style="display: none">
+            <div id="qrcode"></div>
+            <p class="ui small text" style="margin-top: 1em; color: #666">
+              <i class="mobile alternate icon"></i>
+              Scan QR code with mobile device
+            </p>
+          </div>
+        </div>
+
+
+        <div class="device-table-section" style="margin-top: 1em;flex:1;overflow-y: auto;">
+          <%- include('DeviceTable', { 
+      concertId: concert._id, 
+      title: 'Active devices', 
+      showRefreshButton: true 
+    }) %>
+        </div>
+
+      
+      </div>
+    </div>
+
+    <!-- Libraries -->
+    <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
+    <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <script>
+      // Dashboard configuration
+      const CONCERT_ID = "<%= concert._id %>";
+      const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7c7c", "#a78bfa", "#fb923c", "#34d399", "#f472b6", "#06b6d4", "#10b981"];
+
+      // Dashboard state
+      let chart = null;
+      let autoRefreshEnabled = true;
+      let autoRefreshInterval = null;
+      let currentTimeRange = 30000; // Default 30 seconds
+
+      // Initialize dashboard
+      document.addEventListener("DOMContentLoaded", function () {
+        initializeChart();
+        initializeControls();
+        startAutoRefresh();
+
+        // Initial data load
+        refreshChartData();
+      });
+
+      function initializeChart() {
+        chart = new CanvasJS.Chart("chartContainer", {
+          animationEnabled: true,
+          theme: "light1",
+          title: {
+            text: "Tension Values - Real Time",
+            fontColor: "#333",
+            fontSize: 18,
+          },
+          axisX: {
+            title: "Time",
+            titleFontColor: "#333",
+            labelFormatter: function (e) {
+              return CanvasJS.formatDate(e.value, "HH:mm:ss");
+            },
+          },
+          axisY: {
+            title: "Tension Value (0-100)",
+            titleFontColor: "#333",
+            includeZero: true,
+            maximum: 100,
+          },
+          legend: {
+            cursor: "pointer",
+            fontSize: 12,
+            itemclick: toggleDataSeries,
+          },
+          toolTip: {
+            shared: true,
+            contentFormatter: function (e) {
+              let content = `<strong>${CanvasJS.formatDate(e.entries[0].dataPoint.x, "HH:mm:ss.fff")}</strong><br/>`;
+              e.entries.forEach((entry) => {
+                content += `<span style="color:${entry.dataSeries.color}">${entry.dataSeries.name}</span>: ${entry.dataPoint.y}<br/>`;
+              });
+              return content;
+            },
+          },
+          data: [],
+        });
+
+        chart.render();
+      }
+
+      function initializeControls() {
+        // Time range dropdown
+        $("#time-range-dropdown").dropdown({
+          onChange: function (value) {
+            currentTimeRange = parseInt(value);
+            refreshChartData();
+          },
+        });
+
+        // Refresh button
+        document.getElementById("refresh-chart-btn").addEventListener("click", refreshChartData);
+
+        // Auto-refresh toggle
+        document.getElementById("toggle-auto-refresh").addEventListener("click", toggleAutoRefresh);
+      }
+
+      function toggleDataSeries(e) {
+        if (typeof e.dataSeries.visible === "undefined" || e.dataSeries.visible) {
+          e.dataSeries.visible = false;
+        } else {
+          e.dataSeries.visible = true;
+        }
+        chart.render();
+      }
+
+      function refreshChartData() {
+        const apiUrl = currentTimeRange > 0 ? `/api/forms/concert/${CONCERT_ID}/recent/${currentTimeRange}` : `/api/forms/concert/${CONCERT_ID}/realtime`;
+
+        fetch(apiUrl)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              updateChart(data.data);
+              updateMetrics(data.meta);
+            } else {
+              console.error("Failed to fetch chart data:", data.error);
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching chart data:", error);
+          });
+      }
+
+      function updateChart(formData) {
+        // Group data by clientId
+        const userGroups = {};
+
+        formData.forEach((point) => {
+          const userId = point.clientId;
+          if (!userGroups[userId]) {
+            userGroups[userId] = [];
+          }
+          userGroups[userId].push({
+            x: new Date(point.timestamp),
+            y: point.value,
+          });
+        });
+
+        // Convert to CanvasJS data series
+        const dataSeries = Object.keys(userGroups).map((userId, index) => {
+          const points = userGroups[userId].sort((a, b) => a.x - b.x);
+
+          return {
+            type: "spline",
+            name: `Device ${userId.substring(0, 8)}...`,
+            color: COLORS[index % COLORS.length],
+            showInLegend: true,
+            markerSize: 3,
+            dataPoints: points,
+          };
+        });
+
+        chart.options.data = dataSeries;
+        chart.render();
+      }
+
+      function updateMetrics(meta) {
+        if (meta) {
+          document.getElementById("active-devices-count").textContent = meta.userCount || 0;
+          document.getElementById("total-data-points").textContent = meta.dataPointCount || 0;
+        }
+        document.getElementById("last-update").textContent = new Date().toLocaleTimeString();
+      }
+
+      function startAutoRefresh() {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+
+        if (autoRefreshEnabled) {
+          autoRefreshInterval = setInterval(refreshChartData, 2000); // Refresh every 2 seconds
+        }
+      }
+
+      function toggleAutoRefresh() {
+        autoRefreshEnabled = !autoRefreshEnabled;
+        const button = document.getElementById("toggle-auto-refresh");
+        const icon = button.querySelector("i");
+
+        if (autoRefreshEnabled) {
+          button.innerHTML = '<i class="pause icon"></i>Stop auto-refresh';
+          button.className = "ui blue button";
+          startAutoRefresh();
+        } else {
+          button.innerHTML = '<i class="play icon"></i>Start auto-refresh';
+          button.className = "ui green button";
+          if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        }
+      }
+
+      // QR Code Generator functionality
+      let currentQRCode = null;
+
+      function generateQRCode() {
+        const linkInput = document.getElementById("client-link-input");
+        const qrContainer = document.getElementById("qr-container");
+        const qrCodeDiv = document.getElementById("qrcode");
+
+        const url = linkInput.value.trim();
+
+        if (!url) {
+          alert("Please provide client link");
+          return;
+        }
+
+        // Validate URL format
+        try {
+          new URL(url);
+        } catch {
+          alert("Please provide a valid URL (e.g. https://example.com)");
+          return;
+        }
+
+        // Clear existing QR code
+        if (currentQRCode) {
+          qrCodeDiv.innerHTML = "";
+          currentQRCode = null;
+        }
+
+        // Generate new QR code
+        try {
+          currentQRCode = new QRCode(qrCodeDiv, {
+            text: url,
+            width: 400,
+            height: 400,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M,
+          });
+
+          qrContainer.style.display = "block";
+        } catch (error) {
+          console.error("Error generating QR code:", error);
+          alert("Error generating QR code");
+        }
+      }
+
+      // Initialize QR code generator
+      document.addEventListener("DOMContentLoaded", function () {
+        const generateBtn = document.getElementById("generate-qr-btn");
+        const linkInput = document.getElementById("client-link-input");
+
+        generateBtn.addEventListener("click", generateQRCode);
+
+        // Generate QR code on Enter key press
+        linkInput.addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            generateQRCode();
+          }
+        });
+      });
+
+      // Cleanup on page unload
+      window.addEventListener("beforeunload", function () {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      });
+    </script>
+  </body>
+</html>

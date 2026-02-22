@@ -68,6 +68,7 @@ export const EVENT_TYPES = [
   "END_OF_CONCERT",
   "SPONSORS",
   "PIECE_LISTENING",
+  "TENSION_MEASUREMENT_CONFERENCE",
 ] as const;
 export const DEVICE_TYPES = ["Web", "M5Stack"] as const;
 

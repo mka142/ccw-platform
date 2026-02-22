@@ -23,6 +23,7 @@ import { EventType } from "./config";
 import config from "./config";
 import SponsorsPage from "./pages/SponsorsPage";
 import PieceListeningPage from "./pages/PieceListeningPage";
+import TensionMeasurementConferencePage from "./pages/TensionMeasurementConferencePage";
 
 function getColor(color: string | { [key: string]: string } | undefined) {
   if (typeof color === "string") {
@@ -104,6 +105,10 @@ export function App() {
       <StateNavigationPage<EventType>
         pageState="TENSION_MEASUREMENT"
         component={TensionMeasurementPage}
+      />
+      <StateNavigationPage<EventType>
+        pageState="TENSION_MEASUREMENT_CONFERENCE"
+        component={TensionMeasurementConferencePage}
       />
       <StateNavigationPage<EventType>
         pageState="OVATION"

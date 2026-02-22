@@ -1,4 +1,5 @@
 import { parseId } from "@/lib/db/utils";
+import { UserService } from "@/modules/user";
 
 import { FormOperations } from "../db";
 
@@ -77,6 +78,46 @@ export class FormService {
    */
   static async deleteById(id: string | ObjectId): Promise<OperationResult<boolean>> {
     return FormOperations.deleteById(id);
+  }
+
+  /**
+   * Get recent form data for a concert within specified time range (for real-time dashboard)
+   */
+  static async getRecentByConcert(concertId: string | ObjectId, timeRangeMs: number): Promise<FormDataWithId[]> {
+    try {
+      // Get all users for this concert
+      const users = await UserService.getUsersByConcert(concertId);
+      if (users.length === 0) {
+        return [];
+      }
+
+      const userIds = users.map(user => user._id);
+      const sinceTimestamp = Date.now() - timeRangeMs;
+      
+      return await FormOperations.findRecentByUsers(userIds, sinceTimestamp);
+    } catch (error) {
+      console.error("Failed to get recent form data by concert:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all form data for a concert (for real-time dashboard)
+   */
+  static async getByConcert(concertId: string | ObjectId): Promise<FormDataWithId[]> {
+    try {
+      // Get all users for this concert
+      const users = await UserService.getUsersByConcert(concertId);
+      if (users.length === 0) {
+        return [];
+      }
+
+      const userIds = users.map(user => user._id);
+      return await FormOperations.findByUsers(userIds);
+    } catch (error) {
+      console.error("Failed to get form data by concert:", error);
+      return [];
+    }
   }
 
   /**
