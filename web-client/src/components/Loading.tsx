@@ -29,7 +29,7 @@ export default function Loading() {
         <MusicNote delay="200ms" />
         <MusicNote delay="400ms" />
       </div>
-      <p className="text-glow/80 mt-4 text-2xl">Ładowanie...</p>
+      <p className="text-glow/80 mt-4 text-2xl">Loading...</p>
     </div>
   );
 }

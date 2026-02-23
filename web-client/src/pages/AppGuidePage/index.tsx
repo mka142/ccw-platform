@@ -18,16 +18,16 @@ export default function AppGuidePage({
       setTransitionFinished={setTransitionFinished}
     >
       <FadeInWrapper className="w-full h-full flex flex-col items-center justify-start overflow-auto py-12 px-4 text-center max-w-lg px-6">
-        <h1 className="text-4xl font-bold text-white mb-8">Drogi Słuchaczu</h1>
+        <h1 className="text-4xl font-bold text-white mb-8">Dear Listener</h1>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
         >
           <span className="text-lg text-white/90 leading-relaxed mb-3">
-            Przed rozpoczęciem koncertu badawczego, prosimy o zapoznanie się z
-            poniższymi wskazówkami, które pomogą Ci w pełni cieszyć się
-            doświadczeniem muzycznym.
+            Before starting the research concert, please familiarize yourself with
+            the following guidelines that will help you fully enjoy the
+            musical experience.
           </span>
         </motion.div>
 
@@ -40,7 +40,7 @@ export default function AppGuidePage({
           >
             <div className="text-2xl">🔇</div>
             <p className="text-white text-sm font-medium">
-              Pamiętaj o wyciszeniu telefonu
+              Remember to silence your phone
             </p>
           </motion.div>
 
@@ -52,7 +52,7 @@ export default function AppGuidePage({
           >
             <div className="text-2xl">🔆</div>
             <p className="text-white text-sm font-medium">
-              Spróbuj zmniejszyć jasność ekranu
+              Try to reduce screen brightness
             </p>
           </motion.div>
           <motion.div
@@ -64,17 +64,17 @@ export default function AppGuidePage({
             <div className="flex items-center justify-center space-x-3 mb-3">
               <div className="text-2xl">📳</div>
               <p className="text-white text-sm font-medium">
-                Wyłącz wibracje w telefonie
+                Turn off vibrations on your phone
               </p>
             </div>
             <div className="text-xs text-white/80 space-y-1">
               <div>
-                <strong>iPhone:</strong> Ustawienia › Dostępność › Dotyk ›
-                Wibracja (wyłącz)
+                <strong>iPhone:</strong> Settings › Accessibility › Touch ›
+                Vibration (turn off)
               </div>
               <div>
-                <strong>Android:</strong> Ustawienia › Dźwięki i wibracje ›
-                Wycisz
+                <strong>Android:</strong> Settings › Sounds and vibrations ›
+                Mute
               </div>
             </div>
           </motion.div>
@@ -89,12 +89,12 @@ export default function AppGuidePage({
               <div className="text-2xl">📱</div>
 
               <p className="text-white text-sm font-medium">
-                W trakcie trwania koncertu nie wychodź z aplikacji
+                Don't exit the app during the concert
               </p>
             </div>
             <div className="text-xs text-white/80 space-y-1">
-              Wchodzenie i wychodzenie z aplikacji może powodować zakłócenia w
-              jej działaniu oraz wpływać na jakość zbieranych danych.
+              Entering and exiting the app may cause disruptions to its
+              operation and affect the quality of collected data.
             </div>
           </motion.div>
         </div>
